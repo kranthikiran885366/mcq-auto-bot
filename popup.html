@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advanced AI MCQ Bot</title>
+  <style>
+    body {
+      width: 340px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 15px;
+      background-color: #f9f9f9;
+      margin: 0;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #eaeaea;
+    }
+    .logo {
+      width: 40px;
+      height: 40px;
+      margin-right: 10px;
+    }
+    h1 {
+      font-size: 18px;
+      margin: 0;
+      color: #333;
+    }
+    .container {
+      background-color: white;
+      border-radius: 8px;
+      padding: 15px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      margin-bottom: 15px;
+    }
+    .status {
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+    .status-dot.active {
+      background-color: #4CAF50;
+    }
+    .status-dot.inactive {
+      background-color: #F44336;
+    }
+    .status-text {
+      font-size: 14px;
+    }
+    .toggle-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .toggle-label {
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .toggle {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+    }
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 24px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #2196F3;
+    }
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+    .button {
+      width: 100%;
+      padding: 10px;
+      background-color: #2196F3;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      margin-bottom: 10px;
+    }
+    .button:hover {
+      background-color: #0b7dda;
+    }
+    .button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    .button.secondary {
+      background-color: #f1f1f1;
+      color: #333;
+    }
+    .button.secondary:hover {
+      background-color: #e1e1e1;
+    }
+    .settings-link {
+      display: block;
+      text-align: center;
+      margin-top: 15px;
+      color: #666;
+      text-decoration: none;
+      font-size: 12px;
+    }
+    .settings-link:hover {
+      text-decoration: underline;
+    }
+    .api-status {
+      font-size: 12px;
+      color: #666;
+      margin-top: 10px;
+      text-align: center;
+    }
+    .api-status.connected {
+      color: #4CAF50;
+    }
+    .api-status.disconnected {
+      color: #F44336;
+    }
+    .mode-selector {
+      margin-bottom: 15px;
+    }
+    .mode-selector select {
+      width: 100%;
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+    }
+    .stats {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+      font-size: 12px;
+      color: #666;
+    }
+    .stats-item {
+      text-align: center;
+    }
+    .stats-value {
+      font-weight: bold;
+      font-size: 16px;
+      color: #333;
+    }
+    .theme-toggle {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 18px;
+    }
+    .dark-mode {
+      background-color: #222;
+      color: #eee;
+    }
+    .dark-mode .container {
+      background-color: #333;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+    .dark-mode h1, .dark-mode .toggle-label {
+      color: #fff;
+    }
+    .dark-mode .button.secondary {
+      background-color: #444;
+      color: #eee;
+    }
+    .dark-mode .stats-value {
+      color: #fff;
+    }
+    .mcq-info {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #f5f5f5;
+      border-radius: 4px;
+      font-size: 12px;
+      max-height: 100px;
+      overflow-y: auto;
+    }
+    .dark-mode .mcq-info {
+      background-color: #444;
+    }
+    .mcq-question {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .mcq-answer {
+      color: #4CAF50;
+    }
+    .dark-mode .mcq-answer {
+      color: #8BC34A;
+    }
+  </style>
+</head>
+<body>
+  <button id="themeToggle" class="theme-toggle">🌙</button>
+  
+  <div class="header">
+    <img src="icons/icon48.png" alt="Logo" class="logo">
+    <h1>Advanced AI MCQ Bot</h1>
+  </div>
+  
+  <div class="container">
+    <div class="status">
+      <div id="statusDot" class="status-dot inactive"></div>
+      <div id="statusText" class="status-text">Bot is inactive</div>
+    </div>
+    
+    <div class="toggle-container">
+      <span class="toggle-label">Enable Bot</span>
+      <label class="toggle">
+        <input type="checkbox" id="botToggle">
+        <span class="slider"></span>
+      </label>
+    </div>
+    
+    <div class="mode-selector">
+      <select id="modeSelect">
+        <option value="learning">Learning Mode</option>
+        <option value="safe">Safe Mode</option>
+        <option value="stealth">Stealth Mode</option>
+      </select>
+    </div>
+    
+    <div class="toggle-container">
+      <span class="toggle-label">Voice Narration</span>
+      <label class="toggle">
+        <input type="checkbox" id="voiceToggle">
+        <span class="slider"></span>
+      </label>
+    </div>
+    
+    <div class="toggle-container">
+      <span class="toggle-label">Auto-Answer</span>
+      <label class="toggle">
+        <input type="checkbox" id="autoAnswerToggle" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+    
+    <button id="scanButton" class="button">Scan for MCQs</button>
+    <button id="captureButton" class="button secondary">Capture Screen</button>
+    
+    <div id="mcqInfo" class="mcq-info" style="display: none;">
+      <div class="mcq-question">Question: </div>
+      <div class="mcq-answer">Answer: </div>
+    </div>
+    
+    <div id="apiStatus" class="api-status disconnected">
+      API Status: Not Connected
+    </div>
+    
+    <div class="stats">
+      <div class="stats-item">
+        <div class="stats-value" id="mcqsFound">0</div>
+        <div>MCQs Found</div>
+      </div>
+      <div class="stats-item">
+        <div class="stats-value" id="mcqsAnswered">0</div>
+        <div>Answered</div>
+      </div>
+      <div class="stats-item">
+        <div class="stats-value" id="accuracy">0%</div>
+        <div>Accuracy</div>
+      </div>
+    </div>
+  </div>
+  
+  <a href="options.html" class="settings-link">Settings & API Configuration</a>
+  
+  <script src="popup.js"></script>
+</body>
+</html>

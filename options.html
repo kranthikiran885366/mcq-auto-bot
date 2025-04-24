@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advanced AI MCQ Bot Settings</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: #f9f9f9;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .logo {
+      width: 48px;
+      height: 48px;
+      margin-right: 15px;
+    }
+    h1 {
+      font-size: 24px;
+      margin: 0;
+      color: #333;
+    }
+    .container {
+      background-color: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      transition: background-color 0.3s, box-shadow 0.3s;
+    }
+    h2 {
+      font-size: 18px;
+      margin-top: 0;
+      margin-bottom: 15px;
+      color: #333;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    input[type="text"], input[type="password"], select, textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      background-color: white;
+      color: #333;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+    .button {
+      padding: 10px 15px;
+      background-color: #2196F3;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .button:hover {
+      background-color: #0b7dda;
+    }
+    .button.secondary {
+      background-color: #f1f1f1;
+      color: #333;
+    }
+    .button.secondary:hover {
+      background-color: #e1e1e1;
+    }
+    .button-group {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .toggle-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .toggle-label {
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .toggle {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+    }
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 24px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #2196F3;
+    }
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+    .status {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .status.success {
+      background-color: #e8f5e9;
+      color: #2e7d32;
+    }
+    .status.error {
+      background-color: #ffebee;
+      color: #c62828;
+    }
+    .tab-container {
+      margin-bottom: 20px;
+    }
+    .tab-buttons {
+      display: flex;
+      border-bottom: 1px solid #ddd;
+      margin-bottom: 15px;
+    }
+    .tab-button {
+      padding: 10px 15px;
+      background-color: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: #666;
+      transition: color 0.3s;
+    }
+    .tab-button.active {
+      color: #2196F3;
+      border-bottom: 2px solid #2196F3;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .theme-toggle {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 24px;
+    }
+    .dark-mode {
+      background-color: #222;
+      color: #eee;
+    }
+    .dark-mode .container {
+      background-color: #333;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+    .dark-mode h1, .dark-mode h2, .dark-mode label, .dark-mode .toggle-label {
+      color: #fff;
+    }
+    .dark-mode input[type="text"], .dark-mode input[type="password"], .dark-mode select, .dark-mode textarea {
+      background-color: #444;
+      color: #fff;
+      border-color: #555;
+    }
+    .dark-mode .button.secondary {
+      background-color: #444;
+      color: #eee;
+    }
+    .dark-mode .tab-button {
+      color: #aaa;
+    }
+    .dark-mode .status.success {
+      background-color: #1b5e20;
+      color: #e8f5e9;
+    }
+    .dark-mode .status.error {
+      background-color: #b71c1c;
+      color: #ffebee;
+    }
+    .api-priority {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .api-priority-number {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background-color: #2196F3;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 10px;
+      font-weight: bold;
+    }
+    .api-priority-controls {
+      margin-left: auto;
+      display: flex;
+      gap: 5px;
+    }
+    .api-priority-button {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: none;
+      background-color: #f1f1f1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+    .dark-mode .api-priority-button {
+      background-color: #444;
+      color: #fff;
+    }
+    .api-list {
+      margin-bottom: 20px;
+    }
+    .history-item {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+    }
+    .dark-mode .history-item {
+      border-bottom-color: #444;
+    }
+    .history-question {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .history-answer {
+      color: #4CAF50;
+    }
+    .dark-mode .history-answer {
+      color: #8BC34A;
+    }
+    .history-time {
+      font-size: 12px;
+      color: #999;
+      margin-top: 5px;
+    }
+    .history-list {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .range-container {
+      display: flex;
+      align-items: center;
+    }
+    .range-value {
+      margin-left: 10px;
+      font-weight: bold;
+      min-width: 40px;
+    }
+  </style>
+</head>
+<body>
+  <button id="themeToggle" class="theme-toggle">🌙</button>
+  
+  <div class="header">
+    <img src="icons/icon48.png" alt="Logo" class="logo">
+    <h1>Advanced AI MCQ Bot Settings</h1>
+  </div>
+  
+  <div class="tab-container">
+    <div class="tab-buttons">
+      <button class="tab-button active" data-tab="api">AI Configuration</button>
+      <button class="tab-button" data-tab="behavior">Behavior Settings</button>
+      <button class="tab-button" data-tab="detection">Detection Settings</button>
+      <button class="tab-button" data-tab="advanced">Advanced Settings</button>
+      <button class="tab-button" data-tab="history">Answer History</button>
+    </div>
+    
+    <div id="apiTab" class="tab-content active">
+      <div class="container">
+        <h2>AI API Configuration</h2>
+        
+        <div class="api-list">
+          <h3>API Priority Order</h3>
+          <p>The bot will try APIs in this order until it gets a successful response:</p>
+          
+          <div class="api-priority">
+            <div class="api-priority-number">1</div>
+            <div>OpenAI (ChatGPT)</div>
+            <div class="api-priority-controls">
+              <button class="api-priority-button" disabled>↑</button>
+              <button class="api-priority-button">↓</button>
+            </div>
+          </div>
+          
+          <div class="api-priority">
+            <div class="api-priority-number">2</div>
+            <div>Google Gemini Pro</div>
+            <div class="api-priority-controls">
+              <button class="api-priority-button">↑</button>
+              <button class="api-priority-button">↓</button>
+            </div>
+          </div>
+          
+          <div class="api-priority">
+            <div class="api-priority-number">3</div>
+            <div>DeepSeek</div>
+            <div class="api-priority-controls">
+              <button class="api-priority-button">↑</button>
+              <button class="api-priority-button" disabled>↓</button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="apiProvider">Primary AI Provider</label>
+          <select id="apiProvider">
+            <option value="openai">OpenAI (ChatGPT)</option>
+            <option value="gemini">Google Gemini Pro</option>
+            <option value="deepseek">DeepSeek</option>
+            <option value="auto">Auto (Try All)</option>
+          </select>
+        </div>
+        
+        <div id="openaiSettings">
+          <div class="form-group">
+            <label for="openaiKey">OpenAI API Key</label>
+            <input type="password" id="openaiKey" placeholder="Enter your OpenAI API key">
+          </div>
+          
+          <div class="form-group">
+            <label for="openaiModel">OpenAI Model</label>
+            <select id="openaiModel">
+              <option value="gpt-4o">GPT-4o</option>
+              <option value="gpt-4-turbo">GPT-4 Turbo</option>
+              <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+            </select>
+          </div>
+        </div>
+        
+        <div id="geminiSettings" style="display: none;">
+          <div class="form-group">
+            <label for="geminiKey">Google Gemini API Key</label>
+            <input type="password" id="geminiKey" placeholder="Enter your Google Gemini API key">
+          </div>
+          
+          <div class="form-group">
+            <label for="geminiModel">Gemini Model</label>
+            <select id="geminiModel">
+              <option value="gemini-pro">Gemini Pro</option>
+              <option value="gemini-pro-vision">Gemini Pro Vision</option>
+            </select>
+          </div>
+        </div>
+        
+        <div id="deepseekSettings" style="display: none;">
+          <div class="form-group">
+            <label for="deepseekKey">DeepSeek API Key</label>
+            <input type="password" id="deepseekKey" placeholder="Enter your DeepSeek API key">
+          </div>
+          
+          <div class="form-group">
+            <label for="deepseekModel">DeepSeek Model</label>
+            <select id="deepseekModel">
+              <option value="deepseek-chat">DeepSeek Chat</option>
+              <option value="deepseek-coder">DeepSeek Coder</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="promptTemplate">AI Prompt Template</label>
+          <textarea id="promptTemplate" rows="5" placeholder="Enter your custom prompt template">You are an expert at answering multiple choice questions. Analyze the following question and options, then respond ONLY with the letter or number of the correct option (e.g., "A" or "1"). If multiple answers are correct, list them separated by commas.
+
+Question: {{question}}
+
+Options:
+{{options}}
+
+Correct answer:</textarea>
+        </div>
+        
+        <div id="apiStatus" class="status" style="display: none;"></div>
+        
+        <div class="button-group">
+          <button id="testApiButton" class="button secondary">Test Connection</button>
+          <button id="saveApiButton" class="button">Save API Settings</button>
+        </div>
+      </div>
+    </div>
+    
+    <div id="behaviorTab" class="tab-content">
+      <div class="container">
+        <h2>Behavior Settings</h2>
+        
+        <div class="toggle-container">
+          <span class="toggle-label">Auto-Answer Questions</span>
+          <label class="toggle">
+            <input type="checkbox" id="autoAnswerToggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        
+        <div class="form-group">
+          <label for="answerDelay">Minimum Answer Delay (seconds)</label>
+          <div class="range-container">
+            <input type="range" id="answerDelay" min="1" max="10" value="3" step="0.5">
+            <span class="range-value" id="answerDelayValue">3s</span>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="maxAnswerDelay">Maximum Answer Delay (seconds)</label>
+          <div class="range-container">
+            <input type="range" id="maxAnswerDelay" min="2" max="15" value="6" step="0.5">
+            <span class="range-value" id="maxAnswerDelayValue">6s</span>
+          </div>
+        </div>
+        
+        <div class="toggle-container">
+          <span class="toggle-label">Retry Wrong Answers</span>
+          <label class="toggle">
+            <input type="checkbox" id="retryWrongToggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        
+        <div class="form-group">
+          <label for="maxRetries">Maximum Retries</label>
+          <div class="range-container">
+            <input type="range" id="maxRetries" min="1" max="5" value="3" step="1">
+            <span class="range-value" id="maxRetriesValue">3</span>
+          </div>
+        </div>
+        
+        <div class="toggle-container">
+          <span class="toggle-label">Voice Narration</span>
+          <label class="toggle">
+            <input type="checkbox" id="voiceToggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+        
+        <div class="form-group">
+          <label for="voiceRate">Voice Speed</label>
+          <div class="range-container">
+            <input type="range" id="voiceRate" min="0.5" max="2" value="1" step="0.1">
+            <span class="range-value" id="voiceRateValue">1x</span>
+          </div>
+        </div>
+        
+        <div class="toggle-container">
+          <span class="toggle-label">Auto-Scroll to MCQs</span>
+          <label class="toggle">
+            <input type="checkbox" id="autoScrollToggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        
+        <div class="toggle-container">
+          <span class="toggle-label">Highlight Selected Answers</span>
+          <label class="toggle">
+            <input type="checkbox" id="highlightToggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        
+        <div class="button-group">
+          <button id="saveBehaviorButton" class="button">Save Behavior Settings</button>
+        </div>
+      </div>
+    </div>
+    
+    <div id="detectionTab" class="tab-content">
+      <div class="container">
+        <h2>Detection Settings</h2>
+        
+        <div class="toggle-container">
+          <span class="toggle-label">DOM-based Detection</span>
+          <label class="toggle">
+            <input type="checkbox" id="domDetectionToggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        
+        <div class="toggle-container">
+          <span class="toggle-label">OCR Detection</span>
+          <label class="toggle">
+            <input type="checkbox" id="ocrToggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        
+        <div class="form-group">
+          <label for="ocrLanguage">OCR Language</label>
+          <select id="ocrLanguage">
+            <option value="eng">English</option>
+            <option value="eng+hin">English + Hindi</option>
+            <option value="eng+spa">English + Spanish</option>
+            <option value="eng+fra">English + French</option>
+            <option value="eng+deu">English + German</option>
+            <option value="eng+chi_sim">English + Chinese (Simplified)</option>
+            <option value="eng+ara">English + Arabic</option>
+          </select>
+        </div>
+        
+        <div class="toggle-container">
+          <span class="toggle-label">Shadow DOM Detection</span>
+          <label class="toggle">
+            <input type="checkbox" id="shadowDomToggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        
+        <div class="toggle-container">
+          <span class="toggle-label">Image-based MCQ Detection</span>
+          <label class="toggle">
+            <input type="checkbox" id="imageDetectionToggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        
+        <div class="toggle-container">
+          <span class="toggle-label">Math Equation Detection</span>
+          <label class="toggle">
+            <input type="checkbox" id="mathDetectionToggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        
+        <div class="form-group">
+          <label for="customSelectors">Custom CSS Selectors (one per line)</label>
+          <textarea id="customSelectors" rows="4" placeholder=".quiz-question
+.mcq-container
+.question-wrapper">.question
+.mcq
+.quiz-question
+.multiple-choice</textarea>
+        </div>
+        
+        <div class="button-group">
+          <button id="saveDetectionButton" class="button">Save Detection Settings</button>
+        </div>
+      </div>
+    </div>
+    
+    <div id="advancedTab" class="tab-content">
+      <div class="container">
+        <h2>Advanced Settings</h2>
+        
+        <div class="toggle-container">
+          <span class="toggle-label">Safe Mode (Disable in Proctored Environments)</span>
+          <label class="toggle">
+            <input type="checkbox" id="safeModeToggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        
+        <div class="toggle-container">
+          <span class="toggle-label">Detect Webcam</span>
+          <label class="toggle">
+            <input type="checkbox" id="detectWebcamToggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        
+        <div class="toggle-container">
+          <span class="toggle-label">Detect Fullscreen Mode</span>
+          <label class="toggle">
+            <input type="checkbox" id="detectFullscreenToggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        
+        <div class="toggle-container">
+          <span class="toggle-label">Detect Virtual Machine</span>
+          <label class="toggle">
+            <input type="checkbox" id="detectVMToggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        
+        <div class="toggle-container">
+          <span class="toggle-label">Stealth Mode (Reduce Detection Footprint)</span>
+          <label class="toggle">
+            <input type="checkbox" id="stealthModeToggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+        
+        <div class="toggle-container">
+          <span class="toggle-label">Save Answer History</span>
+          <label class="toggle">
+            <input type="checkbox" id="saveHistoryToggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        
+        <div class="form-group">
+          <label for="maxHistoryItems">Maximum History Items</label>
+          <div class="range-container">
+            <input type="range" id="maxHistoryItems" min="10" max="100" value="50" step="10">
+            <span class="range-value" id="maxHistoryItemsValue">50</span>
+          </div>
+        </div>
+        
+        <div class="toggle-container">
+          <span class="toggle-label">Debug Mode</span>
+          <label class="toggle">
+            <input type="checkbox" id="debugModeToggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+        
+        <div class="button-group">
+          <button id="exportDataButton" class="button secondary">Export Data</button>
+          <button id="importDataButton" class="button secondary">Import Data</button>
+          <button id="resetButton" class="button secondary">Reset to Defaults</button>
+          <button id="saveAdvancedButton" class="button">Save Advanced Settings</button>
+        </div>
+      </div>
+    </div>
+    
+    <div id="historyTab" class="tab-content">
+      <div class="container">
+        <h2>Answer History</h2>
+        
+        <div class="button-group" style="justify-content: flex-start; margin-bottom: 15px;">
+          <button id="clearHistoryButton" class="button secondary">Clear History</button>
+          <button id="exportHistoryButton" class="button secondary">Export History</button>
+        </div>
+        
+        <div id="historyList" class="history-list">
+          <!-- History items will be added here dynamically -->
+          <div class="history-item">
+            <div class="history-question">What is the capital of France?</div>
+            <div class="history-answer">Answer: Paris</div>
+            <div class="history-time">2023-06-15 14:32:45</div>
+          </div>
+          <div class="history-item">
+            <div class="history-question">Which planet is known as the Red Planet?</div>
+            <div class="history-answer">Answer: Mars</div>
+            <div class="history-time">2023-06-15 14:30:12</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="options.js"></script>
+</body>
+</html>
