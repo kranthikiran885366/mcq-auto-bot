@@ -3,7 +3,7 @@
   "name": "Advanced AI MCQ Answering Bot",
   "version": "1.0.0",
   "description": "Automatically detects and answers any type of MCQ using AI on any website",
-  "permissions": ["activeTab", "storage", "scripting", "tabs", "webNavigation"],
+  "permissions": ["activeTab", "storage", "scripting", "tabs", "webNavigation", "tabCapture"],
   "host_permissions": ["<all_urls>"],
   "action": {
     "default_popup": "popup.html",
@@ -21,7 +21,8 @@
     {
       "matches": ["<all_urls>"],
       "js": ["tesseract.min.js", "content.js"],
-      "run_at": "document_idle"
+      "run_at": "document_idle",
+      "all_frames": true
     }
   ],
   "web_accessible_resources": [

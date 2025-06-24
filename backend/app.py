@@ -464,6 +464,27 @@ def get_answer():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+@app.route('/api/answer', methods=['POST'])
+def answer_mcq():
+    """Answer a single MCQ using AI"""
+    data = request.json
+    question = data.get('question')
+    options = data.get('options')
+    provider = data.get('provider', 'openai')
+
+    try:
+        answer_index = bot.get_ai_answer(question, [{'text': opt} for opt in options], provider)
+        if answer_index is not None and 0 <= answer_index < len(options):
+            return jsonify({
+                'success': True,
+                'answer_index': answer_index,
+                'answer_text': options[answer_index]
+            })
+        else:
+            return jsonify({'success': False, 'error': 'Could not determine answer'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 @app.route('/api/close', methods=['POST'])
 def close_bot():
     """Close the bot"""

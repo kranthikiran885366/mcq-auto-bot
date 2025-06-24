@@ -1,5 +1,7 @@
-// Import Tesseract.js for OCR
-importScripts("https://unpkg.com/tesseract.js@v2.1.0/dist/tesseract.min.js")
+// Manifest V3 service worker (module): importScripts() is NOT supported. Use ES module imports instead.
+// importScripts("https://unpkg.com/tesseract.js@v2.1.0/dist/tesseract.min.js") // <-- REMOVE THIS LINE
+// If you need Tesseract, use dynamic import:
+// import('https://unpkg.com/tesseract.js@v2.1.0/dist/tesseract.min.js').then(Tesseract => { /* use Tesseract */ });
 
 // Global variables
 let apiProvider = "openai"
@@ -10,6 +12,18 @@ let geminiModel = "gemini-pro"
 let deepseekKey = ""
 let deepseekModel = "deepseek-chat"
 let promptTemplate = ""
+
+// Dynamically import Tesseract.js for OCR in MV3 service worker using ESM CDN
+let Tesseract = null;
+(async () => {
+  try {
+    const tesseractModule = await import('https://cdn.skypack.dev/tesseract.js@2.1.5');
+    Tesseract = tesseractModule.default || tesseractModule.Tesseract || tesseractModule;
+    console.log('Tesseract loaded in background service worker from CDN.');
+  } catch (e) {
+    console.error('Failed to load Tesseract.js from CDN:', e);
+  }
+})();
 
 // Initialize settings
 chrome.runtime.onInstalled.addListener(() => {
@@ -39,6 +53,12 @@ chrome.runtime.onInstalled.addListener(() => {
 
 // Listen for messages from popup and content scripts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === "testConnection") {
+    console.log("Test connection received");
+    sendResponse({ success: true, message: "Extension is working!" });
+    return true;
+  }
+
   if (message.action === "testApiConnection") {
     testApiConnection(message.provider, message.apiKey, message.model)
       .then((result) => sendResponse(result))
@@ -65,6 +85,54 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .then((result) => sendResponse(result))
       .catch((error) => sendResponse({ success: false, error: error.message }))
     return true // Indicates async response
+  }
+
+  if (message.action === "captureTabScreenshot") {
+    try {
+      chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+        if (!tabs || !tabs[0]) {
+          console.error("No active tab found");
+          sendResponse({ success: false, error: "No active tab found" });
+          return;
+        }
+        
+        chrome.tabs.captureVisibleTab(
+          tabs[0].windowId,
+          { format: "png" },
+          function(dataUrl) {
+            if (chrome.runtime.lastError) {
+              console.error("Capture failed:", chrome.runtime.lastError);
+              sendResponse({ 
+                success: false, 
+                error: chrome.runtime.lastError.message || "Screen capture failed"
+              });
+              return;
+            }
+            if (!dataUrl) {
+              console.error("No data URL returned from capture");
+              sendResponse({ 
+                success: false, 
+                error: "No image data received from capture" 
+              });
+              return;
+            }
+            console.log("Screen capture successful");
+            sendResponse({ success: true, dataUrl: dataUrl });
+          }
+        );
+      });
+      return true; // Indicates async response
+    } catch (error) {
+      console.error("Screen capture error:", error);
+      sendResponse({ success: false, error: error.message });
+      return true;
+    }
+  }
+
+  // Default handler for unhandled actions
+  if (!['testConnection', 'testApiConnection', 'predictAnswer', 'performOCR', 'detectMathEquation'].includes(message.action)) {
+    console.warn('No handler for action:', message.action);
+    sendResponse({ success: false, error: 'No handler for action: ' + message.action });
   }
 })
 
@@ -426,8 +494,7 @@ Instructions:
 3. Respond ONLY with the letter or number of the correct option, or the exact text of the correct option.
 4. If multiple answers are correct, list all correct options separated by commas.
 5. Do not explain your reasoning, just provide the answer.
-`
-    }
+`    }
 
     // Prepare request body
     const requestBody = {
@@ -497,8 +564,7 @@ Instructions:
 3. Respond ONLY with the letter or number of the correct option, or the exact text of the correct option.
 4. If multiple answers are correct, list all correct options separated by commas.
 5. Do not explain your reasoning, just provide the answer.
-`
-    }
+`    }
 
     const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
       method: "POST",
@@ -530,38 +596,32 @@ Instructions:
 // Perform OCR on image
 async function performOCR(imageData, language = "eng", detectBounds = true) {
   try {
+    if (!Tesseract) throw new Error('Tesseract.js is not loaded.');
     const worker = await Tesseract.createWorker({
       logger: (m) => console.log(m),
-    })
-
-    await worker.loadLanguage(language)
-    await worker.initialize(language)
-
+    });
+    await worker.loadLanguage(language);
+    await worker.initialize(language);
     // Basic text recognition
-    const { data } = await worker.recognize(imageData)
-
+    const { data } = await worker.recognize(imageData);
     const result = {
       success: true,
       text: data.text,
       confidence: data.confidence,
-    }
-
+    };
     // Get detailed data with bounding boxes if requested
     if (detectBounds) {
       const { data: boxData } = await worker.recognize(imageData, {
         rectangle: { top: 0, left: 0, width: 0, height: 0 },
-      })
-
-      result.words = boxData.words
-      result.lines = boxData.lines
-      result.paragraphs = boxData.paragraphs
+      });
+      result.words = boxData.words;
+      result.lines = boxData.lines;
+      result.paragraphs = boxData.paragraphs;
     }
-
-    await worker.terminate()
-
-    return result
+    await worker.terminate();
+    return result;
   } catch (error) {
-    return { success: false, error: error.message }
+    return { success: false, error: error.message };
   }
 }
 
@@ -694,3 +754,5 @@ async function detectMathEquation(imageData) {
     return { success: false, error: error.message }
   }
 }
+
+

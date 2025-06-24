@@ -466,9 +466,17 @@ document.addEventListener("DOMContentLoaded", () => {
       openaiKey.value = result.openaiKey || ""
       openaiModel.value = result.openaiModel || "gpt-4o"
       geminiKey.value = result.geminiKey || ""
-      geminiModel.value = result.geminiModel || "gemini-pro"
+      if (result.geminiModel) {
+        geminiModel.value = result.geminiModel;
+      } else {
+        geminiModel.value = "gemini-pro";
+      }
       deepseekKey.value = result.deepseekKey || ""
-      deepseekModel.value = result.deepseekModel || "deepseek-chat"
+      if (result.deepseekModel) {
+        deepseekModel.value = result.deepseekModel;
+      } else {
+        deepseekModel.value = "deepseek-chat";
+      }
       promptTemplate.value = result.promptTemplate || promptTemplate.defaultValue
 
       // Show/hide provider settings based on selected provider

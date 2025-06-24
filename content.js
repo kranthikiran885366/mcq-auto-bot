@@ -25,6 +25,7 @@ let shadowDomDetection = true
 let imageDetection = true
 let mathDetection = true
 let customSelectors = ""
+let humanMouseMovement = false
 
 // Stats
 let stats = {
@@ -36,6 +37,28 @@ let stats = {
 
 // Last MCQ processed
 let lastMCQ = null
+
+// Fake cursor overlay for visible simulated movement
+let fakeCursor = null;
+function setupFakeCursor() {
+  if (fakeCursor) return;
+  fakeCursor = document.createElement('div');
+  fakeCursor.style.position = 'fixed';
+  fakeCursor.style.width = '24px';
+  fakeCursor.style.height = '24px';
+  fakeCursor.style.background = 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\'><polygon points=\'2,2 22,12 12,14 10,22\' fill=\'black\'/></svg>") no-repeat center/contain';
+  fakeCursor.style.pointerEvents = 'none';
+  fakeCursor.style.zIndex = 999999;
+  fakeCursor.style.transition = 'left 0.2s, top 0.2s';
+  fakeCursor.style.left = '0px';
+  fakeCursor.style.top = '0px';
+  document.body.appendChild(fakeCursor);
+}
+function moveFakeCursor(x, y) {
+  if (!fakeCursor) setupFakeCursor();
+  fakeCursor.style.left = x + 'px';
+  fakeCursor.style.top = y + 'px';
+}
 
 // Initialize settings
 if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.sync) {
@@ -66,6 +89,7 @@ if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.sync) {
     imageDetection = result.imageDetection !== false // Default to true
     mathDetection = result.mathDetection !== false // Default to true
     customSelectors = result.customSelectors || ""
+    humanMouseMovement = result.humanMouseMovement || false
 
     // Load stats
     if (result.stats) {
@@ -317,7 +341,8 @@ function startObserver() {
 function scanAndAnswerMCQs() {
   if (!botEnabled) return
 
-  const mcqs = findMCQs()
+  // Use robust universal MCQ detection
+  const mcqs = findAllMCQs();
 
   if (mcqs.length > 0) {
     if (debugMode) {
@@ -325,6 +350,14 @@ function scanAndAnswerMCQs() {
     } else {
       console.log(`Found ${mcqs.length} MCQs`)
     }
+
+    // Log all MCQs and their options for debugging
+    mcqs.forEach((mcq, idx) => {
+      console.log(`MCQ ${idx + 1}: ${mcq.question}`);
+      mcq.options.forEach((opt, oidx) => {
+        console.log(`  Option ${oidx + 1}: ${opt.text}`);
+      });
+    });
 
     // Update stats
     stats.found = mcqs.length
@@ -345,60 +378,83 @@ function scanAndAnswerMCQs() {
   }
 }
 
+// Helper to robustly find the question text for an input
+function getQuestionForInput(input) {
+  // Look for heading or bold text above the input
+  let node = input;
+  while (node) {
+    // Check previous siblings for text ending with '?'
+    let prev = node.previousElementSibling;
+    while (prev) {
+      if (
+        prev.textContent &&
+        prev.textContent.trim().length > 5 &&
+        prev.textContent.includes("?")
+      ) {
+        return prev.textContent.trim();
+      }
+      prev = prev.previousElementSibling;
+    }
+    // Check parent for question
+    node = node.parentElement;
+    if (
+      node &&
+      node.textContent &&
+      node.textContent.trim().length > 5 &&
+      node.textContent.includes("?")
+    ) {
+      return node.textContent.trim();
+    }
+  }
+  // Fallback: look for text node above
+  node = input;
+  while (node && node.previousSibling) {
+    if (
+      node.previousSibling.nodeType === 3 &&
+      node.previousSibling.textContent.trim().includes("?")
+    ) {
+      return node.previousSibling.textContent.trim();
+    }
+    node = node.previousSibling;
+  }
+  return "";
+}
+
 // Find MCQs on the page
 function findMCQs() {
-  const mcqs = []
-
-  // Method 1: Find radio button groups (if DOM detection is enabled)
-  if (domDetection) {
-    const radioGroups = findRadioGroups()
-    mcqs.push(...radioGroups)
-
-    // Method 2: Find checkbox groups
-    const checkboxGroups = findCheckboxGroups()
-    mcqs.push(...checkboxGroups)
-
-    // Method 3: Find select dropdowns
-    const selectDropdowns = findSelectDropdowns()
-    mcqs.push(...selectDropdowns)
-
-    // Method 4: Find common MCQ patterns in HTML
-    const htmlPatterns = findHTMLPatterns()
-    mcqs.push(...htmlPatterns)
-
-    // Method 5: Find MCQs in shadow DOM (if enabled)
-    if (shadowDomDetection) {
-      const shadowDomMCQs = findShadowDomMCQs()
-      mcqs.push(...shadowDomMCQs)
-    }
-
-    // Method 6: Find MCQs using custom selectors
-    if (customSelectors) {
-      const customMCQs = findCustomMCQs()
-      mcqs.push(...customMCQs)
-    }
-  }
-
-  // Method 7: Use OCR to find MCQs in images (if enabled)
-  if (ocrEnabled) {
-    findMCQsWithOCR().then((ocrMcqs) => {
-      mcqs.push(...ocrMcqs)
-    })
-  }
-
-  // Method 8: Find image-based MCQs (if enabled)
-  if (imageDetection) {
-    const imageMCQs = findImageMCQs()
-    mcqs.push(...imageMCQs)
-  }
-
-  // Method 9: Find math equation MCQs (if enabled)
-  if (mathDetection) {
-    const mathMCQs = findMathMCQs()
-    mcqs.push(...mathMCQs)
-  }
-
-  return mcqs
+  const mcqs = [];
+  const inputTypes = ["radio", "checkbox"];
+  inputTypes.forEach(type => {
+    const inputs = Array.from(document.querySelectorAll(`input[type='${type}']`));
+    const groups = {};
+    inputs.forEach(input => {
+      const name = input.getAttribute("name") || input.id || "no-name";
+      if (!groups[name]) groups[name] = [];
+      groups[name].push(input);
+    });
+    Object.values(groups).forEach(group => {
+      if (group.length < 2) return;
+      let firstInput = group[0];
+      let question = getQuestionForInput(firstInput);
+      // Get options
+      const options = group.map(input => {
+        let optionText = "";
+        let label = document.querySelector(`label[for='${input.id}']`);
+        if (label) {
+          optionText = label.textContent.trim();
+        } else if (input.parentElement && input.parentElement.tagName === "LABEL") {
+          optionText = input.parentElement.textContent.trim();
+        } else {
+          optionText = input.value || "";
+        }
+        return { input, text: optionText };
+      });
+      if (question && options.length > 1) {
+        mcqs.push({ question, options, type });
+      }
+    });
+  });
+  return mcqs;
 }
 
 // Find radio button groups
@@ -411,45 +467,47 @@ function findRadioGroups() {
   radioButtons.forEach((radio) => {
     const name = radio.name
     if (!name) return
-
     if (!groupedRadios[name]) {
       groupedRadios[name] = []
     }
-
     groupedRadios[name].push(radio)
   })
 
   // Process each group
   for (const name in groupedRadios) {
     const radios = groupedRadios[name]
-
     if (radios.length < 2) continue // Skip groups with only one option
-
-    // Find the question text
     let questionText = ""
-
-    // Method 1: Look for a label or heading before the radio group
     const firstRadio = radios[0]
     let currentElement = firstRadio.parentElement
-
+    // Try to find question text in parent elements
     while (currentElement && !questionText) {
-      // Look for headings, paragraphs, or divs with text
       const headings = currentElement.querySelectorAll("h1, h2, h3, h4, h5, h6, p, div")
-
       for (const heading of headings) {
         const text = heading.textContent.trim()
-        if (text && text.length > 10 && text.includes("?")) {
+        if (text && text.length > 10 && text.match(/[?\uFF1F]/)) {
           questionText = text
           break
         }
       }
-
       currentElement = currentElement.parentElement
-
-      // Prevent infinite loop
       if (currentElement === document.body) break
     }
-
+    // Fallback: look for <b> or text node above the first radio
+    if (!questionText && radios[0]) {
+      let node = radios[0].previousSibling
+      for (let i = 0; i < 5 && node; i++) {
+        if (node.nodeType === Node.ELEMENT_NODE && node.tagName === 'B') {
+          questionText = node.textContent.trim()
+          break
+        }
+        if (node.nodeType === Node.TEXT_NODE && node.textContent.trim().length > 5) {
+          questionText = node.textContent.trim()
+          break
+        }
+        node = node.previousSibling
+      }
+    }
     // Method 2: Look for a fieldset legend
     if (!questionText) {
       const fieldset = firstRadio.closest("fieldset")
@@ -460,7 +518,6 @@ function findRadioGroups() {
         }
       }
     }
-
     // Method 3: Look for a div with a question-like class
     if (!questionText) {
       const questionDiv = document.querySelector(".question, .question-text, .quiz-question, .mcq-question")
@@ -468,7 +525,6 @@ function findRadioGroups() {
         questionText = questionDiv.textContent.trim()
       }
     }
-
     // If we still don't have a question, use a generic one
     if (!questionText) {
       questionText = `Question for options: ${radios
@@ -479,45 +535,38 @@ function findRadioGroups() {
         .filter(Boolean)
         .join(", ")}`
     }
-
     // Get the options
     const options = radios.map((radio) => {
       let optionText = ""
-
-      // Method 1: Look for a label with matching 'for' attribute
       if (radio.id) {
         const label = document.querySelector(`label[for="${radio.id}"]`)
         if (label) {
           optionText = label.textContent.trim()
         }
       }
-
-      // Method 2: Look for a label wrapping the radio
       if (!optionText) {
         const parentLabel = radio.closest("label")
         if (parentLabel) {
           optionText = parentLabel.textContent.trim()
-          // Remove the radio button text if any
           optionText = optionText.replace(/^\s*[\u25CB\u25CF\u25EF\u26AB\u26AA]\s*/, "")
         }
       }
-
-      // Method 3: Look for text next to the radio
       if (!optionText) {
         const nextSibling = radio.nextSibling
         if (nextSibling && nextSibling.nodeType === Node.TEXT_NODE) {
           optionText = nextSibling.textContent.trim()
         }
       }
-
+      // Fallback: get text from parent element
+      if (!optionText && radio.parentElement) {
+        optionText = radio.parentElement.textContent.trim()
+      }
       return {
         element: radio,
         text: optionText,
       }
     })
-
-    // Only add if we have a question and options with text
-    if (questionText && options.some((opt) => opt.text)) {
+    if (questionText && options.length > 1) {
       radioGroups.push({
         type: "radio",
         question: questionText,
@@ -526,7 +575,6 @@ function findRadioGroups() {
       })
     }
   }
-
   return radioGroups
 }
 
@@ -574,16 +622,24 @@ function findCheckboxGroups() {
       }
     }
 
-    // If we still don't have a question, use a generic one
-    if (!questionText) {
-      questionText = `Question for checkboxes: ${Array.from(containerCheckboxes)
-        .map((cb) => {
-          const label = document.querySelector(`label[for="${cb.id}"]`)
-          return label ? label.textContent.trim() : ""
-        })
-        .filter(Boolean)
-        .join(", ")}`
+    // Fallback: look for <b> or text node above the first checkbox
+    if (!questionText && containerCheckboxes[0]) {
+      let node = containerCheckboxes[0].previousSibling
+      for (let i = 0; i < 5 && node; i++) {
+        if (node.nodeType === Node.ELEMENT_NODE && node.tagName === 'B') {
+          questionText = node.textContent.trim()
+          break
+        }
+        if (node.nodeType === Node.TEXT_NODE && node.textContent.trim().length > 5) {
+          questionText = node.textContent.trim()
+          break
+        }
+        node = node.previousSibling
+      }
     }
+
+    // Fallback: use container text
+    if (!questionText) questionText = container.textContent.trim().split('\n')[0]
 
     // Get the options
     const options = Array.from(containerCheckboxes).map((checkbox) => {
@@ -1026,267 +1082,224 @@ function findShadowDomMCQs() {
   return shadowMCQs
 }
 
-// Find MCQs using custom selectors
-function findCustomMCQs() {
-  const customMCQs = []
-
-  if (!customSelectors) return customMCQs
-
-  // Split custom selectors by newline
-  const selectors = customSelectors.split("\n").filter((s) => s.trim())
-
-  selectors.forEach((selector) => {
-    try {
-      // Find elements matching the selector
-      const elements = document.querySelectorAll(selector.trim())
-
-      elements.forEach((element) => {
-        // Try to find a question and options
-        let questionText = ""
-
-        // Look for question text in headings, paragraphs, or divs
-        const questionElements = element.querySelectorAll("h1, h2, h3, h4, h5, h6, p, div.question, .question-text")
-        for (const qElement of questionElements) {
-          const text = qElement.textContent.trim()
-          if (text && text.length > 10) {
-            questionText = text
-            break
-          }
-        }
-
-        // If no question found, use the element's text
-        if (!questionText) {
-          questionText = element.textContent.trim().substring(0, 100)
-        }
-
-        // Look for options
-        const optionElements = element.querySelectorAll(
-          "li, .option, .answer, .choice, label, input[type='radio'], input[type='checkbox']",
-        )
-
-        if (optionElements.length > 0) {
-          const options = Array.from(optionElements)
-            .map((optElement) => {
-              // If it's an input, try to find its label
-              if (optElement.tagName === "INPUT") {
-                if (optElement.id) {
-                  const label = document.querySelector(`label[for="${optElement.id}"]`)
-                  if (label) {
-                    return {
-                      element: optElement,
-                      text: label.textContent.trim(),
-                    }
-                  }
-                }
-
-                // If no label found, use parent's text
-                const parent = optElement.parentElement
-                if (parent) {
-                  return {
-                    element: optElement,
-                    text: parent.textContent.trim(),
-                  }
-                }
-
-                // Fallback to value
-                return {
-                  element: optElement,
-                  text: optElement.value || "Option",
-                }
-              }
-
-              // For other elements, use their text content
-              return {
-                element: optElement,
-                text: optElement.textContent.trim(),
-              }
-            })
-            .filter((opt) => opt.text)
-
-          if (options.length > 1) {
-            customMCQs.push({
-              type: "custom",
-              question: questionText,
-              options: options,
-              answered: false, // Can't easily determine
-            })
-          }
-        }
-      })
-    } catch (error) {
-      console.error(`Error with custom selector "${selector}":`, error)
-    }
-  })
-
-  return customMCQs
+// Helper to robustly extract option text for checkboxes/radios
+function extractOptionText(input) {
+  let optionText = '';
+  if (input.id) {
+    const label = document.querySelector(`label[for="${input.id}"]`);
+    if (label) optionText = label.textContent.trim();
+  }
+  if (!optionText) {
+    const parentLabel = input.closest('label');
+    if (parentLabel) optionText = parentLabel.textContent.trim();
+  }
+  if (!optionText && input.nextSibling && input.nextSibling.nodeType === Node.TEXT_NODE) {
+    optionText = input.nextSibling.textContent.trim();
+  }
+  if (!optionText && input.parentElement) optionText = input.parentElement.textContent.trim();
+  // If input is an image
+  if (!optionText && input.type === 'image') {
+    optionText = input.alt || input.src || '';
+  }
+  return optionText;
 }
 
-// Find MCQs using OCR
-async function findMCQsWithOCR() {
-  if (!ocrEnabled) return []
-
+// Find MCQs using custom selectors
+function findCustomMCQs() {
   const mcqs = []
-
-  try {
-    // Take a screenshot of the visible area
-    const imageData = await captureScreen()
-
-    // Send to background script for OCR
-    if (typeof chrome !== "undefined" && chrome.runtime) {
-      const result = await new Promise((resolve) => {
-        chrome.runtime.sendMessage(
-          {
-            action: "performOCR",
-            imageData: imageData,
-            language: ocrLanguage,
-            detectBounds: true,
-          },
-          resolve,
-        )
-      })
-
-      if (!result.success) {
-        console.error("OCR failed:", result.error)
-        return []
+  if (!customSelectors) return mcqs
+  const containers = document.querySelectorAll(customSelectors)
+  containers.forEach(container => {
+    let questionText = ''
+    // Try to find question in headings, labels, b, span
+    const questionEl = container.querySelector('h1, h2, h3, h4, h5, h6, .question, .question-text, .quiz-question, .mcq-question, label, b, span')
+    if (questionEl) questionText = questionEl.textContent.trim()
+    // Fallback: check for <b>, <span>, or text node above first option
+    const firstOption = container.querySelector('input[type="radio"], input[type="checkbox"]')
+    if (!questionText && firstOption) {
+      let node = firstOption.previousSibling
+      for (let i = 0; i < 5 && node; i++) {
+        if (node.nodeType === Node.ELEMENT_NODE && (node.tagName === 'B' || node.tagName === 'SPAN')) {
+          questionText = node.textContent.trim()
+          break
+        }
+        if (node.nodeType === Node.TEXT_NODE && node.textContent.trim().length > 5) {
+          questionText = node.textContent.trim()
+          break
+        }
+        node = node.previousSibling
       }
+    }
+    if (!questionText) questionText = container.textContent.trim().split('\n')[0]
+    const options = Array.from(container.querySelectorAll('input[type="radio"], input[type="checkbox"]')).map(input => {
+      return { element: input, text: extractOptionText(input) }
+    })
+    if (questionText && options.some(opt => opt.text)) {
+      mcqs.push({
+        type: options[0]?.element.type || 'unknown',
+              question: questionText,
+        options: options.filter(opt => opt.text),
+        answered: options.some(opt => opt.element.checked),
+      })
+    }
+  })
+  return mcqs
+}
 
-      // Parse the OCR text to find questions and options
-      const lines = result.text.split("\n").filter((line) => line.trim())
+// Helper to run OCR in the content script if Tesseract is available
+async function runOCRWithTesseract(imageData, language = "eng", detectBounds = true) {
+  if (!window.Tesseract) {
+    throw new Error("Tesseract.js is not loaded in content script.");
+  }
+  const worker = await window.Tesseract.createWorker();
+  await worker.loadLanguage(language);
+  await worker.initialize(language);
+  const { data } = await worker.recognize(imageData);
+  const result = {
+    success: true,
+    text: data.text,
+    confidence: data.confidence,
+  };
+  if (detectBounds) {
+    const { data: boxData } = await worker.recognize(imageData, {
+      rectangle: { top: 0, left: 0, width: 0, height: 0 },
+    });
+    result.words = boxData.words;
+    result.lines = boxData.lines;
+    result.paragraphs = boxData.paragraphs;
+  }
+  await worker.terminate();
+  return result;
+}
 
-      // Look for question patterns
+// Update findMCQsWithOCR to use runOCRWithTesseract if available, fallback to background
+async function findMCQsWithOCR() {
+  if (!ocrEnabled) return [];
+  const mcqs = [];
+  try {
+    const imageData = await captureScreen();
+    let result = null;
+    if (window.Tesseract) {
+      try {
+        result = await runOCRWithTesseract(imageData, ocrLanguage, true);
+      } catch (e) {
+        console.warn("Tesseract OCR in content script failed, falling back to background:", e);
+      }
+    }
+    if (!result) {
+      // Fallback: send to background for OCR (legacy)
+      if (typeof chrome !== "undefined" && chrome.runtime) {
+        result = await new Promise((resolve) => {
+          chrome.runtime.sendMessage(
+            {
+              action: "performOCR",
+              imageData: imageData,
+              language: ocrLanguage,
+              detectBounds: true,
+            },
+            resolve,
+          );
+        });
+      } else {
+        console.warn("Chrome runtime API not available. OCR will not be performed.");
+        return [];
+      }
+    }
+    if (!result.success) {
+      console.error("OCR failed:", result.error);
+      return [];
+    }
+    // ... (rest of your MCQ extraction logic from OCR text)
+    const lines = result.text.split("\n").filter((line) => line.trim());
+    // Look for question patterns
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line.endsWith("?") || /what|which|when|where|why|how/i.test(line)) {
+        const questionText = line;
+        const options = [];
+        for (let j = i + 1; j < Math.min(i + 10, lines.length); j++) {
+          const optionLine = lines[j].trim();
+          if (/^[A-Za-z0-9][.)]\s+/.test(optionLine)) {
+            const optionElement = findElementByText(optionLine);
+            options.push({
+              element: optionElement,
+              text: optionLine,
+            });
+          }
+        }
+        if (options.length >= 2) {
+          mcqs.push({
+            type: "ocr",
+            question: questionText,
+            options: options,
+            answered: false,
+          });
+          i += options.length;
+        }
+      }
+    }
+    // ... (rest of your MCQ extraction logic from OCR bounding boxes, if needed)
+    if (result.words && result.words.length > 0) {
+      // Group words by line
+      const lines = [];
+      let currentLine = [];
+      let lastTop = -1;
+      result.words.forEach((word) => {
+        if (lastTop === -1 || Math.abs(word.bbox.y0 - lastTop) < 10) {
+          currentLine.push(word)
+        } else {
+          if (currentLine.length > 0) {
+            lines.push(currentLine)
+          }
+          currentLine = [word]
+        }
+        lastTop = word.bbox.y0
+      })
+      if (currentLine.length > 0) {
+        lines.push(currentLine)
+      }
       for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim()
-
-        // Check if this line looks like a question (ends with ? or has question-like words)
-        if (line.endsWith("?") || /what|which|when|where|why|how/i.test(line)) {
-          const questionText = line
+        const line = lines[i]
+        const lineText = line.map((word) => word.text).join(" ").trim()
+        if (lineText.endsWith("?") || /what|which|when|where|why|how/i.test(lineText)) {
+          const questionText = lineText
           const options = []
-
-          // Look for options in the next few lines
           for (let j = i + 1; j < Math.min(i + 10, lines.length); j++) {
-            const optionLine = lines[j].trim()
-
-            // Check if this line looks like an option (starts with A., B., 1., 2., etc.)
-            if (/^[A-Za-z0-9][.)]\s+/.test(optionLine)) {
-              // Find the corresponding element on the page
-              const optionElement = findElementByText(optionLine)
-
+            const optionLine = lines[j]
+            const optionText = optionLine.map((word) => word.text).join(" ").trim()
+            if (/^[A-Za-z0-9][.)]\s+/.test(optionText)) {
+              const firstWord = optionLine[0]
+              const lastWord = optionLine[optionLine.length - 1]
+              const centerX = (firstWord.bbox.x0 + lastWord.bbox.x1) / 2
+              const centerY = (firstWord.bbox.y0 + lastWord.bbox.y1) / 2
+              const element = document.elementFromPoint(centerX, centerY)
               options.push({
-                element: optionElement,
-                text: optionLine,
+                element: element,
+                text: optionText,
+                bbox: {
+                  x0: firstWord.bbox.x0,
+                  y0: firstWord.bbox.y0,
+                  x1: lastWord.bbox.x1,
+                  y1: lastWord.bbox.y1,
+                },
               })
             }
           }
-
-          // If we found options, add this as an MCQ
           if (options.length >= 2) {
             mcqs.push({
               type: "ocr",
               question: questionText,
               options: options,
-              answered: false, // We can't easily determine if it's answered
+              answered: false,
             })
-
-            // Skip ahead to avoid processing the same options as questions
             i += options.length
           }
         }
       }
-
-      // Use the words with bounding boxes to find MCQs
-      if (result.words && result.words.length > 0) {
-        // Group words by line
-        const lines = []
-        let currentLine = []
-        let lastTop = -1
-
-        result.words.forEach((word) => {
-          if (lastTop === -1 || Math.abs(word.bbox.y0 - lastTop) < 10) {
-            // Same line
-            currentLine.push(word)
-          } else {
-            // New line
-            if (currentLine.length > 0) {
-              lines.push(currentLine)
-            }
-            currentLine = [word]
-          }
-
-          lastTop = word.bbox.y0
-        })
-
-        if (currentLine.length > 0) {
-          lines.push(currentLine)
-        }
-
-        // Look for question patterns
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i]
-          const lineText = line
-            .map((word) => word.text)
-            .join(" ")
-            .trim()
-
-          // Check if this line looks like a question
-          if (lineText.endsWith("?") || /what|which|when|where|why|how/i.test(lineText)) {
-            const questionText = lineText
-            const options = []
-
-            // Look for options in the next few lines
-            for (let j = i + 1; j < Math.min(i + 10, lines.length); j++) {
-              const optionLine = lines[j]
-              const optionText = optionLine
-                .map((word) => word.text)
-                .join(" ")
-                .trim()
-
-              // Check if this line looks like an option
-              if (/^[A-Za-z0-9][.)]\s+/.test(optionText)) {
-                // Calculate the center of the option text
-                const firstWord = optionLine[0]
-                const lastWord = optionLine[optionLine.length - 1]
-
-                const centerX = (firstWord.bbox.x0 + lastWord.bbox.x1) / 2
-                const centerY = (firstWord.bbox.y0 + lastWord.bbox.y1) / 2
-
-                // Find the element at this position
-                const element = document.elementFromPoint(centerX, centerY)
-
-                options.push({
-                  element: element,
-                  text: optionText,
-                  bbox: {
-                    x0: firstWord.bbox.x0,
-                    y0: firstWord.bbox.y0,
-                    x1: lastWord.bbox.x1,
-                    y1: lastWord.bbox.y1,
-                  },
-                })
-              }
-            }
-
-            // If we found options, add this as an MCQ
-            if (options.length >= 2) {
-              mcqs.push({
-                type: "ocr",
-                question: questionText,
-                options: options,
-                answered: false,
-              })
-
-              // Skip ahead
-              i += options.length
-            }
-          }
-        }
-      }
-    } else {
-      console.warn("Chrome runtime API not available. OCR will not be performed.")
     }
   } catch (error) {
     console.error("Error in OCR MCQ detection:", error)
   }
-
   return mcqs
 }
 
@@ -1720,25 +1733,47 @@ function findElementByText(text) {
 // Capture the screen as a data URL
 async function captureScreen() {
   return new Promise((resolve, reject) => {
-    try {
-      // Create a canvas element
-      const canvas = document.createElement("canvas")
-      const context = canvas.getContext("2d")
-
-      // Set canvas dimensions to match the viewport
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
-
-      // Draw the current view to the canvas
-      context.drawImage(document.documentElement, 0, 0, canvas.width, canvas.height)
-
-      // Get the image data as a data URL
-      const imageData = canvas.toDataURL("image/png")
-      resolve(imageData)
-    } catch (error) {
-      reject(error)
+    if (window.location.protocol === 'file:') {
+      const msg = 'Screen capture will fail on file:// URLs. Please use http://localhost/ or a real server.';
+      console.error(msg);
+      reject(new Error(msg));
+      return;
     }
-  })
+    if (typeof chrome === "undefined" || !chrome.runtime) {
+      console.error("Chrome runtime API not available");
+      reject(new Error("Chrome runtime API not available"));
+      return;
+    }
+    console.log("Initiating screen capture...");
+    chrome.runtime.sendMessage({ 
+      action: "captureTabScreenshot",
+      timestamp: Date.now() // Add timestamp to prevent caching
+    }, (response) => {
+      if (chrome.runtime.lastError) {
+        console.error("Runtime error during capture:", chrome.runtime.lastError);
+        if (chrome.runtime.lastError.message.includes('not allowed')) {
+          console.error('Screen capture failed: Make sure the tab is focused and you are not on a restricted page.');
+        }
+        reject(new Error(chrome.runtime.lastError.message));
+        return;
+      }
+      if (!response) {
+        console.error("No response received from capture request");
+        reject(new Error("No response from capture request"));
+        return;
+      }
+      if (!response.success) {
+        console.error("Capture failed:", response.error);
+        if (response.error && response.error.includes('permission')) {
+          console.error('Screen capture failed: Check extension permissions and tab focus.');
+        }
+        reject(new Error(response.error || "Screen capture failed"));
+        return;
+      }
+      console.log("Screen capture successful");
+      resolve(response.dataUrl);
+    });
+  });
 }
 
 // Process an MCQ
@@ -1970,4 +2005,332 @@ function calculateSimilarity(str1, str2) {
   // Similarity: 1 - normalized edit distance
   const maxLen = Math.max(len1, len2);
   return maxLen === 0 ? 1 : 1 - dp[len1][len2] / maxLen;
+}
+
+// In findMCQs, call the new methods:
+function findFallbackMCQs() {
+  const mcqs = []
+  const inputs = document.querySelectorAll('input[type="radio"], input[type="checkbox"]')
+  const seen = new Set()
+  inputs.forEach(input => {
+    if (seen.has(input)) return
+    let group = [input]
+    let parent = input.parentElement
+    // Try to find siblings of the same type
+    if (parent) {
+      const siblings = parent.querySelectorAll('input[type="radio"], input[type="checkbox"]')
+      siblings.forEach(sib => { if (!seen.has(sib)) group.push(sib); });
+    }
+    group.forEach(i => seen.add(i));
+    // Try to find question text above
+    let questionText = ''
+    let node = input
+    for (let i = 0; i < 3 && node; i++) {
+      node = node.previousSibling
+      if (node && node.nodeType === Node.TEXT_NODE && node.textContent.trim().length > 5) {
+        questionText = node.textContent.trim()
+        break
+      }
+    }
+    if (!questionText && parent) questionText = parent.textContent.trim().split('\n')[0]
+    const options = group.map(i => ({ element: i, text: extractOptionText(i) }))
+    if (questionText && options.some(opt => opt.text)) {
+      mcqs.push({
+        type: input.type,
+        question: questionText,
+        options: options.filter(opt => opt.text),
+        answered: group.some(i => i.checked),
+      })
+    }
+  })
+  return mcqs
+}
+
+// Helper for focus and capture
+function focusAndCaptureTabScreenshot(tabId, windowId, callback) {
+  if (typeof chrome !== "undefined" && chrome.runtime) {
+    chrome.runtime.sendMessage({
+      action: "focusAndCaptureTabScreenshot",
+      tabId: tabId,
+      windowId: windowId
+    }, (response) => {
+      callback(response);
+    });
+  } else {
+    callback({ success: false, error: "Chrome runtime API not available." });
+  }
+}
+
+// Example: Add to settings UI (pseudo-code, integrate with your actual UI logic)
+// <label><input type="checkbox" id="humanMouseMovementToggle"> Human-like Mouse Movement</label>
+document.addEventListener('DOMContentLoaded', () => {
+  const toggle = document.getElementById('humanMouseMovementToggle');
+  if (toggle) {
+    toggle.checked = humanMouseMovement;
+    toggle.addEventListener('change', (e) => {
+      humanMouseMovement = e.target.checked;
+      if (humanMouseMovement) startHumanMouseMovement();
+    });
+  }
+});
+
+// Simulate random mouse movement, clicks, and scrolling
+function startHumanMouseMovement() {
+  if (!humanMouseMovement) return;
+  setupFakeCursor();
+  function moveMouseRandomly() {
+    if (!humanMouseMovement) return;
+    const x = Math.floor(Math.random() * window.innerWidth);
+    const y = Math.floor(Math.random() * window.innerHeight);
+    // Move fake cursor
+    moveFakeCursor(x, y);
+    // Move mouse event
+    const mouseMoveEvent = new MouseEvent('mousemove', {
+      clientX: x,
+      clientY: y,
+      bubbles: true,
+      cancelable: true
+    });
+    document.dispatchEvent(mouseMoveEvent);
+    // Occasionally click
+    if (Math.random() < 0.2) { // 20% chance
+      const mouseClickEvent = new MouseEvent('click', {
+        clientX: x,
+        clientY: y,
+        bubbles: true,
+        cancelable: true
+      });
+      document.elementFromPoint(x, y)?.dispatchEvent(mouseClickEvent);
+    }
+    // Occasionally scroll
+    if (Math.random() < 0.3) { // 30% chance
+      const scrollY = Math.floor(Math.random() * window.innerHeight * 0.5);
+      window.scrollBy({ top: scrollY - window.innerHeight / 4, behavior: 'smooth' });
+    }
+    setTimeout(moveMouseRandomly, 1000 + Math.random() * 2000); // Move every 1-3 seconds
+  }
+  moveMouseRandomly();
+}
+
+// Text-to-speech function
+function speakText(text, rate = 1) {
+  if (!('speechSynthesis' in window)) {
+    console.warn('Speech synthesis not supported');
+    return;
+  }
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = rate;
+  window.speechSynthesis.speak(utterance);
+}
+
+// Automatically process and answer MCQs using backend AI
+function processAndAnswerMCQs() {
+  // Use universal MCQ detection
+  const mcqs = findAllMCQs();
+  // Deduplicate MCQs for logging and processing
+  function normalizeText(text) {
+    return text.toLowerCase().replace(/[^a-z0-9? ]/g, '').replace(/\s+/g, ' ').trim();
+  }
+  const seen = new Set();
+  const uniqueMcqs = mcqs.filter(mcq => {
+    const normQ = normalizeText(mcq.question);
+    const normOpts = mcq.options.map(o => normalizeText(o.text)).join('|');
+    const key = normQ + '|' + normOpts;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  // Debug: Log all unique MCQs and their options
+  console.log(`Detected ${uniqueMcqs.length} unique MCQs:`);
+  uniqueMcqs.forEach((mcq, idx) => {
+    console.log(`MCQ ${idx + 1}: ${mcq.question}`);
+    mcq.options.forEach((opt, oidx) => {
+      console.log(`  Option ${oidx + 1}: ${opt.text}`);
+    });
+  });
+  // Process all unique MCQs
+  uniqueMcqs.forEach((mcq, idx) => {
+    fetch('http://localhost:5000/api/answer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        question: mcq.question,
+        options: mcq.options.map(opt => opt.text),
+        provider: 'openai' // or 'gemini', etc.
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (typeof data.answer_index === 'number' && mcq.options[data.answer_index]) {
+        // Try to click/select the answer for all types
+        if (mcq.options[data.answer_index].input instanceof HTMLElement) {
+          mcq.options[data.answer_index].input.click();
+        } else if (mcq.type === 'select') {
+          mcq.options[data.answer_index].input.selected = true;
+          mcq.options[data.answer_index].input.parentElement.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        console.log(`Answered: ${mcq.question} -> ${mcq.options[data.answer_index].text}`);
+      } else {
+        console.warn('No valid answer received for:', mcq.question);
+      }
+    })
+    .catch(err => {
+      console.error('Error getting answer:', err);
+    });
+  });
+  console.log(`Total unique MCQs processed: ${uniqueMcqs.length}`);
+}
+
+// Improved: Find checkbox groups by container (for MCQs like 'Select all prime numbers')
+function findCheckboxGroupsByContainer() {
+  const mcqs = [];
+  document.querySelectorAll('.mcq-block, .question, .quiz-question, .multiple-choice, div').forEach(container => {
+    const checkboxes = Array.from(container.querySelectorAll("input[type='checkbox']"));
+    if (checkboxes.length >= 2) {
+      // Find the question in <b>, <span>, heading, or first text node
+      let question = '';
+      const qElem = container.querySelector('b,span,h1,h2,h3,h4,h5,h6');
+      if (qElem && qElem.textContent.trim().length > 5) {
+        question = qElem.textContent.trim();
+      } else if (container.childNodes[0] && container.childNodes[0].textContent) {
+        question = container.childNodes[0].textContent.trim();
+      }
+      // Get options
+      const options = checkboxes.map(input => {
+        let label = document.querySelector(`label[for='${input.id}']`);
+        let optionText = label ? label.textContent.trim() : (input.parentElement && input.parentElement.tagName === "LABEL" ? input.parentElement.textContent.trim() : input.value || "");
+        return { input, text: optionText };
+      });
+      if (question && options.length > 1) {
+        mcqs.push({ question, options, type: 'checkbox' });
+      }
+    }
+  });
+  return mcqs;
+}
+
+// Universal MCQ detection supporting any format
+function findAllMCQs() {
+  const mcqs = [];
+  const seen = new Set();
+  // Helper to check if an MCQ is duplicate
+  function isDuplicate(question, options) {
+    const key = question + '|' + options.map(o => o.text).join('|');
+    if (seen.has(key)) return true;
+    seen.add(key);
+    return false;
+  }
+  // 1. Standard radio/checkbox groups (already handled)
+  findMCQs().forEach(mcq => {
+    if (!isDuplicate(mcq.question, mcq.options)) {
+      mcq.source = 'findMCQs';
+      mcq.options = mcq.options.filter(opt => opt.text && !/^[A-D]$/.test(opt.text));
+      if (mcq.options.length > 1) mcqs.push(mcq);
+    }
+  });
+  // 1b. Improved: Checkbox groups by container
+  findCheckboxGroupsByContainer().forEach(mcq => {
+    if (!isDuplicate(mcq.question, mcq.options)) {
+      mcq.source = 'findCheckboxGroupsByContainer';
+      mcq.options = mcq.options.filter(opt => opt.text && !/^[A-D]$/.test(opt.text));
+      if (mcq.options.length > 1) mcqs.push(mcq);
+    }
+  });
+  // 1c. Fallback: Loose checkbox groups
+  findLooseCheckboxGroups().forEach(mcq => {
+    if (!isDuplicate(mcq.question, mcq.options)) {
+      mcq.source = 'findLooseCheckboxGroups';
+      mcq.options = mcq.options.filter(opt => opt.text && !/^[A-D]$/.test(opt.text));
+      if (mcq.options.length > 1) mcqs.push(mcq);
+    }
+  });
+  // 2. Select/dropdown MCQs
+  document.querySelectorAll('select').forEach(select => {
+    let question = getQuestionForInput(select);
+    const options = Array.from(select.options).map(opt => ({ input: opt, text: opt.text })).filter(opt => opt.text && !/^[A-D]$/.test(opt.text));
+    if (question && options.length > 1 && !isDuplicate(question, options)) {
+      mcqs.push({ question, options, type: 'select', source: 'select' });
+    }
+  });
+  // 3. Custom containers (e.g., .mcq-block, .question, .quiz-question, .multiple-choice)
+  document.querySelectorAll('.mcq-block, .question, .quiz-question, .multiple-choice').forEach(block => {
+    let question = '';
+    const qElem = block.querySelector('h1,h2,h3,h4,h5,h6,b,strong,span');
+    if (qElem && qElem.textContent.trim().length > 5) {
+      question = qElem.textContent.trim();
+    } else if (block.childNodes[0] && block.childNodes[0].textContent) {
+      question = block.childNodes[0].textContent.trim();
+    }
+    const options = [];
+    block.querySelectorAll('label,button,div.option,img').forEach(optElem => {
+      let text = optElem.alt || optElem.textContent.trim();
+      if (text && text.length > 0 && !/^[A-D]$/.test(text)) {
+        options.push({ input: optElem, text });
+      }
+    });
+    if (question && options.length > 1 && !isDuplicate(question, options)) {
+      mcqs.push({ question, options, type: 'custom', source: 'custom-container' });
+    }
+  });
+  // 4. List-based MCQs (ul/ol with options)
+  document.querySelectorAll('ul,ol').forEach(list => {
+    let prev = list.previousElementSibling;
+    let question = '';
+    while (prev) {
+      if (prev.textContent && prev.textContent.trim().length > 5) {
+        question = prev.textContent.trim();
+        break;
+      }
+      prev = prev.previousElementSibling;
+    }
+    const options = Array.from(list.querySelectorAll('li')).map(li => ({ input: li, text: li.textContent.trim() })).filter(opt => opt.text && !/^[A-D]$/.test(opt.text));
+    if (question && options.length > 1 && !isDuplicate(question, options)) {
+      mcqs.push({ question, options, type: 'list', source: 'list' });
+    }
+  });
+  // 5. Fallback: Any block with 2+ clickable options and a nearby question (add more heuristics as needed)
+  return mcqs;
+}
+
+// Fallback: Find loose checkbox groups that are close in the DOM
+function findLooseCheckboxGroups() {
+  const mcqs = [];
+  const allCheckboxes = Array.from(document.querySelectorAll("input[type='checkbox']"));
+  let group = [];
+  let lastParent = null;
+
+  allCheckboxes.forEach((cb, idx) => {
+    // Group by parent or by being close in the DOM
+    const parent = cb.parentElement;
+    if (lastParent && parent !== lastParent) {
+      if (group.length >= 2) {
+        // Try to find question above the first checkbox in the group
+        let question = getQuestionForInput(group[0]);
+        const options = group.map(input => {
+          let label = document.querySelector(`label[for='${input.id}']`);
+          let optionText = label ? label.textContent.trim() : (input.parentElement && input.parentElement.tagName === "LABEL" ? input.parentElement.textContent.trim() : input.value || "");
+          return { input, text: optionText };
+        });
+        if (question && options.length > 1) {
+          mcqs.push({ question, options, type: 'checkbox' });
+        }
+      }
+      group = [];
+    }
+    group.push(cb);
+    lastParent = parent;
+  });
+  // Handle last group
+  if (group.length >= 2) {
+    let question = getQuestionForInput(group[0]);
+    const options = group.map(input => {
+      let label = document.querySelector(`label[for='${input.id}']`);
+      let optionText = label ? label.textContent.trim() : (input.parentElement && input.parentElement.tagName === "LABEL" ? input.parentElement.textContent.trim() : input.value || "");
+      return { input, text: optionText };
+    });
+    if (question && options.length > 1) {
+      mcqs.push({ question, options, type: 'checkbox' });
+    }
+  }
+  return mcqs;
 }

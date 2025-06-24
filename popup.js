@@ -162,13 +162,17 @@ document.addEventListener("DOMContentLoaded", () => {
   // Capture screen button
   captureButton.addEventListener("click", () => {
     statusText.textContent = "Capturing screen..."
-
     // Send message to content script
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       chrome.tabs.sendMessage(tabs[0].id, { action: "captureScreen" }, (response) => {
+        // Enhanced: Log the response for debugging
+        console.log("Popup received captureScreen response:", response);
+        if (chrome.runtime.lastError) {
+          statusText.textContent = "Screen capture failed: " + chrome.runtime.lastError.message;
+          return;
+        }
         if (response && response.success) {
-          statusText.textContent = "Screen captured"
-
+          statusText.textContent = "Screen captured";
           // Show MCQ info if available
           if (response.ocrText) {
             mcqInfo.style.display = "block"
@@ -176,10 +180,10 @@ document.addEventListener("DOMContentLoaded", () => {
               `OCR Text: ${response.ocrText.substring(0, 100)}${response.ocrText.length > 100 ? "..." : ""}`
           }
         } else {
-          statusText.textContent = "Screen capture failed"
+          statusText.textContent = "Screen capture failed: " + (response && response.error ? response.error : "Unknown error");
         }
-      })
-    })
+      });
+    });
   })
 
   // Listen for messages from content script
