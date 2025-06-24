@@ -1,99 +1,238 @@
-# AI MCQ Answering Bot Chrome Extension
+# MCQ Automation Bot
 
-This Chrome extension automatically detects and answers Multiple Choice Questions (MCQs) on websites using AI.
+A complete automation solution for Multiple Choice Questions (MCQs) using AI and web automation. This project includes both frontend and backend components with full automation capabilities.
 
-## Features
+## 🚀 Features
 
-- **Automatic MCQ Detection**: Detects MCQs on any website using DOM parsing and OCR.
-- **AI-Powered Answers**: Uses AI (OpenAI, Google Gemini, or DeepSeek) to predict the correct answers.
-- **Multiple MCQ Types**: Supports radio buttons, checkboxes, dropdowns, and more.
-- **Voice Narration**: Optional voice narration of questions and answers.
-- **Safe Mode**: Detects proctored environments and disables the bot.
-- **Customizable Settings**: Configure delay times, retry behavior, and more.
+- **Advanced MCQ Detection**: Detects MCQs using multiple strategies (DOM parsing, OCR, pattern recognition)
+- **AI-Powered Answers**: Uses OpenAI GPT-4 or Google Gemini Pro for intelligent answer prediction
+- **Human-like Behavior**: Simulates natural human interaction patterns
+- **Stealth Mode**: Advanced anti-detection techniques
+- **Multiple Detection Methods**: Form-based, list-based, table-based, and pattern-based detection
+- **Real-time Processing**: Live processing with progress tracking
+- **Beautiful Frontend**: Modern, responsive web interface
+- **Complete Automation**: No human intervention required
 
-## Installation
+## 📁 Project Structure
 
-### Method 1: Install from Chrome Web Store (Coming Soon)
+```
+mcq-automation-bot/
+├── backend/
+│   ├── app.py                 # Main Flask application
+│   ├── automation_bot.py      # Advanced MCQ automation bot
+│   ├── requirements.txt       # Python dependencies
+│   ├── install_dependencies.py # Dependency installer
+│   ├── run_server.py          # Server runner script
+│   ├── .env.example          # Environment variables template
+│   └── templates/
+│       └── index.html         # Backend control panel
+├── frontend/
+│   └── index.html            # Main frontend dashboard
+└── README.md
+```
 
-1. Visit the Chrome Web Store (link will be provided when published)
-2. Click "Add to Chrome"
-3. Follow the prompts to install the extension
+## 🛠️ Installation
 
-### Method 2: Manual Installation (Developer Mode)
+### Prerequisites
 
-1. Download or clone this repository
-2. Open Chrome and go to `chrome://extensions/`
-3. Enable "Developer mode" in the top-right corner
-4. Click "Load unpacked" and select the folder containing the extension files
-5. The extension should now be installed and visible in your extensions list
+- Python 3.8 or higher
+- Google Chrome browser
+- Internet connection
 
-## Setup
+### Quick Setup
 
-1. After installation, click on the extension icon in your browser toolbar
-2. Go to "Settings & API Configuration"
-3. Choose your preferred AI provider (OpenAI, Google Gemini, or DeepSeek)
-4. Enter your API key
-5. Configure other settings as desired
-6. Click "Save API Settings"
+1. **Clone or download the project**
+   ```bash
+   git clone <repository-url>
+   cd mcq-automation-bot
+   ```
 
-## Usage
+2. **Install dependencies automatically**
+   ```bash
+   cd backend
+   python install_dependencies.py
+   ```
 
-1. Navigate to a website with MCQs
-2. Click the extension icon to open the popup
-3. Toggle "Enable Bot" to start the bot
-4. The bot will automatically scan for MCQs and answer them
-5. You can also click "Scan for MCQs" to manually trigger a scan
+3. **Manual installation (if automatic fails)**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-## Settings
+4. **Install Tesseract OCR** (for image-based MCQ detection)
+   - **Windows**: Download from [GitHub](https://github.com/UB-Mannheim/tesseract/wiki)
+   - **macOS**: `brew install tesseract`
+   - **Ubuntu**: `sudo apt install tesseract-ocr`
 
-### API Configuration
+## 🚀 Usage
 
-- **AI Provider**: Choose between OpenAI (ChatGPT), Google Gemini Pro, or DeepSeek
-- **API Key**: Your API key for the selected provider
-- **Model**: The specific AI model to use
+### 1. Start the Backend Server
 
-### Behavior Settings
+```bash
+cd backend
+python run_server.py
+```
 
-- **Auto-Answer Questions**: Automatically select answers when found
-- **Answer Delay**: Time to wait before selecting an answer (for natural behavior)
-- **Retry Wrong Answers**: Try another option if the first answer is wrong
-- **Voice Narration**: Enable spoken narration of questions and answers
+The server will start at `http://localhost:5000`
 
-### Advanced Settings
+### 2. Open the Frontend
 
-- **Safe Mode**: Disable the bot in proctored environments
-- **Detect Webcam**: Check if webcam is active
-- **Detect Fullscreen Mode**: Check if the browser is in fullscreen mode
-- **OCR Detection**: Enable OCR for detecting MCQs in images
-- **OCR Language**: Set the language for OCR
+Open `frontend/index.html` in your web browser or serve it using a local server:
 
-## Ethical Use
+```bash
+cd frontend
+python -m http.server 8080
+```
+
+Then visit `http://localhost:8080`
+
+### 3. Configure the Bot
+
+1. **Enter API Keys**:
+   - Get OpenAI API key from [OpenAI Platform](https://platform.openai.com/api-keys)
+   - Get Google Gemini API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+
+2. **Configure Settings**:
+   - Choose AI provider (OpenAI or Gemini)
+   - Set answer delay (1-10 seconds)
+   - Configure retry attempts
+   - Enable/disable headless mode
+
+3. **Set Target URL**:
+   - Enter the URL of the quiz/MCQ page
+
+### 4. Run Automation
+
+1. Click **"Setup Bot"** to initialize the automation system
+2. Click **"Detect MCQs"** to scan for questions (optional)
+3. Click **"Auto Process MCQs"** to automatically answer all questions
+4. Monitor progress and results in real-time
+
+## 🎯 Supported MCQ Types
+
+- **Radio Button Groups**: Single-choice questions
+- **Checkbox Groups**: Multiple-choice questions
+- **Form-based MCQs**: Questions within HTML forms
+- **List-based MCQs**: Questions in ordered/unordered lists
+- **Table-based MCQs**: Questions in table structures
+- **Pattern-based MCQs**: Text-based questions with A) B) C) D) format
+- **Image-based MCQs**: Questions extracted using OCR
+
+## 🧠 AI Providers
+
+### OpenAI GPT-4
+- High accuracy for complex questions
+- Excellent reasoning capabilities
+- Requires OpenAI API key
+
+### Google Gemini Pro
+- Fast processing
+- Good for general knowledge questions
+- Requires Google AI API key
+
+## ⚙️ Configuration Options
+
+### Bot Settings
+- **Headless Mode**: Run browser in background
+- **Auto Answer**: Automatically select answers
+- **Answer Delay**: Time between selections (1-10 seconds)
+- **Max Retries**: Number of retry attempts (1-5)
+
+### Detection Settings
+- **Form Detection**: Scan HTML forms
+- **List Detection**: Scan list structures
+- **Table Detection**: Scan table structures
+- **Pattern Detection**: Use text pattern matching
+- **OCR Detection**: Extract text from images
+
+## 🔒 Stealth Features
+
+- **Anti-Detection**: Advanced techniques to avoid detection
+- **Human-like Behavior**: Random delays and mouse movements
+- **User Agent Rotation**: Multiple browser identities
+- **Natural Scrolling**: Simulates human scrolling patterns
+
+## 📊 Monitoring & Results
+
+- **Real-time Progress**: Live progress tracking
+- **Success Statistics**: Accuracy and completion rates
+- **Detailed Results**: Question-by-question breakdown
+- **Error Handling**: Comprehensive error reporting
+
+## 🚨 Ethical Usage
 
 This tool is intended for:
-- Learning and practicing with MCQs
-- Self-assessment and study
-- Educational purposes
+- **Educational purposes**
+- **Practice and learning**
+- **Self-assessment**
+- **Research and development**
 
-Please use this tool responsibly and ethically. Do not use it to cheat on official exams or assessments.
+**Please use responsibly and ethically. Do not use for:**
+- Cheating on official exams
+- Violating terms of service
+- Academic dishonesty
 
-## Privacy
+## 🛠️ Troubleshooting
 
-This extension:
-- Does not collect or store your data
-- Processes all MCQs locally
-- Only sends question text to the AI API for answer prediction
-- Does not track your browsing history
+### Common Issues
 
-## Troubleshooting
+1. **ChromeDriver not found**
+   ```bash
+   pip install webdriver-manager
+   ```
 
-If the extension is not working as expected:
+2. **Tesseract not found**
+   - Install Tesseract OCR for your operating system
+   - Add to system PATH
 
-1. Make sure you have entered a valid API key
-2. Check that the bot is enabled in the popup
-3. Try refreshing the page
-4. Ensure the MCQs are in a format the bot can detect
-5. Check the browser console for any error messages
+3. **API key errors**
+   - Verify API keys are correct
+   - Check API quotas and billing
 
-## License
+4. **MCQs not detected**
+   - Try different detection methods
+   - Check page structure
+   - Enable OCR detection
+
+### Debug Mode
+
+Enable debug mode in `backend/app.py`:
+```python
+app.run(debug=True)
+```
+
+## 📝 API Endpoints
+
+- `POST /api/setup` - Initialize the bot
+- `POST /api/detect-mcqs` - Detect MCQs on page
+- `POST /api/process-mcqs` - Process MCQs automatically
+- `POST /api/ocr-detect` - OCR-based detection
+- `POST /api/get-answer` - Get AI answer for question
+- `POST /api/close` - Close the bot
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## ⚠️ Disclaimer
+
+This software is provided for educational and research purposes only. Users are responsible for ensuring their use complies with applicable laws, regulations, and terms of service. The developers are not responsible for any misuse of this software.
+
+## 🆘 Support
+
+For support and questions:
+1. Check the troubleshooting section
+2. Review the documentation
+3. Open an issue on GitHub
+4. Contact the development team
+
+---
+
+**Happy Automating! 🤖**
