@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCQ Automation Bot - Backend</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .results {
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .mcq-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        .mcq-question {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .mcq-answer {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .mcq-error {
+            color: #dc3545;
+        }
+        .config-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .config-section {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 MCQ Automation Bot - Backend Control Panel</h1>
+        
+        <div class="config-section">
+            <div>
+                <h3>AI Configuration</h3>
+                <div class="form-group">
+                    <label for="openaiKey">OpenAI API Key:</label>
+                    <input type="password" id="openaiKey" placeholder="Enter OpenAI API key">
+                </div>
+                
+                <div class="form-group">
+                    <label for="geminiKey">Google Gemini API Key:</label>
+                    <input type="password" id="geminiKey" placeholder="Enter Gemini API key">
+                </div>
+                
+                <div class="form-group">
+                    <label for="aiProvider">AI Provider:</label>
+                    <select id="aiProvider">
+                        <option value="openai">OpenAI GPT-4</option>
+                        <option value="gemini">Google Gemini Pro</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div>
+                <h3>Bot Configuration</h3>
+                <div class="form-group">
+                    <label for="headless">
+                        <input type="checkbox" id="headless" checked> Headless Mode
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label for="autoAnswer">
+                        <input type="checkbox" id="autoAnswer" checked> Auto Answer
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label for="answerDelay">Answer Delay (seconds):</label>
+                    <input type="number" id="answerDelay" value="3" min="1" max="10">
+                </div>
+                
+                <div class="form-group">
+                    <label for="maxRetries">Max Retries:</label>
+                    <input type="number" id="maxRetries" value="3" min="1" max="5">
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="targetUrl">Target URL:</label>
+            <input type="url" id="targetUrl" placeholder="https://example.com/quiz">
+        </div>
+        
+        <button onclick="setupBot()">Setup Bot</button>
+        <button onclick="detectMCQs()" id="detectBtn" disabled>Detect MCQs</button>
+        <button onclick="processMCQs()" id="processBtn" disabled>Process MCQs Automatically</button>
+        <button onclick="closeBot()" id="closeBtn" disabled>Close Bot</button>
+        
+        <div id="status"></div>
+        
+        <div id="results" class="results"></div>
+    </div>
+
+    <script>
+        let botSetup = false;
+
+        async function setupBot() {
+            const config = {
+                openai_key: document.getElementById('openaiKey').value,
+                gemini_key: document.getElementById('geminiKey').value,
+                headless: document.getElementById('headless').checked,
+                config: {
+                    auto_answer: document.getElementById('autoAnswer').checked,
+                    answer_delay: parseInt(document.getElementById('answerDelay').value),
+                    max_retries: parseInt(document.getElementById('maxRetries').value)
+                }
+            };
+
+            try {
+                showStatus('Setting up bot...', 'info');
+                
+                const response = await fetch('/api/setup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(config)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showStatus('Bot setup completed successfully!', 'success');
+                    botSetup = true;
+                    document.getElementById('detectBtn').disabled = false;
+                    document.getElementById('processBtn').disabled = false;
+                    document.getElementById('closeBtn').disabled = false;
+                } else {
+                    showStatus(`Setup failed: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`Setup error: ${error.message}`, 'error');
+            }
+        }
+
+        async function detectMCQs() {
+            if (!botSetup) {
+                showStatus('Please setup the bot first', 'error');
+                return;
+            }
+
+            const url = document.getElementById('targetUrl').value;
+            if (!url) {
+                showStatus('Please enter a target URL', 'error');
+                return;
+            }
+
+            try {
+                showStatus('Detecting MCQs...', 'info');
+                
+                const response = await fetch('/api/detect-mcqs', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showStatus(`Found ${result.count} MCQs`, 'success');
+                    displayMCQs(result.mcqs);
+                } else {
+                    showStatus(`Detection failed: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`Detection error: ${error.message}`, 'error');
+            }
+        }
+
+        async function processMCQs() {
+            if (!botSetup) {
+                showStatus('Please setup the bot first', 'error');
+                return;
+            }
+
+            const url = document.getElementById('targetUrl').value;
+            const aiProvider = document.getElementById('aiProvider').value;
+
+            if (!url) {
+                showStatus('Please enter a target URL', 'error');
+                return;
+            }
+
+            try {
+                showStatus('Processing MCQs automatically...', 'info');
+                
+                const response = await fetch('/api/process-mcqs', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url, ai_provider: aiProvider })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showStatus(`Processed ${result.total_processed} MCQs, ${result.successful} successful`, 'success');
+                    displayResults(result.results);
+                } else {
+                    showStatus(`Processing failed: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`Processing error: ${error.message}`, 'error');
+            }
+        }
+
+        async function closeBot() {
+            try {
+                const response = await fetch('/api/close', {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showStatus('Bot closed successfully', 'success');
+                    botSetup = false;
+                    document.getElementById('detectBtn').disabled = true;
+                    document.getElementById('processBtn').disabled = true;
+                    document.getElementById('closeBtn').disabled = true;
+                } else {
+                    showStatus(`Close failed: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`Close error: ${error.message}`, 'error');
+            }
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function displayMCQs(mcqs) {
+            const resultsDiv = document.getElementById('results');
+            let html = '<h3>Detected MCQs:</h3>';
+
+            mcqs.forEach((mcq, index) => {
+                html += `
+                    <div class="mcq-item">
+                        <div class="mcq-question">Q${index + 1}: ${mcq.question}</div>
+                        <div>Options:</div>
+                        <ul>
+                            ${mcq.options.map(opt => `<li>${opt.text}</li>`).join('')}
+                        </ul>
+                        <div>Type: ${mcq.type}</div>
+                    </div>
+                `;
+            });
+
+            resultsDiv.innerHTML = html;
+        }
+
+        function displayResults(results) {
+            const resultsDiv = document.getElementById('results');
+            let html = '<h3>Processing Results:</h3>';
+
+            results.forEach((result, index) => {
+                html += `
+                    <div class="mcq-item">
+                        <div class="mcq-question">Q${index + 1}: ${result.question}</div>
+                        ${result.success ? 
+                            `<div class="mcq-answer">✅ Selected: ${result.selected_answer}</div>` :
+                            `<div class="mcq-error">❌ Failed: ${result.error || 'Unknown error'}</div>`
+                        }
+                    </div>
+                `;
+            });
+
+            resultsDiv.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
