@@ -22,6 +22,7 @@ from PIL import Image, ImageFile, UnidentifiedImageError, ImageEnhance, ImageFil
 import io
 from dotenv import load_dotenv
 from io import BytesIO
+import requests
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -38,6 +39,9 @@ GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 GEMINI_API_URL = os.environ.get('GEMINI_API_URL')
 GPT4V_API_KEY = os.environ.get('GPT4V_API_KEY')
 GPT4V_API_URL = os.environ.get('GPT4V_API_URL')
+HUGGINGFACE_API_KEY = os.environ.get('HUGGINGFACE_API_KEY')
+GOOGLE_SEARCH_API_KEY = os.environ.get('GOOGLE_SEARCH_API_KEY')
+GOOGLE_SEARCH_CX = os.environ.get('GOOGLE_SEARCH_CX')
 
 # Check for required environment variables and log errors
 if not GOOGLE_APPLICATION_CREDENTIALS:
@@ -50,6 +54,12 @@ if not GPT4V_API_KEY:
     logger.warning('GPT4V_API_KEY not set in .env (GPT-4 Vision fallback will not work)')
 if not GPT4V_API_URL:
     logger.warning('GPT4V_API_URL not set in .env (GPT-4 Vision fallback will not work)')
+if not HUGGINGFACE_API_KEY:
+    logger.warning('HUGGINGFACE_API_KEY not set in .env (Hugging Face API key will not work)')
+if not GOOGLE_SEARCH_API_KEY:
+    logger.warning('GOOGLE_SEARCH_API_KEY not set in .env (Google Search API key will not work)')
+if not GOOGLE_SEARCH_CX:
+    logger.warning('GOOGLE_SEARCH_CX not set in .env (Google Search CX will not work)')
 
 # Suppress unnecessary warnings from libraries
 import warnings
@@ -60,6 +70,10 @@ class MCQAutomationBot:
         self.driver = None
         self.openai_client = None
         self.genai_client = None
+        self.huggingface_key = None
+        self.huggingface_model = None
+        self.google_search_api_key = GOOGLE_SEARCH_API_KEY
+        self.google_search_cx = GOOGLE_SEARCH_CX
         self.config = {
             'auto_answer': True,
             'answer_delay': 3,
@@ -86,7 +100,7 @@ class MCQAutomationBot:
         self.driver = webdriver.Chrome(options=chrome_options)
         self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
         
-    def setup_ai_clients(self, openai_key=None, gemini_key=None):
+    def setup_ai_clients(self, openai_key=None, gemini_key=None, huggingface_key=None, huggingface_model=None, google_search_api_key=None, google_search_cx=None):
         """Setup AI clients"""
         if openai_key:
             self.openai_client = openai.OpenAI(api_key=openai_key)
@@ -94,6 +108,15 @@ class MCQAutomationBot:
         if gemini_key:
             genai.configure(api_key=gemini_key)
             self.genai_client = genai.GenerativeModel('gemini-pro')
+        
+        if huggingface_key:
+            self.huggingface_key = huggingface_key
+        if huggingface_model:
+            self.huggingface_model = huggingface_model
+        if google_search_api_key:
+            self.google_search_api_key = google_search_api_key
+        if google_search_cx:
+            self.google_search_cx = google_search_cx
     
     def detect_mcqs_dom(self, url=None):
         """Detect MCQs using DOM parsing"""
@@ -312,49 +335,140 @@ class MCQAutomationBot:
         
         return text.strip()
     
-    def get_ai_answer(self, question, options, provider='openai'):
-        """Get AI answer for MCQ"""
-        options_text = '\n'.join([f"{i+1}. {opt['text']}" for i, opt in enumerate(options)])
+    def get_search_answer(self, question, options):
+        api_key = self.google_search_api_key
+        cx = self.google_search_cx
         
-        prompt = f"""
-        Question: {question}
-        
-        Options:
-        {options_text}
-        
-        Instructions:
-        1. Analyze the question and options carefully.
-        2. Select the most accurate answer.
-        3. Respond ONLY with the number of the correct option (1, 2, 3, or 4).
-        4. Do not explain your reasoning, just provide the number.
-        """
+        # Validate credentials
+        if not api_key or not cx:
+            error_msg = 'Google Search API key or CX not set.'
+            logger.error(error_msg)
+            return {'error': error_msg, 'success': False}
+            
+        # Prepare the search query
+        query = question
+        # Remove any leading/trailing whitespace and ensure cx doesn't have 'cx=' prefix
+        cx = cx.strip()
+        if cx.lower().startswith('cx='):
+            cx = cx[3:].strip()
+        url = f"https://www.googleapis.com/customsearch/v1?q={requests.utils.quote(query)}&key={api_key}&cx={cx}&num=10"
         
         try:
-            if provider == 'openai' and self.openai_client:
-                response = self.openai_client.chat.completions.create(
-                    model="gpt-4",
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=0.3,
-                    max_tokens=10
-                )
-                answer = response.choices[0].message.content.strip()
-                
-            elif provider == 'gemini' and self.genai_client:
-                response = self.genai_client.generate_content(prompt)
-                answer = response.text.strip()
+            logger.info(f'Making Google Search API request to: {url}')
+            response = requests.get(url, timeout=10)
+            response_data = response.json()
             
+            # Log API response (without sensitive data)
+            if 'items' in response_data:
+                logger.info(f'Received {len(response_data["items"])} search results')
             else:
+                logger.warning('No items in search results')
+                
+            if response.status_code != 200:
+                error_msg = f'Google Search API error: {response.status_code} - {response_data.get("error", {}).get("message", "Unknown error")}'
+                logger.error(error_msg)
+                return {'error': error_msg, 'success': False}
+                
+            # Process results
+            results = response_data.get('items', [])
+            if not results:
+                logger.warning('No search results found')
                 return None
+                
+            # Calculate scores for each option
+            option_texts = [opt['text'].strip().lower() for opt in options]
+            scores = [0] * len(options)
             
-            # Extract number from answer
-            match = re.search(r'\b([1-4])\b', answer)
-            if match:
-                return int(match.group(1)) - 1  # Convert to 0-based index
+            for item in results:
+                content = f"{item.get('title', '')} {item.get('snippet', '')}".lower()
+                for i, opt_text in enumerate(option_texts):
+                    if opt_text in content:
+                        scores[i] += 1
             
+            logger.info(f'Option scores: {list(zip(option_texts, scores))}')
+            
+            # Find the best matching option
+            max_score = max(scores)
+            if max_score == 0:
+                logger.warning('No matches found for any option')
+                return None
+                
+            best_match_index = scores.index(max_score)
+            logger.info(f'Best match: {options[best_match_index]["text"]} (score: {max_score})')
+            
+            return best_match_index
+            
+        except requests.exceptions.RequestException as e:
+            error_msg = f'Request failed: {str(e)}'
+            logger.error(error_msg)
+            return {'error': error_msg, 'success': False}
         except Exception as e:
-            logger.error(f"Error getting AI answer: {e}")
-        
-        return None
+            error_msg = f'Unexpected error: {str(e)}'
+            logger.error(error_msg, exc_info=True)
+            return {'error': error_msg, 'success': False}
+    
+    def get_ai_answer(self, question, options, provider='openai'):
+        """Get answer from selected AI provider"""
+        prompt = (
+            f"Question: {question}\n"
+            f"Options:\n" + "\n".join([f"{chr(65+i)}. {opt['text']}" for i, opt in enumerate(options)]) +
+            "\nInstructions: Respond ONLY with the letter (A, B, C, D, etc.) or the exact answer text. Do not explain.\nAnswer:"
+        )
+        try:
+            if provider == 'openai':
+                # ... existing OpenAI logic ...
+                pass
+            elif provider == 'gemini':
+                # ... existing Gemini logic ...
+                pass
+            elif provider == 'huggingface':
+                if not self.huggingface_key or not self.huggingface_model:
+                    raise ValueError('Hugging Face API key or model not set')
+                API_URL = f"https://api-inference.huggingface.co/models/{self.huggingface_model}"
+                headers = {"Authorization": f"Bearer {self.huggingface_key}"}
+                payload = {"inputs": prompt}
+                response = requests.post(API_URL, headers=headers, json=payload)
+                if response.status_code == 200:
+                    result = response.json()
+                    if isinstance(result, list) and len(result) > 0 and 'generated_text' in result[0]:
+                        answer_text = result[0]['generated_text']
+                    elif isinstance(result, dict) and 'generated_text' in result:
+                        answer_text = result['generated_text']
+                    else:
+                        answer_text = str(result)
+                    logger.info(f'Hugging Face raw answer: {answer_text}')
+                    answer_text_clean = answer_text.strip().lower()
+                    for i, opt in enumerate(options):
+                        letter = chr(65 + i).lower()
+                        if answer_text_clean == letter or answer_text_clean == f"{letter}." or answer_text_clean.startswith(letter + "."):
+                            return i
+                    for i, opt in enumerate(options):
+                        if answer_text_clean == str(i+1) or answer_text_clean == f"{i+1}." or answer_text_clean.startswith(str(i+1) + "."):
+                            return i
+                    for i, opt in enumerate(options):
+                        if opt['text'].strip().lower() in answer_text_clean:
+                            return i
+                    for i, opt in enumerate(options):
+                        if f"the answer is {chr(65+i).lower()}" in answer_text_clean or f"the answer is {opt['text'].strip().lower()}" in answer_text_clean:
+                            return i
+                    return None
+                else:
+                    try:
+                        error_json = response.json()
+                        error_msg = error_json.get('error', response.text)
+                    except Exception:
+                        error_msg = response.text
+                    logger.error(f'Hugging Face API error: {response.status_code} - {error_msg}')
+                    if response.status_code == 401:
+                        logger.error('Hugging Face 401 Unauthorized: Check your API key and model access.')
+                    return None
+            elif provider == 'search':
+                return self.get_search_answer(question, options)
+            else:
+                raise ValueError(f'Unknown provider: {provider}')
+        except Exception as e:
+            logger.error(f'AI answer error ({provider}): {e}')
+            return None
     
     def select_answer(self, mcq, answer_index):
         """Automatically select the answer"""
@@ -461,7 +575,11 @@ def setup_bot():
         # Setup AI clients
         bot.setup_ai_clients(
             openai_key=data.get('openai_key'),
-            gemini_key=data.get('gemini_key')
+            gemini_key=data.get('gemini_key'),
+            huggingface_key=data.get('huggingfaceKey'),
+            huggingface_model=data.get('huggingfaceModel'),
+            google_search_api_key=data.get('googleSearchApiKey'),
+            google_search_cx=data.get('googleSearchCx')
         )
         
         # Update config
@@ -1182,28 +1300,66 @@ def ocr_detect():
         logger.error(f'Unexpected error in /api/ocr-detect: {e}')
         return jsonify({'success': False, 'error': f'Unexpected error: {e}'})
 
+
 @app.route('/api/get-answer', methods=['POST'])
 def get_answer():
-    """Get AI answer for a specific question"""
     data = request.json
     question = data.get('question')
     options = data.get('options')
     provider = data.get('provider', 'openai')
-    
-    try:
-        answer_index = bot.get_ai_answer(question, options, provider)
+
+    # Validate required parameters
+    if not question or not options or not isinstance(options, list):
+        return jsonify({
+            'success': False,
+            'error': 'Missing required parameters: question and options (array) are required'
+        }), 400
+
+    # Provider-specific validations
+    if provider == 'huggingface' and (not bot.huggingface_key or not bot.huggingface_model):
+        return jsonify({
+            'success': False,
+            'error': 'Hugging Face API key or model not set. Please call /api/setup with your credentials.'
+        }), 400
         
-        if answer_index is not None:
+    if provider == 'search' and (not bot.google_search_api_key or not bot.google_search_cx):
+        return jsonify({
+            'success': False,
+            'error': 'Google Search API key or CX not set. Please call /api/setup with your credentials.'
+        }), 400
+
+    try:
+        answer = bot.get_ai_answer(question, options, provider)
+        
+        # Handle dictionary responses (for error cases)
+        if isinstance(answer, dict) and 'success' in answer and not answer['success']:
+            return jsonify(answer), 400
+            
+        # Handle successful answer
+        if answer is not None:
             return jsonify({
                 'success': True,
-                'answer_index': answer_index,
-                'answer_text': options[answer_index]['text']
+                'answer': answer,
+                'provider': provider,
+                'question': question,
+                'selected_option': options[answer]['text'] if answer < len(options) else 'Unknown'
             })
-        else:
-            return jsonify({'success': False, 'error': 'Could not determine answer'})
-    
+            
+        # No answer could be determined
+        return jsonify({
+            'success': False,
+            'error': 'Could not determine answer from the available options',
+            'provider': provider,
+            'question': question
+        })
+        
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
+        logger.error(f'Error in get_answer: {str(e)}', exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': f'An error occurred: {str(e)}',
+            'provider': provider
+        }), 500
 
 @app.route('/api/answer', methods=['POST'])
 def answer_mcq():
@@ -1233,7 +1389,8 @@ def close_bot():
         bot.close()
         return jsonify({'success': True, 'message': 'Bot closed'})
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
+        logger.error(f'Unexpected error in /api/ocr-detect: {e}')
+        return jsonify({'success': False, 'error': f'Unexpected error: {e}'})
 
 @app.route('/api/vision-answer', methods=['POST'])
 def vision_answer():

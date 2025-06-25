@@ -33,6 +33,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const openaiSettings = document.getElementById("openaiSettings")
   const geminiSettings = document.getElementById("geminiSettings")
   const deepseekSettings = document.getElementById("deepseekSettings")
+  const huggingfaceSettings = document.getElementById("huggingfaceSettings")
+  const searchSettings = document.getElementById("searchSettings")
 
   apiProvider.addEventListener("change", () => {
     const provider = apiProvider.value
@@ -41,6 +43,8 @@ document.addEventListener("DOMContentLoaded", () => {
     openaiSettings.style.display = "none"
     geminiSettings.style.display = "none"
     deepseekSettings.style.display = "none"
+    huggingfaceSettings.style.display = "none"
+    searchSettings.style.display = "none"
 
     // Show selected provider settings
     if (provider === "openai" || provider === "auto") {
@@ -53,6 +57,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (provider === "deepseek" || provider === "auto") {
       deepseekSettings.style.display = "block"
+    }
+
+    if (provider === "huggingface" || provider === "auto") {
+      huggingfaceSettings.style.display = "block"
+    }
+
+    if (provider === "search" || provider === "auto") {
+      searchSettings.style.display = "block"
     }
   })
 
@@ -94,6 +106,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const geminiModel = document.getElementById("geminiModel")
   const deepseekKey = document.getElementById("deepseekKey")
   const deepseekModel = document.getElementById("deepseekModel")
+  const huggingfaceKey = document.getElementById("huggingfaceKey")
+  const huggingfaceModel = document.getElementById("huggingfaceModel")
   const promptTemplate = document.getElementById("promptTemplate")
   const apiStatus = document.getElementById("apiStatus")
   const testApiButton = document.getElementById("testApiButton")
@@ -144,6 +158,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const provider = apiProvider.value
     let key = ""
     let model = ""
+    let searchApiKey = ""
+    let searchCx = ""
 
     if (provider === "openai" || provider === "auto") {
       key = openaiKey.value
@@ -154,9 +170,22 @@ document.addEventListener("DOMContentLoaded", () => {
     } else if (provider === "deepseek") {
       key = deepseekKey.value
       model = deepseekModel.value
+    } else if (provider === "huggingface") {
+      key = huggingfaceKey.value
+      model = huggingfaceModel.value
+    } else if (provider === "search") {
+      searchApiKey = googleSearchApiKey.value
+      searchCx = googleSearchCx.value
     }
 
-    if (!key) {
+    if (provider === "search") {
+      if (!searchApiKey || !searchCx) {
+        showApiStatus("Please enter both Google Search API key and CX", "error")
+        return
+      }
+    }
+
+    if (!key && !searchApiKey) {
       showApiStatus("Please enter an API key", "error")
       return
     }
@@ -170,6 +199,8 @@ document.addEventListener("DOMContentLoaded", () => {
         provider: provider,
         apiKey: key,
         model: model,
+        googleSearchApiKey: searchApiKey,
+        googleSearchCx: searchCx,
       },
       (response) => {
         if (response && response.success) {
@@ -237,6 +268,33 @@ document.addEventListener("DOMContentLoaded", () => {
         settings.deepseekModel = model
         settings.apiConfigured = true
       }
+    }
+
+    if (provider === "huggingface" || provider === "auto") {
+      const key = huggingfaceKey.value
+      const model = huggingfaceModel.value
+
+      if (!key && (provider === "huggingface" || !settings.apiConfigured)) {
+        showApiStatus("Please enter a Hugging Face API key", "error")
+        return
+      }
+
+      if (key) {
+        settings.huggingfaceKey = key
+        settings.huggingfaceModel = model
+        settings.apiConfigured = true
+      }
+    }
+
+    if (provider === "search" || provider === "auto") {
+      const searchApiKey = googleSearchApiKey.value
+      const searchCx = googleSearchCx.value
+      if (!searchApiKey || !searchCx) {
+        showApiStatus("Please enter both Google Search API key and CX", "error")
+        return
+      }
+      settings.googleSearchApiKey = searchApiKey
+      settings.googleSearchCx = searchCx
     }
 
     chrome.storage.sync.set(settings, () => {
@@ -455,78 +513,41 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Helper functions
   function loadSettings() {
-    chrome.storage.sync.get(null, (result) => {
-      // Apply dark mode if enabled
-      isDarkMode = result.darkMode || false
-      document.body.classList.toggle("dark-mode", isDarkMode)
-      themeToggle.textContent = isDarkMode ? "☀️" : "🌙"
-
-      // API settings
+    chrome.storage.sync.get(
+      [
+        "apiProvider",
+        "openaiKey",
+        "openaiModel",
+        "geminiKey",
+        "geminiModel",
+        "deepseekKey",
+        "deepseekModel",
+        "huggingfaceKey",
+        "huggingfaceModel",
+        "googleSearchApiKey",
+        "googleSearchCx",
+        "promptTemplate",
+        "apiConfigured",
+        // ... other settings ...
+      ],
+      (result) => {
       apiProvider.value = result.apiProvider || "openai"
       openaiKey.value = result.openaiKey || ""
       openaiModel.value = result.openaiModel || "gpt-4o"
       geminiKey.value = result.geminiKey || ""
-      if (result.geminiModel) {
-        geminiModel.value = result.geminiModel;
-      } else {
-        geminiModel.value = "gemini-pro";
-      }
+        geminiModel.value = result.geminiModel || "gemini-pro"
       deepseekKey.value = result.deepseekKey || ""
-      if (result.deepseekModel) {
-        deepseekModel.value = result.deepseekModel;
-      } else {
-        deepseekModel.value = "deepseek-chat";
-      }
-      promptTemplate.value = result.promptTemplate || promptTemplate.defaultValue
-
-      // Show/hide provider settings based on selected provider
-      const provider = apiProvider.value
-      openaiSettings.style.display = provider === "openai" || provider === "auto" ? "block" : "none"
-      geminiSettings.style.display = provider === "gemini" || provider === "auto" ? "block" : "none"
-      deepseekSettings.style.display = provider === "deepseek" || provider === "auto" ? "block" : "none"
-
-      // Behavior settings
-      autoAnswerToggle.checked = result.autoAnswer !== false // Default to true
-      answerDelay.value = result.answerDelay || 3
-      maxAnswerDelay.value = result.maxAnswerDelay || 6
-      retryWrongToggle.checked = result.retryWrong !== false // Default to true
-      maxRetries.value = result.maxRetries || 3
-      voiceToggle.checked = result.voiceEnabled || false
-      voiceRate.value = result.voiceRate || 1
-      autoScrollToggle.checked = result.autoScroll !== false // Default to true
-      highlightToggle.checked = result.highlightAnswers !== false // Default to true
-
-      // Update range value displays
-      document.getElementById("answerDelayValue").textContent = `${answerDelay.value}s`
-      document.getElementById("maxAnswerDelayValue").textContent = `${maxAnswerDelay.value}s`
-      document.getElementById("maxRetriesValue").textContent = maxRetries.value
-      document.getElementById("voiceRateValue").textContent = `${voiceRate.value}x`
-
-      // Detection settings
-      domDetectionToggle.checked = result.domDetection !== false // Default to true
-      ocrToggle.checked = result.ocrEnabled !== false // Default to true
-      ocrLanguage.value = result.ocrLanguage || "eng"
-      shadowDomToggle.checked = result.shadowDomDetection !== false // Default to true
-      imageDetectionToggle.checked = result.imageDetection !== false // Default to true
-      mathDetectionToggle.checked = result.mathDetection !== false // Default to true
-      customSelectors.value = result.customSelectors || customSelectors.defaultValue
-
-      // Advanced settings
-      safeModeToggle.checked = result.safeMode !== false // Default to true
-      detectWebcamToggle.checked = result.detectWebcam !== false // Default to true
-      detectFullscreenToggle.checked = result.detectFullscreen !== false // Default to true
-      detectVMToggle.checked = result.detectVM !== false // Default to true
-      stealthModeToggle.checked = result.stealthMode || false
-      saveHistoryToggle.checked = result.saveHistory !== false // Default to true
-      maxHistoryItems.value = result.maxHistoryItems || 50
-      debugModeToggle.checked = result.debugMode || false
-
-      // Update range value display
-      document.getElementById("maxHistoryItemsValue").textContent = maxHistoryItems.value
-
-      // Load history
-      loadHistory()
-    })
+        deepseekModel.value = result.deepseekModel || "deepseek-chat"
+        huggingfaceKey.value = result.huggingfaceKey || ""
+        huggingfaceModel.value = result.huggingfaceModel || "google/flan-t5-base"
+        googleSearchApiKey.value = result.googleSearchApiKey || ""
+        googleSearchCx.value = result.googleSearchCx || ""
+        promptTemplate.value = result.promptTemplate || ""
+        // ... other settings ...
+        // Show/hide settings based on provider
+        apiProvider.dispatchEvent(new Event("change"))
+      },
+    )
   }
 
   function loadHistory() {

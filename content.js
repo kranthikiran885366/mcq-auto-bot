@@ -479,275 +479,857 @@ function getQuestionForInput(input) {
   return "";
 }
 
-// Find MCQs on the page
+// Find MCQs on the page using multiple detection strategies
 function findMCQs() {
+  console.log('[MCQ] ===== Starting MCQ Detection =====');
+  console.log('[MCQ] Document URL:', window.location.href);
   const mcqs = [];
-  const inputTypes = ["radio", "checkbox"];
-  inputTypes.forEach(type => {
-    const inputs = Array.from(document.querySelectorAll(`input[type='${type}']`));
-    const groups = {};
-    inputs.forEach(input => {
-      const name = input.getAttribute("name") || input.id || "no-name";
-      if (!groups[name]) groups[name] = [];
-      groups[name].push(input);
-    });
-    Object.values(groups).forEach(group => {
-      if (group.length < 2) return;
-      let firstInput = group[0];
-      let question = getQuestionForInput(firstInput);
-      // Get options
-      const options = group.map(input => {
-        let optionText = "";
-        let label = document.querySelector(`label[for='${input.id}']`);
-        if (label) {
-          optionText = label.textContent.trim();
-        } else if (input.parentElement && input.parentElement.tagName === "LABEL") {
-          optionText = input.parentElement.textContent.trim();
-        } else {
-          optionText = input.value || "";
-        }
-        return { input, text: optionText };
-      });
-      if (question && options.length > 1) {
-        mcqs.push({ question, options, type });
-      }
-    });
+  const seen = new Set();
+  let detectionCount = 0;
+  
+  // Debug: Log basic page structure
+  console.log('[MCQ] Page title:', document.title);
+  console.log('[MCQ] Number of forms on page:', document.forms.length);
+  console.log('[MCQ] Number of radio buttons:', document.querySelectorAll('input[type="radio"]').length);
+  console.log('[MCQ] Number of checkboxes:', document.querySelectorAll('input[type="checkbox"]').length);
+  console.log('[MCQ] Number of select dropdowns:', document.querySelectorAll('select').length);
+  
+  // Debug: Log first few form elements if they exist
+  const forms = Array.from(document.forms).slice(0, 3);
+  forms.forEach((form, i) => {
+    console.log(`[MCQ] Form ${i + 1} ID:`, form.id || 'no-id', 'Classes:', form.className);
+    console.log(`[MCQ] Form ${i + 1} elements:`, form.elements.length);
   });
+
+  // Helper to add unique MCQs
+  function addUniqueMCQ(mcq, source) {
+    if (!mcq) {
+      console.log(`[MCQ] ${source}: Skipping null/undefined MCQ`);
+      return false;
+    }
+    
+    if (!mcq.question) {
+      console.log(`[MCQ] ${source}: Skipping MCQ with no question`);
+      return false;
+    }
+    
+    if (!mcq.options || mcq.options.length < 2) {
+      console.log(`[MCQ] ${source}: Skipping MCQ with insufficient options (${mcq.options ? mcq.options.length : 0})`);
+      return false;
+    }
+    
+    const key = `${mcq.question}:${mcq.options.map(o => o.text).join(',')}`;
+    if (seen.has(key)) {
+      console.log(`[MCQ] ${source}: Skipping duplicate MCQ`);
+      return false;
+    }
+    
+    seen.add(key);
+    mcqs.push(mcq);
+    detectionCount++;
+    console.log(`[MCQ] ${source}: Added MCQ with ${mcq.options.length} options`);
+    return true;
+  }
+
+  // 1. Find radio button groups (single-select MCQs)
+  console.log('[MCQ] 1. Looking for radio button groups...');
+  const radioGroups = findRadioGroups();
+  console.log(`[MCQ] Found ${radioGroups.length} radio groups`);
+  radioGroups.forEach((group, i) => {
+    console.log(`[MCQ] Processing radio group ${i + 1}/${radioGroups.length}`);
+    addUniqueMCQ(group, 'Radio Group');
+  });
+
+  // 2. Find checkbox groups (multi-select MCQs)
+  console.log('\n[MCQ] 2. Looking for checkbox groups...');
+  const checkboxGroups = findCheckboxGroups();
+  console.log(`[MCQ] Found ${checkboxGroups.length} checkbox groups`);
+  checkboxGroups.forEach((group, i) => {
+    console.log(`[MCQ] Processing checkbox group ${i + 1}/${checkboxGroups.length}`);
+    addUniqueMCQ(group, 'Checkbox Group');
+  });
+
+  // 3. Find select dropdowns
+  console.log('\n[MCQ] 3. Looking for select dropdowns...');
+  const selectGroups = findSelectDropdowns();
+  console.log(`[MCQ] Found ${selectGroups.length} select dropdowns`);
+  selectGroups.forEach((group, i) => {
+    console.log(`[MCQ] Processing select dropdown ${i + 1}/${selectGroups.length}`);
+    addUniqueMCQ(group, 'Select Dropdown');
+  });
+
+  // 4. Find HTML patterns
+  console.log('\n[MCQ] 4. Looking for HTML patterns...');
+  const htmlPatterns = findHTMLPatterns();
+  console.log(`[MCQ] Found ${htmlPatterns.length} HTML patterns`);
+  htmlPatterns.forEach((pattern, i) => {
+    console.log(`[MCQ] Processing HTML pattern ${i + 1}/${htmlPatterns.length}`);
+    addUniqueMCQ(pattern, 'HTML Pattern');
+  });
+
+  // 5. Find custom MCQs
+  console.log('\n[MCQ] 5. Looking for custom MCQs...');
+  const customMCQs = findCustomMCQs();
+  console.log(`[MCQ] Found ${customMCQs.length} custom MCQs`);
+  customMCQs.forEach((mcq, i) => {
+    console.log(`[MCQ] Processing custom MCQ ${i + 1}/${customMCQs.length}`);
+    addUniqueMCQ(mcq, 'Custom MCQ');
+  });
+
+  console.log(`\n[MCQ] ===== MCQ Detection Complete =====`);
+  console.log(`[MCQ] Total unique MCQs found: ${mcqs.length}`);
+  
+  // If no MCQs found, try to diagnose why
+  if (mcqs.length === 0) {
+    console.warn('[MCQ] WARNING: No MCQs found. Possible reasons:');
+    
+    // Check for iframes that might contain the questions
+    const iframes = document.querySelectorAll('iframe');
+    console.log(`[MCQ] Found ${iframes.length} iframes on the page`);
+    if (iframes.length > 0) {
+      console.warn('[MCQ] WARNING: Page contains iframes. The MCQs might be inside an iframe.');
+      iframes.forEach((iframe, i) => {
+        try {
+          console.log(`[MCQ] Iframe ${i + 1} src:`, iframe.src || 'no-src', 
+                     'sandbox:', iframe.sandbox, 
+                     'srcdoc:', iframe.srcdoc ? 'has-srcdoc' : 'no-srcdoc');
+        } catch (e) {
+          console.log(`[MCQ] Could not access iframe ${i + 1} due to CORS`);
+        }
+      });
+    }
+    
+    // Check for common question containers
+    const questionContainers = document.querySelectorAll('.question, .mcq, .quiz-question, .question-text, [role="question"]');
+    console.log(`[MCQ] Found ${questionContainers.length} potential question containers`);
+    
+    // Check for form elements that might be part of MCQs
+    const formElements = document.querySelectorAll('input[type="radio"], input[type="checkbox"], select');
+    console.log(`[MCQ] Found ${formElements.length} form elements that could be part of MCQs`);
+    
+    // Log the first few form elements for debugging
+    Array.from(formElements).slice(0, 5).forEach((el, i) => {
+      console.log(`[MCQ] Form element ${i + 1}:`, {
+        tag: el.tagName,
+        type: el.type,
+        id: el.id || 'no-id',
+        name: el.name || 'no-name',
+        classes: el.className || 'no-class',
+        parent: el.parentElement ? el.parentElement.tagName + (el.parentElement.id ? `#${el.parentElement.id}` : '') : 'no-parent'
+      });
+    });
+  }
+  
+  console.log('[MCQ] MCQs found:', mcqs);
   return mcqs;
 }
 
-// Find radio button groups
+// Enhanced radio button group detection with better question and option extraction
 function findRadioGroups() {
-  const radioGroups = []
-  const radioButtons = document.querySelectorAll('input[type="radio"]')
-  const groupedRadios = {}
+  console.log('[MCQ] ===== Starting Radio Group Detection =====');
+  const radioGroups = [];
+  const radioButtons = Array.from(document.querySelectorAll('input[type="radio"]'));
+  console.log(`[MCQ] Found ${radioButtons.length} radio buttons`);
+  
+  if (radioButtons.length === 0) {
+    console.warn('[MCQ] WARNING: No radio buttons found on the page');
+    return [];
+  }
+  
+  // Debug: Log first few radio buttons
+  radioButtons.slice(0, 3).forEach((radio, i) => {
+    console.log(`[MCQ] Radio button ${i + 1}:`, {
+      id: radio.id || 'no-id',
+      name: radio.name || 'no-name',
+      value: radio.value || 'no-value',
+      form: radio.form ? (radio.form.id || 'form-no-id') : 'no-form',
+      parent: radio.parentElement ? radio.parentElement.tagName : 'no-parent',
+      classes: radio.className || 'no-classes'
+    });
+  });
+  
+  const processedGroups = new Set();
 
-  // Group radio buttons by name
+  // Group radio buttons by name and form context
+  const groupedRadios = {};
+  console.log('[MCQ] Grouping radio buttons by name and form...');
   radioButtons.forEach((radio) => {
-    const name = radio.name
-    if (!name) return
-    if (!groupedRadios[name]) {
-      groupedRadios[name] = []
+    const name = radio.name;
+    if (!name) return;
+    const formId = radio.form ? radio.form.id || 'no-form' : 'no-form';
+    const groupKey = `${formId}:${name}`;
+    
+    if (!groupedRadios[groupKey]) {
+      groupedRadios[groupKey] = [];
     }
-    groupedRadios[name].push(radio)
-  })
+    groupedRadios[groupKey].push(radio);
+  });
 
   // Process each group
-  for (const name in groupedRadios) {
-    const radios = groupedRadios[name]
-    if (radios.length < 2) continue // Skip groups with only one option
-    let questionText = ""
-    const firstRadio = radios[0]
-    let currentElement = firstRadio.parentElement
-    // Try to find question text in parent elements
-    while (currentElement && !questionText) {
-      const headings = currentElement.querySelectorAll("h1, h2, h3, h4, h5, h6, p, div")
-      for (const heading of headings) {
-        const text = heading.textContent.trim()
-        if (text && text.length > 10 && text.match(/[?\uFF1F]/)) {
-          questionText = text
-          break
-        }
-      }
-      currentElement = currentElement.parentElement
-      if (currentElement === document.body) break
+  const groupKeys = Object.keys(groupedRadios);
+  console.log(`[MCQ] Found ${groupKeys.length} radio groups`);
+  
+  if (groupKeys.length === 0) {
+    console.warn('[MCQ] WARNING: No valid radio groups found (all groups have < 2 options)');
+  }
+  
+  for (const [groupKey, radios] of Object.entries(groupedRadios)) {
+    console.log(`\n[MCQ] Processing group "${groupKey}" with ${radios.length} radios`);
+    
+    if (radios.length < 2) {
+      console.warn(`[MCQ] WARNING: Group "${groupKey}" has only ${radios.length} radio button(s) (needs at least 2)`);
+      continue;
     }
-    // Fallback: look for <b> or text node above the first radio
-    if (!questionText && radios[0]) {
-      let node = radios[0].previousSibling
-      for (let i = 0; i < 5 && node; i++) {
-        if (node.nodeType === Node.ELEMENT_NODE && node.tagName === 'B') {
-          questionText = node.textContent.trim()
-          break
-        }
-        if (node.nodeType === Node.TEXT_NODE && node.textContent.trim().length > 5) {
-          questionText = node.textContent.trim()
-          break
-        }
-        node = node.previousSibling
+    
+    // Debug: Log first radio in group
+    const firstRadio = radios[0];
+    console.log('[MCQ] First radio in group:', {
+      id: firstRadio.id || 'no-id',
+      name: firstRadio.name || 'no-name',
+      value: firstRadio.value || 'no-value',
+      form: firstRadio.form ? (firstRadio.form.id || 'form-no-id') : 'no-form'
+    });
+    const groupId = `radio-group-${groupKey}`;
+    if (processedGroups.has(groupId)) continue;
+    processedGroups.add(groupId);
+
+    // Find the question text using multiple strategies
+    console.log('[MCQ] Looking for question text...');
+    let questionText = findQuestionText(firstRadio, {
+      questionMarkRequired: true,
+      minLength: 5,
+      maxSiblingDepth: 5,
+      searchParents: true
+    });
+    console.log('[MCQ] Found question text:', questionText ? questionText.substring(0, 50) + '...' : 'none');
+
+    // Get options with better text extraction
+    const options = [];
+    const seenOptions = new Set();
+    console.log('[MCQ] Extracting options...');
+    
+    for (const radio of radios) {
+      // Skip duplicates (same value)
+      if (seenOptions.has(radio.value)) {
+        console.log('[MCQ] Skipping duplicate option with value:', radio.value);
+        continue;
       }
-    }
-    // Method 2: Look for a fieldset legend
-    if (!questionText) {
-      const fieldset = firstRadio.closest("fieldset")
-      if (fieldset) {
-        const legend = fieldset.querySelector("legend")
-        if (legend) {
-          questionText = legend.textContent.trim()
-        }
-      }
-    }
-    // Method 3: Look for a div with a question-like class
-    if (!questionText) {
-      const questionDiv = document.querySelector(".question, .question-text, .quiz-question, .mcq-question")
-      if (questionDiv) {
-        questionText = questionDiv.textContent.trim()
-      }
-    }
-    // If we still don't have a question, use a generic one
-    if (!questionText) {
-      questionText = `Question for options: ${radios
-        .map((r) => {
-          const label = document.querySelector(`label[for="${r.id}"]`)
-          return label ? label.textContent.trim() : ""
-        })
-        .filter(Boolean)
-        .join(", ")}`
-    }
-    // Get the options
-    const options = radios.map((radio) => {
-      let optionText = ""
-      if (radio.id) {
-        const label = document.querySelector(`label[for="${radio.id}"]`)
-        if (label) {
-          optionText = label.textContent.trim()
-        }
-      }
+      
+      let optionText = extractOptionText(radio);
+      console.log('[MCQ] Raw option text:', optionText);
       if (!optionText) {
-        const parentLabel = radio.closest("label")
-        if (parentLabel) {
-          optionText = parentLabel.textContent.trim()
-          optionText = optionText.replace(/^\s*[\u25CB\u25CF\u25EF\u26AB\u26AA]\s*/, "")
-        }
+        console.log('[MCQ] No text found for radio:', radio);
+        continue;
       }
+      
+      // Clean up option text
+      const originalText = optionText;
+      optionText = optionText
+        .replace(/^\s*[A-Za-z0-9][.)]\s*/, '')  // Remove A), 1., etc.
+        .replace(/^[\s•○●▪■□◻◼◽◾⬜⬛]\s*/, '')  // Remove bullet points
+        .trim();
+      
+      console.log('[MCQ] Cleaned option text:', optionText, '(from:', originalText + ')');
+      
       if (!optionText) {
-        const nextSibling = radio.nextSibling
-        if (nextSibling && nextSibling.nodeType === Node.TEXT_NODE) {
-          optionText = nextSibling.textContent.trim()
-        }
+        console.log('[MCQ] Empty option text after cleaning');
+        continue;
       }
-      // Fallback: get text from parent element
-      if (!optionText && radio.parentElement) {
-        optionText = radio.parentElement.textContent.trim()
+      
+      if (seenOptions.has(optionText)) {
+        console.log('[MCQ] Skipping duplicate option text:', optionText);
+        continue;
       }
-      return {
+      
+      seenOptions.add(optionText);
+      options.push({
         element: radio,
         text: optionText,
-      }
-    })
-    if (questionText && options.length > 1) {
+        value: radio.value
+      });
+    }
+
+    // Only add if we have a valid question and at least 2 options
+    if (questionText && options.length >= 2) {
       radioGroups.push({
-        type: "radio",
+        type: 'radio',
         question: questionText,
-        options: options.filter((opt) => opt.text),
-        answered: radios.some((radio) => radio.checked),
-      })
+        options,
+        answered: radios.some(r => r.checked),
+        source: 'radio-group',
+        groupId
+      });
     }
   }
-  return radioGroups
+
+  console.log(`[MCQ] Radio group detection complete. Found ${radioGroups.length} valid groups`);
+  return radioGroups;
 }
 
-// Find checkbox groups
+// Helper function to extract question text from an input element
+function findQuestionText(element, options = {}) {
+  console.log('[MCQ] findQuestionText called for element:', element);
+  
+  const defaults = {
+    questionMarkRequired: true,
+    minLength: 5,
+    maxSiblingDepth: 5,
+    searchParents: true,
+    searchSiblings: true
+  };
+  const settings = { ...defaults, ...options };
+  console.log('[MCQ] findQuestionText settings:', settings);
+  
+  // Check if element is valid
+  if (!element || !element.nodeType || element.nodeType !== Node.ELEMENT_NODE) {
+    console.log('[MCQ] Invalid element provided');
+    return '';
+  }
+  
+  let questionText = '';
+  let source = '';
+  
+  // 1. Check for data-question attribute
+  if (element.hasAttribute('data-question')) {
+    questionText = element.getAttribute('data-question').trim();
+    console.log('[MCQ] Found data-question attribute:', questionText);
+    if (questionText && (!settings.questionMarkRequired || questionText.includes('?'))) {
+      console.log('[MCQ] Using data-question as question text');
+      return questionText;
+    }
+  }
+  
+  // 2. Check for aria-label or aria-labelledby
+  if (!questionText) {
+    if (element.hasAttribute('aria-label')) {
+      questionText = element.getAttribute('aria-label').trim();
+      source = 'aria-label';
+      console.log(`[MCQ] Found aria-label: ${questionText}`);
+    } else if (element.hasAttribute('aria-labelledby')) {
+      const labelId = element.getAttribute('aria-labelledby');
+      const labelElement = document.getElementById(labelId);
+      if (labelElement) {
+        questionText = labelElement.textContent.trim();
+        source = 'aria-labelledby';
+        console.log(`[MCQ] Found aria-labelledby (${labelId}): ${questionText}`);
+      }
+    }
+    
+    if (questionText && (!settings.questionMarkRequired || questionText.includes('?'))) {
+      console.log(`[MCQ] Using ${source} as question text`);
+      return questionText;
+    }
+  }
+  
+  // 3. Check for associated label
+  if (!questionText && element.id) {
+    const label = document.querySelector(`label[for="${element.id}"]`);
+    if (label) {
+      questionText = label.textContent.trim();
+      console.log('[MCQ] Found associated label:', questionText);
+      if (questionText && (!settings.questionMarkRequired || questionText.includes('?'))) {
+        console.log('[MCQ] Using associated label as question text');
+        return questionText;
+      }
+    } else {
+      console.log(`[MCQ] No label found for element with id: ${element.id}`);
+    }
+  } else if (!element.id) {
+    console.log('[MCQ] Element has no ID, cannot look up by label[for]');
+  }
+  
+  // 4. Check parent elements for question text
+  if (settings.searchParents) {
+    console.log('[MCQ] Searching parent elements for question text...');
+    let current = element.parentElement;
+    let depth = 0;
+    
+    while (current && depth < 10) {
+      console.log(`[MCQ] Checking parent ${depth}:`, current.tagName, current.className);
+      
+      // Check for common question containers
+      if (current.matches && 
+          (current.matches('.question, .mcq, .quiz-question, .question-text, [role="heading"], h1, h2, h3, h4, h5, h6, p, div') ||
+           current.getAttribute('aria-label') ||
+           current.getAttribute('aria-labelledby'))) {
+        
+        let text = current.textContent.trim();
+        console.log(`[MCQ] Found potential container with text (${text.length} chars):`, text.substring(0, 100) + (text.length > 100 ? '...' : ''));
+        
+        // Clean up text
+        text = text.replace(/\s+/g, ' ');
+        
+        // Check if text looks like a question
+        if (text.length >= settings.minLength) {
+          const hasQuestionMark = text.includes('?');
+          const isReasonableLength = text.length < 200 || hasQuestionMark;
+          
+          console.log(`[MCQ] Text check - Length: ${text.length}, Has ?: ${hasQuestionMark}, Reasonable: ${isReasonableLength}`);
+          
+          if ((!settings.questionMarkRequired || hasQuestionMark) && isReasonableLength) {
+            questionText = text;
+            source = `parent ${depth} (${current.tagName}${current.id ? '#' + current.id : ''}${current.className ? '.' + current.className.replace(/\s+/g, '.') : ''})`;
+            console.log(`[MCQ] Using text from ${source}: ${text.substring(0, 50)}...`);
+            break;
+          }
+        }
+      }
+      
+      current = current.parentElement;
+      depth++;
+    }
+  }
+  
+  // 5. Check previous siblings for question text
+  if (!questionText && settings.searchSiblings) {
+    console.log('[MCQ] Searching previous siblings for question text...');
+    let current = element.previousElementSibling;
+    let depth = 0;
+    
+    while (current && depth < settings.maxSiblingDepth) {
+      console.log(`[MCQ] Checking sibling ${depth}:`, current.tagName, current.className);
+      
+      let text = current.textContent.trim();
+      console.log(`[MCQ] Sibling text (${text.length} chars):`, text.substring(0, 100) + (text.length > 100 ? '...' : ''));
+      
+      text = text.replace(/\s+/g, ' ');
+      
+      if (text.length >= settings.minLength) {
+        const hasQuestionMark = text.includes('?');
+        const isReasonableLength = text.length < 200 || hasQuestionMark;
+        
+        console.log(`[MCQ] Sibling text check - Length: ${text.length}, Has ?: ${hasQuestionMark}, Reasonable: ${isReasonableLength}`);
+        
+        if ((!settings.questionMarkRequired || hasQuestionMark) && isReasonableLength) {
+          questionText = text;
+          source = `sibling ${depth} (${current.tagName}${current.id ? '#' + current.id : ''}${current.className ? '.' + current.className.replace(/\s+/g, '.') : ''})`;
+          console.log(`[MCQ] Using text from ${source}: ${text.substring(0, 50)}...`);
+          break;
+        }
+      }
+      
+      current = current.previousElementSibling;
+      depth++;
+    }
+  }
+
+  // 6. Check for data-question attribute
+  const dataQuestion = element.closest('[data-question]');
+  if (dataQuestion) {
+    const text = dataQuestion.getAttribute('data-question');
+    if (isQuestionLike(text)) return text;
+  }
+
+  return '';
+}
+
+// Enhanced option text extraction with detailed debugging
+function extractOptionText(input) {
+  console.log('[MCQ] extractOptionText called for input:', input);
+  
+  if (!input) {
+    console.log('[MCQ] No input element provided');
+    return '';
+  }
+  
+  let optionText = '';
+  let source = '';
+  
+  // 1. Check for associated label (for attribute)
+  if (input.id) {
+    const selector = `label[for="${input.id}"]`;
+    console.log(`[MCQ] Looking for label with selector: ${selector}`);
+    const label = document.querySelector(selector);
+    
+    if (label) {
+      optionText = label.textContent.trim();
+      source = 'label[for]';
+      console.log(`[MCQ] Found label[for]: "${optionText}"`);
+    } else {
+      console.log(`[MCQ] No label found with selector: ${selector}`);
+    }
+  } else {
+    console.log('[MCQ] Input has no ID, cannot look up by label[for]');
+  }
+  
+  // 2. Check if input is inside a label
+  if (!optionText && input.parentElement && input.parentElement.tagName === 'LABEL') {
+    const parentText = input.parentElement.textContent.trim();
+    const inputValue = input.value || '';
+    optionText = parentText.replace(inputValue, '').trim();
+    source = 'parent label text';
+    console.log(`[MCQ] Found parent label text: "${optionText}"`);
+  }
+  
+  // 3. Check for sibling label
+  if (!optionText && input.parentElement) {
+    console.log('[MCQ] Looking for sibling labels...');
+    const labels = input.parentElement.querySelectorAll('label');
+    console.log(`[MCQ] Found ${labels.length} sibling labels`);
+    
+    for (const label of labels) {
+      const text = label.textContent.trim();
+      if (text) {
+        optionText = text;
+        source = 'sibling label';
+        console.log(`[MCQ] Using sibling label: "${optionText}"`);
+        break;
+      }
+    }
+  }
+  
+  // 4. Check for aria-label or title
+  if (!optionText) {
+    const ariaLabel = input.getAttribute('aria-label');
+    if (ariaLabel) {
+      optionText = ariaLabel.trim();
+      source = 'aria-label';
+      console.log(`[MCQ] Using aria-label: "${optionText}"`);
+    } else {
+      const title = input.getAttribute('title');
+      if (title) {
+        optionText = title.trim();
+        source = 'title';
+        console.log(`[MCQ] Using title: "${optionText}"`);
+      }
+    }
+  }
+  
+  // 5. Check for value attribute
+  if (!optionText && input.value) {
+    optionText = input.value.trim();
+    source = 'value attribute';
+    console.log(`[MCQ] Using value: "${optionText}"`);
+  }
+  
+  // 6. Check for text content in parent or nearby elements
+  if (!optionText && input.parentElement) {
+    console.log('[MCQ] Looking for text in parent elements...');
+    
+    // Try to find the closest text node that might contain the option text
+    let currentNode = input;
+    let depth = 0;
+    
+    while (currentNode && depth < 3) { // Limit depth to prevent going too far
+      const text = currentNode.textContent.trim();
+      if (text && text.length > 0) {
+        // Try to extract just the relevant part of the text
+        const lines = text.split(/\n/).map(line => line.trim()).filter(line => line.length > 0);
+        if (lines.length > 0) {
+          optionText = lines[0];
+          source = `parent text (depth ${depth})`;
+          console.log(`[MCQ] Using text from ${source}: "${optionText}"`);
+          break;
+        }
+      }
+      
+      if (currentNode.parentElement) {
+        currentNode = currentNode.parentElement;
+        depth++;
+      } else {
+        break;
+      }
+    }
+  }
+  
+  // Clean up the extracted text
+  if (optionText) {
+    const originalText = optionText;
+    
+    // Remove common prefixes like A), 1., •, etc.
+    optionText = optionText
+      .replace(/^\s*[A-Za-z0-9][.)]\s*/, '')  // A), 1., etc.
+      .replace(/^[\s•○●▪■□◻◼◽◾⬜⬛]\s*/, '')  // Bullet points
+      .replace(/^[-*]\s*/, '')                // Dashes and asterisks
+      .replace(/^\s+/, '')                    // Leading whitespace
+      .replace(/\s+$/, '')                    // Trailing whitespace
+      .replace(/\s+/g, ' ');                  // Multiple spaces
+    
+    if (optionText !== originalText) {
+      console.log(`[MCQ] Cleaned option text: "${originalText}" -> "${optionText}"`);
+    }
+  }
+  
+  if (optionText) {
+    console.log(`[MCQ] Extracted option text (${source}): "${optionText}"`);
+  } else {
+    console.log('[MCQ] Could not extract option text');
+  }
+  
+  return optionText || '';
+}
+
+// Enhanced checkbox group detection with better container and option handling
 function findCheckboxGroups() {
-  const checkboxGroups = []
-  const checkboxes = document.querySelectorAll('input[type="checkbox"]')
+  console.log('\n[MCQ] ===== Starting Checkbox Group Detection =====');
+  const checkboxGroups = [];
+  const checkboxes = Array.from(document.querySelectorAll('input[type="checkbox"]'));
+  console.log(`[MCQ] Found ${checkboxes.length} checkboxes`);
+  
+  if (checkboxes.length === 0) {
+    console.warn('[MCQ] WARNING: No checkboxes found on the page');
+    return [];
+  }
+  
+  // Debug: Log first few checkboxes
+  checkboxes.slice(0, 3).forEach((cb, i) => {
+    console.log(`[MCQ] Checkbox ${i + 1}:`, {
+      id: cb.id || 'no-id',
+      name: cb.name || 'no-name',
+      value: cb.value || 'no-value',
+      form: cb.form ? (cb.form.id || 'form-no-id') : 'no-form',
+      parent: cb.parentElement ? cb.parentElement.tagName : 'no-parent',
+      classes: cb.className || 'no-classes'
+    });
+  });
+  
+  const processedGroups = new Set();
+  console.log('[MCQ] Looking for checkbox containers...');
+
+  // Find all potential container elements
+  const containerSelectors = [
+    'form', 'fieldset', '.question', '.mcq', '.quiz-question',
+    '.question-container', '.mcq-container', '.quiz-container',
+    '[role="group"]', '.form-group', '.options-container'
+  ];
 
   // Group checkboxes by their container
-  const containers = new Set()
-
-  checkboxes.forEach((checkbox) => {
-    // Find the closest container
-    const container = checkbox.closest("form, fieldset, div.question, div.mcq, div.quiz-question")
-    if (container) {
-      containers.add(container)
+  const containerMap = new Map();
+  
+  checkboxes.forEach(checkbox => {
+    // Find the closest container or create a virtual one for standalone checkboxes
+    let container = null;
+    for (const selector of containerSelectors) {
+      const candidate = checkbox.closest(selector);
+      if (candidate) {
+        container = candidate;
+        break;
+      }
     }
-  })
+    
+    // If no container found, use a virtual container based on proximity
+    if (!container) {
+      container = findVirtualContainer(checkbox, checkboxes);
+    }
+    
+    if (!containerMap.has(container)) {
+      containerMap.set(container, []);
+    }
+    containerMap.get(container).push(checkbox);
+  });
 
   // Process each container
-  containers.forEach((container) => {
-    const containerCheckboxes = container.querySelectorAll('input[type="checkbox"]')
-
-    if (containerCheckboxes.length < 2) return // Skip containers with only one checkbox
-
-    // Find the question text
-    let questionText = ""
-
-    // Method 1: Look for a heading or paragraph in the container
-    const headings = container.querySelectorAll("h1, h2, h3, h4, h5, h6, p, legend")
-
-    for (const heading of headings) {
-      const text = heading.textContent.trim()
-      if (text && text.length > 10) {
-        questionText = text
-        break
+  console.log(`[MCQ] Found ${containerMap.size} checkbox containers`);
+  let containerIndex = 0;
+  
+  if (containerMap.size === 0) {
+    console.warn('[MCQ] WARNING: No valid checkbox containers found');
+    // Try to find any potential container with checkboxes
+    const potentialContainers = {};
+    checkboxes.forEach(cb => {
+      let parent = cb.parentElement;
+      for (let i = 0; i < 5 && parent; i++) { // Check up to 5 levels up
+        const containerId = parent.id || parent.className || parent.tagName;
+        if (!potentialContainers[containerId]) {
+          potentialContainers[containerId] = [];
+        }
+        potentialContainers[containerId].push(cb);
+        parent = parent.parentElement;
       }
+    });
+    
+    // Log potential containers with multiple checkboxes
+    Object.entries(potentialContainers).forEach(([id, cbs]) => {
+      if (cbs.length > 1) {
+        console.warn(`[MCQ] Potential container with ${cbs.length} checkboxes:`, id);
+      }
+    });
+  }
+  
+  for (const [container, containerCheckboxes] of containerMap.entries()) {
+    containerIndex++;
+    console.log(`\n[MCQ] Processing container ${containerIndex}/${containerMap.size}`);
+    
+    if (!container) {
+      console.warn('[MCQ] WARNING: Found null container');
+      continue;
     }
+    
+    console.log('[MCQ] Container element:', {
+      tag: container.tagName,
+      id: container.id || 'no-id',
+      classes: container.className || 'no-classes',
+      'data-* attributes': Object.fromEntries(
+        Array.from(container.attributes || [])
+          .filter(attr => attr.name.startsWith('data-'))
+          .map(attr => [attr.name, attr.value])
+      )
+    });
+    
+    if (containerCheckboxes.length < 2) {
+      console.warn(`[MCQ] WARNING: Container has only ${containerCheckboxes.length} checkbox(es) (needs at least 2)`);
+      continue;
+    }
+    
+    const containerId = container.id || container.className || 'container-' + Math.random().toString(36).substr(2, 9);
+    if (processedGroups.has(containerId)) continue;
+    processedGroups.add(containerId);
 
-    // Method 2: Look for a div with a question-like class
+    // Find the question text using multiple strategies
+    const firstCheckbox = containerCheckboxes[0];
+    console.log('[MCQ] Looking for question text in container...');
+    let questionText = findQuestionText(firstCheckbox, {
+      questionMarkRequired: false,  // Checkbox questions might not end with ?
+      minLength: 5,
+      maxSiblingDepth: 5,
+      searchParents: true
+    });
+
+    // If no question found, try to find a common question pattern
     if (!questionText) {
-      const questionDiv = container.querySelector(".question, .question-text, .quiz-question, .mcq-question")
-      if (questionDiv) {
-        questionText = questionDiv.textContent.trim()
-      }
+      console.log('[MCQ] No question found near first checkbox, trying common patterns...');
+      questionText = findCommonQuestionText(container, containerCheckboxes);
     }
+    
+    console.log('[MCQ] Found question text:', questionText ? questionText.substring(0, 50) + '...' : 'none');
 
-    // Fallback: look for <b> or text node above the first checkbox
-    if (!questionText && containerCheckboxes[0]) {
-      let node = containerCheckboxes[0].previousSibling
-      for (let i = 0; i < 5 && node; i++) {
-        if (node.nodeType === Node.ELEMENT_NODE && node.tagName === 'B') {
-          questionText = node.textContent.trim()
-          break
-        }
-        if (node.nodeType === Node.TEXT_NODE && node.textContent.trim().length > 5) {
-          questionText = node.textContent.trim()
-          break
-        }
-        node = node.previousSibling
-      }
-    }
-
-    // Fallback: use container text
-    if (!questionText) questionText = container.textContent.trim().split('\n')[0]
-
-    // Get the options
-    const options = Array.from(containerCheckboxes).map((checkbox) => {
-      let optionText = ""
-
-      // Method 1: Look for a label with matching 'for' attribute
-      if (checkbox.id) {
-        const label = document.querySelector(`label[for="${checkbox.id}"]`)
-        if (label) {
-          optionText = label.textContent.trim()
-        }
-      }
-
-      // Method 2: Look for a label wrapping the checkbox
+    // Get options with better text extraction
+    const options = [];
+    const seenOptions = new Set();
+    console.log('[MCQ] Extracting options from checkboxes...');
+    
+    for (const checkbox of containerCheckboxes) {
+      let optionText = extractOptionText(checkbox);
+      console.log('[MCQ] Raw checkbox text:', optionText);
       if (!optionText) {
-        const parentLabel = checkbox.closest("label")
-        if (parentLabel) {
-          optionText = parentLabel.textContent.trim()
-          // Remove the checkbox text if any
-          optionText = optionText.replace(/^\s*[\u2610\u2611\u2612]\s*/, "")
-        }
+        console.log('[MCQ] No text found for checkbox:', checkbox);
+        continue;
       }
-
-      // Method 3: Look for text next to the checkbox
+      
+      // Clean up option text
+      const originalText = optionText;
+      optionText = optionText
+        .replace(/^\s*[A-Za-z0-9][.)]\s*/, '')  // Remove A), 1., etc.
+        .replace(/^[\s•○●▪■□◻◼◽◾⬜⬛]\s*/, '')  // Remove bullet points
+        .trim();
+      
+      console.log('[MCQ] Cleaned option text:', optionText, '(from:', originalText + ')');
+      
+      // Skip empty or duplicate options
       if (!optionText) {
-        const nextSibling = checkbox.nextSibling
-        if (nextSibling && nextSibling.nodeType === Node.TEXT_NODE) {
-          optionText = nextSibling.textContent.trim()
-        }
+        console.log('[MCQ] Empty option text after cleaning');
+        continue;
       }
-
-      return {
+      
+      if (seenOptions.has(optionText)) {
+        console.log('[MCQ] Skipping duplicate option text:', optionText);
+        continue;
+      }
+      
+      seenOptions.add(optionText);
+      options.push({
         element: checkbox,
         text: optionText,
-      }
-    })
-
-    // Only add if we have a question and options with text
-    if (questionText && options.some((opt) => opt.text)) {
-      checkboxGroups.push({
-        type: "checkbox",
-        question: questionText,
-        options: options.filter((opt) => opt.text),
-        answered: Array.from(containerCheckboxes).some((checkbox) => checkbox.checked),
-      })
+        value: checkbox.value
+      });
     }
-  })
 
-  return checkboxGroups
+    // Only add if we have a valid question and at least 2 options
+    if (questionText && options.length >= 2) {
+      checkboxGroups.push({
+        type: 'checkbox',
+        question: questionText,
+        options,
+        answered: containerCheckboxes.some(cb => cb.checked),
+        source: 'checkbox-group',
+        containerId
+      });
+    }
+  }
+
+  console.log(`[MCQ] Checkbox group detection complete. Found ${checkboxGroups.length} valid groups`);
+  return checkboxGroups;
+}
+
+// Find a virtual container for checkboxes that aren't in a clear container
+function findVirtualContainer(checkbox, allCheckboxes) {
+  // Create a virtual container for this checkbox
+  const virtualContainer = document.createElement('div');
+  virtualContainer.className = 'mcq-virtual-container';
+  
+  // Find nearby checkboxes (within 3 levels up and down in the DOM)
+  const nearbyCheckboxes = [checkbox];
+  let parent = checkbox.parentElement;
+  let depth = 0;
+  
+  // Look for sibling checkboxes
+  while (parent && depth < 3) {
+    const siblings = Array.from(parent.children).filter(el => 
+      el.tagName === 'INPUT' && el.type === 'checkbox' && 
+      !nearbyCheckboxes.includes(el) && 
+      allCheckboxes.includes(el)
+    );
+    
+    nearbyCheckboxes.push(...siblings);
+    parent = parent.parentElement;
+    depth++;
+  }
+  
+  // If we found multiple checkboxes, use them as a group
+  if (nearbyCheckboxes.length > 1) {
+    nearbyCheckboxes.forEach(cb => virtualContainer.appendChild(cb.cloneNode(true)));
+    return virtualContainer;
+  }
+  
+  return null;
+}
+
+// Find common question text for a group of checkboxes
+function findCommonQuestionText(container, checkboxes) {
+  // Get all text nodes in the container
+  const walker = document.createTreeWalker(
+    container,
+    NodeFilter.SHOW_TEXT,
+    null,
+    false
+  );
+  
+  const textNodes = [];
+  let node;
+  while (node = walker.nextNode()) {
+    const text = node.textContent.trim();
+    if (text && text.length > 10) {
+      textNodes.push({
+        node,
+        text,
+        depth: getNodeDepth(node)
+      });
+    }
+  }
+  
+  // Sort by depth (shallow first)
+  textNodes.sort((a, b) => a.depth - b.depth);
+  
+  // Look for text that appears before all checkboxes
+  const firstCheckbox = checkboxes[0];
+  for (const {node, text} of textNodes) {
+    if (node.compareDocumentPosition(firstCheckbox) & Node.DOCUMENT_POSITION_FOLLOWING) {
+      return text;
+    }
+  }
+  
+  // Fallback: use container text
+  return container.textContent.trim().split('\n')[0] || '';
+}
+
+// Helper to get node depth in the DOM tree
+function getNodeDepth(node) {
+  let depth = 0;
+  while (node.parentNode) {
+    depth++;
+    node = node.parentNode;
+  }
+  return depth;
 }
 
 // Find select dropdowns
