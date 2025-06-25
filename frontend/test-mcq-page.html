@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MCQ Bot Test Page</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2em; }
+    .mcq-block { margin-bottom: 2em; padding: 1em; border: 1px solid #ccc; border-radius: 8px; }
+    .custom-mcq { background: #f9f9f9; }
+  </style>
+</head>
+<body>
+  <h1>MCQ Bot Test Page</h1>
+
+  <!-- Standard radio MCQ -->
+  <div class="mcq-block">
+    <h2>1. What is the capital of France?</h2>
+    <label><input type="radio" name="q1" value="A"> Paris</label><br>
+    <label><input type="radio" name="q1" value="B"> London</label><br>
+    <label><input type="radio" name="q1" value="C"> Rome</label><br>
+    <label><input type="radio" name="q1" value="D"> Berlin</label>
+  </div>
+
+  <!-- Checkbox MCQ with <b> tag for question -->
+  <div class="mcq-block">
+    <b>2. Select all prime numbers:</b><br>
+    <input type="checkbox" id="q2a"><label for="q2a"> 2</label><br>
+    <input type="checkbox" id="q2b"><label for="q2b"> 3</label><br>
+    <input type="checkbox" id="q2c"><label for="q2c"> 4</label><br>
+    <input type="checkbox" id="q2d"><label for="q2d"> 5</label>
+  </div>
+
+  <!-- MCQ with question as text node above options -->
+  <div class="mcq-block">
+    Which planet is known as the Red Planet?
+    <br>
+    <input type="radio" name="q3" value="A"> Mars<br>
+    <input type="radio" name="q3" value="B"> Venus<br>
+    <input type="radio" name="q3" value="C"> Jupiter<br>
+    <input type="radio" name="q3" value="D"> Saturn
+  </div>
+
+  <!-- Custom container MCQ -->
+  <div class="mcq-block custom-mcq" id="custom1">
+    <span class="question">4. Who wrote 'Hamlet'?</span>
+    <div><input type="radio" name="q4" value="A"> William Shakespeare</div>
+    <div><input type="radio" name="q4" value="B"> Charles Dickens</div>
+    <div><input type="radio" name="q4" value="C"> Mark Twain</div>
+    <div><input type="radio" name="q4" value="D"> Jane Austen</div>
+  </div>
+
+  <!-- MCQ with image option -->
+  <div class="mcq-block">
+    <h2>5. Which of these is a cat?</h2>
+    <label><input type="radio" name="q5" value="A"><img src="https://placekitten.com/60/60" alt="Cat"></label>
+    <label><input type="radio" name="q5" value="B"><img src="https://placebear.com/60/60" alt="Bear"></label>
+    <label><input type="radio" name="q5" value="C"><img src="https://placedog.net/60/60" alt="Dog"></label>
+  </div>
+
+</body>
+</html> 

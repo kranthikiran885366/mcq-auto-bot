@@ -17,6 +17,9 @@ import time
 import re
 from typing import List, Dict, Optional
 import logging
+from PIL import Image, ImageFile, UnidentifiedImageError, ImageEnhance, ImageFilter
+import io
+from dotenv import load_dotenv
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -24,6 +27,31 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 CORS(app)
+
+# Load environment variables from .env file
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '.env'))
+
+GOOGLE_APPLICATION_CREDENTIALS = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
+GEMINI_API_URL = os.environ.get('GEMINI_API_URL')
+GPT4V_API_KEY = os.environ.get('GPT4V_API_KEY')
+GPT4V_API_URL = os.environ.get('GPT4V_API_URL')
+
+# Check for required environment variables and log errors
+if not GOOGLE_APPLICATION_CREDENTIALS:
+    logger.error('GOOGLE_APPLICATION_CREDENTIALS not set in .env')
+if not GEMINI_API_KEY:
+    logger.warning('GEMINI_API_KEY not set in .env (Gemini fallback will not work)')
+if not GEMINI_API_URL:
+    logger.warning('GEMINI_API_URL not set in .env (Gemini fallback will not work)')
+if not GPT4V_API_KEY:
+    logger.warning('GPT4V_API_KEY not set in .env (GPT-4 Vision fallback will not work)')
+if not GPT4V_API_URL:
+    logger.warning('GPT4V_API_URL not set in .env (GPT-4 Vision fallback will not work)')
+
+# Suppress unnecessary warnings from libraries
+import warnings
+warnings.filterwarnings('ignore')
 
 class MCQAutomationBot:
     def __init__(self):
@@ -152,27 +180,42 @@ class MCQAutomationBot:
     
     def detect_mcqs_ocr(self, image_data=None):
         """Detect MCQs using OCR"""
-        if image_data:
-            # Decode base64 image
-            image_bytes = base64.b64decode(image_data.split(',')[1])
-            nparr = np.frombuffer(image_bytes, np.uint8)
-            image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        else:
-            # Take screenshot
-            screenshot = self.driver.get_screenshot_as_png()
-            nparr = np.frombuffer(screenshot, np.uint8)
-            image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        
-        # Preprocess image for better OCR
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        gray = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
-        
-        # Extract text using OCR
-        text = pytesseract.image_to_string(gray, config='--psm 6')
-        
-        # Parse MCQs from text
-        mcqs = self.parse_mcqs_from_text(text)
-        return mcqs
+        try:
+            if image_data:
+                # Decode base64 image
+                try:
+                    image_bytes = base64.b64decode(image_data.split(',')[1])
+                    nparr = np.frombuffer(image_bytes, np.uint8)
+                    image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                except Exception as decode_err:
+                    logger.error(f"Error decoding image data: {decode_err}")
+                    raise ValueError("Invalid image data for OCR.")
+            else:
+                # Take screenshot
+                screenshot = self.driver.get_screenshot_as_png()
+                nparr = np.frombuffer(screenshot, np.uint8)
+                image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            # Preprocess image for better OCR
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            gray = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+            # Check Tesseract availability
+            try:
+                _ = pytesseract.get_tesseract_version()
+            except Exception as tesseract_err:
+                logger.error(f"Tesseract not found or not working: {tesseract_err}")
+                raise RuntimeError("Tesseract OCR is not installed or not in PATH.")
+            # Extract text using OCR
+            try:
+                text = pytesseract.image_to_string(gray, config='--psm 6')
+            except Exception as ocr_err:
+                logger.error(f"Error during OCR: {ocr_err}")
+                raise RuntimeError(f"OCR failed: {ocr_err}")
+            # Parse MCQs from text
+            mcqs = self.parse_mcqs_from_text(text)
+            return mcqs
+        except Exception as e:
+            logger.error(f"Error in detect_mcqs_ocr: {e}")
+            raise
     
     def parse_mcqs_from_text(self, text):
         """Parse MCQs from extracted text"""
@@ -425,21 +468,204 @@ def process_mcqs():
 
 @app.route('/api/ocr-detect', methods=['POST'])
 def ocr_detect():
-    """Detect MCQs using OCR"""
+    """Detect MCQs using OCR, robust to any image format, with advanced error handling, preprocessing (including deskewing, inversion, whitelisting), debug logging, and fallback OCR logic including EasyOCR, Google Vision API, and Vision-Language AI (Gemini/GPT-4 Vision)."""
     data = request.json
-    image_data = data.get('image_data')
-    
+    image_data = data.get('image_data') or data.get('image')  # support both keys
+    language = data.get('lang', 'eng')
     try:
-        mcqs = bot.detect_mcqs_ocr(image_data)
-        
-        return jsonify({
-            'success': True,
-            'mcqs': mcqs,
-            'count': len(mcqs)
-        })
-    
+        if not image_data:
+            logger.error('No image data provided in request.')
+            return jsonify({'success': False, 'error': 'No image data provided.'})
+
+        logger.info(f"Received base64 image string (first 100 chars): {image_data[:100]}... (length: {len(image_data)})")
+        image_data = image_data.replace('\n', '').replace('\r', '').replace(' ', '')
+        if ',' in image_data:
+            image_data = image_data.split(',')[1]
+        missing_padding = len(image_data) % 4
+        if missing_padding:
+            image_data += '=' * (4 - missing_padding)
+        try:
+            image_bytes = base64.b64decode(image_data)
+        except Exception as e:
+            logger.error(f"Base64 decode error: {e}")
+            return jsonify({'success': False, 'error': f'Base64 decode error: {e}'})
+        if len(image_bytes) < 100:
+            logger.warning(f"Decoded image bytes length is very small: {len(image_bytes)} bytes. Possible corruption.")
+
+        from PIL import Image, ImageFile, UnidentifiedImageError, ImageEnhance, ImageFilter
+        import io
+        import numpy as np
+        import cv2
+        img_pil = None
+        ImageFile.LOAD_TRUNCATED_IMAGES = True
+        try:
+            img_pil = Image.open(io.BytesIO(image_bytes))
+            img_pil.load()
+            img_pil.save('debug_received_pil.png')
+            logger.info('Image saved as debug_received_pil.png (PIL)')
+        except Exception as pil_e:
+            logger.warning(f'PIL could not open image: {pil_e}. Trying OpenCV fallback...')
+            try:
+                nparr = np.frombuffer(image_bytes, np.uint8)
+                img_cv = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED)
+                if img_cv is not None:
+                    cv2.imwrite('debug_received_cv.png', img_cv)
+                    logger.info('Image saved as debug_received_cv.png (OpenCV)')
+                    if len(img_cv.shape) == 2:
+                        img_pil = Image.fromarray(img_cv)
+                    elif img_cv.shape[2] == 4:
+                        img_pil = Image.fromarray(cv2.cvtColor(img_cv, cv2.COLOR_BGRA2RGBA))
+                    else:
+                        img_pil = Image.fromarray(cv2.cvtColor(img_cv, cv2.COLOR_BGR2RGB))
+                else:
+                    logger.error(f'Could not decode image with PIL or OpenCV. Details: {pil_e}')
+                    return jsonify({'success': False, 'error': f'Could not decode image with PIL or OpenCV. Details: {pil_e}'})
+            except Exception as cv_e:
+                logger.error(f'OpenCV also failed to decode image. Details: {cv_e}')
+                return jsonify({'success': False, 'error': f'Could not decode image with PIL or OpenCV. Details: {cv_e}'})
+
+        # Advanced preprocessing with deskewing and inversion
+        try:
+            img_gray = img_pil.convert('L')
+            img_gray.save('debug_pre_gray.png')
+            enhancer = ImageEnhance.Contrast(img_gray)
+            img_contrast = enhancer.enhance(2.0)
+            img_contrast.save('debug_pre_contrast.png')
+            img_sharp = img_contrast.filter(ImageFilter.SHARPEN)
+            img_sharp.save('debug_pre_sharp.png')
+            img_denoise = img_sharp.filter(ImageFilter.MedianFilter(size=3))
+            img_denoise.save('debug_pre_denoise.png')
+            img_np = np.array(img_denoise)
+            img_bin = cv2.adaptiveThreshold(img_np, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 31, 2)
+            img_bin_pil = Image.fromarray(img_bin)
+            img_bin_pil.save('debug_pre_bin.png')
+            coords = np.column_stack(np.where(img_bin > 0))
+            angle = cv2.minAreaRect(coords)[-1]
+            if angle < -45:
+                angle = -(90 + angle)
+            else:
+                angle = -angle
+            (h, w) = img_bin.shape[:2]
+            M = cv2.getRotationMatrix2D((w // 2, h // 2), angle, 1.0)
+            img_deskew = cv2.warpAffine(img_bin, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
+            img_deskew_pil = Image.fromarray(img_deskew)
+            img_deskew_pil.save('debug_pre_deskew.png')
+            if np.mean(img_deskew) > 127:
+                img_invert = cv2.bitwise_not(img_deskew)
+                img_invert_pil = Image.fromarray(img_invert)
+                img_invert_pil.save('debug_pre_invert.png')
+                img_bin_pil = img_invert_pil
+            else:
+                img_bin_pil = img_deskew_pil
+            if img_bin_pil.width < 800:
+                scale = 800 / img_bin_pil.width
+                new_size = (int(img_bin_pil.width * scale), int(img_bin_pil.height * scale))
+                img_bin_pil = img_bin_pil.resize(new_size, Image.LANCZOS)
+                img_bin_pil.save('debug_pre_resized.png')
+        except Exception as pre_e:
+            logger.warning(f'Advanced preprocessing (deskew/invert) failed: {pre_e}')
+            img_bin_pil = img_pil
+
+        import pytesseract
+        best_text = ''
+        best_len = 0
+        best_psm = None
+        best_oem = None
+        whitelist = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,:;!?()[]{}- \'"\n'
+        psm_modes = [6, 3, 11, 12, 4, 7]
+        oem_modes = [3, 1]
+        for psm in psm_modes:
+            for oem in oem_modes:
+                try:
+                    config = f'--psm {psm} --oem {oem} -c tessedit_char_whitelist="{whitelist}"'
+                    text = pytesseract.image_to_string(img_bin_pil, lang=language, config=config)
+                    logger.info(f'OCR text (psm={psm}, oem={oem}, first 100 chars): {text[:100]}')
+                    if len(text) > best_len:
+                        best_text = text
+                        best_len = len(text)
+                        best_psm = psm
+                        best_oem = oem
+                except Exception as ocr_e:
+                    logger.warning(f'OCR failed for psm={psm}, oem={oem}: {ocr_e}')
+        # Fallback: try OCR on the original preprocessed image
+        if not best_text.strip():
+            logger.warning('All advanced OCR attempts failed. Trying fallback on original preprocessed image...')
+            try:
+                fallback_text = pytesseract.image_to_string(img_bin_pil, lang=language)
+                if fallback_text.strip():
+                    logger.info('Fallback OCR on preprocessed image succeeded.')
+                    return jsonify({'success': True, 'ocrText': fallback_text, 'warning': 'Fallback OCR on preprocessed image used. Check debug images.'})
+            except Exception as fallback_e:
+                logger.error(f'Fallback OCR on preprocessed image also failed: {fallback_e}')
+        # Fallback: try OCR on the original PIL image
+        if not best_text.strip():
+            logger.warning('All advanced and preprocessed OCR attempts failed. Trying fallback on original PIL image...')
+            try:
+                fallback_text2 = pytesseract.image_to_string(img_pil, lang=language)
+                if fallback_text2.strip():
+                    logger.info('Fallback OCR on original PIL image succeeded.')
+                    return jsonify({'success': True, 'ocrText': fallback_text2, 'warning': 'Fallback OCR on original PIL image used. Check debug images.'})
+            except Exception as fallback2_e:
+                logger.error(f'Fallback OCR on original PIL image also failed: {fallback2_e}')
+        # Final fallback: EasyOCR
+        if not best_text.strip():
+            logger.warning('All Tesseract OCR attempts failed. Trying EasyOCR as final fallback...')
+            try:
+                import easyocr
+                reader = easyocr.Reader(['en'], gpu=False)
+                with open('debug_received_pil.png', 'rb') as f:
+                    result = reader.readtext(f.read())
+                easy_text = '\n'.join([item[1] for item in result])
+                if easy_text.strip():
+                    logger.info('EasyOCR fallback succeeded.')
+                    return jsonify({'success': True, 'ocrText': easy_text, 'warning': 'EasyOCR fallback used. Check debug images.'})
+                else:
+                    logger.error('EasyOCR fallback did not extract any text.')
+            except Exception as easy_e:
+                logger.error(f'EasyOCR fallback failed: {easy_e}')
+        # Final fallback: Google Vision API
+        if not best_text.strip():
+            logger.warning('All Tesseract and EasyOCR attempts failed. Trying Google Vision API as final fallback...')
+            try:
+                from google.cloud import vision
+                client = vision.ImageAnnotatorClient()
+                with open('debug_received_pil.png', 'rb') as image_file:
+                    content = image_file.read()
+                image = vision.Image(content=content)
+                response = client.text_detection(image=image)
+                texts = response.text_annotations
+                if texts:
+                    vision_text = texts[0].description
+                    logger.info('Google Vision API fallback succeeded.')
+                    return jsonify({'success': True, 'ocrText': vision_text, 'warning': 'Google Vision API fallback used. Check debug images.'})
+                else:
+                    logger.error('Google Vision API did not extract any text.')
+            except Exception as vision_e:
+                logger.error(f'Google Vision API fallback failed: {vision_e}')
+        # Final fallback: Vision-Language AI (Gemini/GPT-4 Vision)
+        if not best_text.strip():
+            logger.warning('All OCR and Vision API attempts failed. Trying Vision-Language AI (Gemini/GPT-4 Vision) as final fallback...')
+            try:
+                # This is a placeholder for actual Gemini/GPT-4 Vision API integration
+                # You must provide your own API key and endpoint
+                # Example prompt:
+                # "This is an image of a multiple choice question. Please read the question and give the correct option (A, B, C, D):"
+                # Send the image and prompt to the API and parse the response
+                # For now, just log and return a not-implemented message
+                logger.info('Vision-Language AI fallback would be called here (Gemini/GPT-4 Vision).')
+                return jsonify({'success': False, 'error': 'Vision-Language AI fallback (Gemini/GPT-4 Vision) not implemented. Please integrate your API key and endpoint.'})
+            except Exception as vla_e:
+                logger.error(f'Vision-Language AI fallback failed: {vla_e}')
+        if not best_text.strip():
+            logger.error('OCR failed for all PSM/OEM modes, fallbacks, and Vision APIs.')
+            return jsonify({'success': False, 'error': 'OCR failed for all PSM/OEM modes, fallbacks, and Vision APIs.'})
+        if len(best_text.strip()) < 10:
+            logger.warning('OCR result is very short. Check debug images for preprocessing quality.')
+            return jsonify({'success': True, 'ocrText': best_text, 'warning': 'OCR result is very short. Check debug images for preprocessing quality.'})
+        return jsonify({'success': True, 'ocrText': best_text})
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
+        logger.error(f'Unexpected error in /api/ocr-detect: {e}')
+        return jsonify({'success': False, 'error': f'Unexpected error: {e}'})
 
 @app.route('/api/get-answer', methods=['POST'])
 def get_answer():

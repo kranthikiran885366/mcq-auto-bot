@@ -112,6 +112,7 @@ if (typeof chrome !== "undefined" && chrome.runtime) {
       botEnabled = true
       mode = message.mode || "learning"
       initBot()
+      injectOCRStyle();
       sendResponse({ success: true })
     }
 
@@ -156,9 +157,10 @@ if (typeof chrome !== "undefined" && chrome.runtime) {
     }
 
     if (message.action === "captureScreen") {
-      captureScreen()
+      console.log("[Content] captureScreen requested");
+      throttledCaptureScreen()
         .then((imageData) => {
-          // Perform OCR on the captured screen
+          console.log("[Content] captureScreen success, sending to OCR");
           chrome.runtime.sendMessage(
             {
               action: "performOCR",
@@ -166,6 +168,7 @@ if (typeof chrome !== "undefined" && chrome.runtime) {
               language: ocrLanguage,
             },
             (response) => {
+              console.log("[Content] OCR response:", response);
               if (response && response.success) {
                 sendResponse({
                   success: true,
@@ -181,6 +184,7 @@ if (typeof chrome !== "undefined" && chrome.runtime) {
           )
         })
         .catch((error) => {
+          console.log("[Content] captureScreen error:", error);
           sendResponse({
             success: false,
             error: error.message,
@@ -188,6 +192,56 @@ if (typeof chrome !== "undefined" && chrome.runtime) {
         })
 
       return true // Indicates async response
+    }
+
+    if (message.action === "performOCR") {
+      (async () => {
+        try {
+          console.log("[Content] Received performOCR:", message);
+          const { imageData, language } = message;
+          try {
+            const result = await runOCRWithTesseract(imageData, language || ocrLanguage, true);
+            console.log("[Content] Tesseract.js OCR result:", result);
+            if (result && result.success) {
+              const mcqs = parseMCQsFromOCRText(result.text);
+              console.log("[Content] Parsed MCQs from OCR text:", mcqs);
+              sendResponse({ success: true, text: result.text, confidence: result.confidence, mcqs });
+              return;
+            } else {
+              throw new Error(result && result.error ? result.error : "Tesseract.js OCR failed");
+            }
+          } catch (err) {
+            console.warn("[Content] Tesseract.js OCR failed, falling back to backend OCR:", err);
+            // Fallback: Use backend OCR API
+            try {
+              const response = await fetch('http://localhost:5000/api/ocr-detect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image_data: imageData, language: language || ocrLanguage })
+              });
+              const data = await response.json();
+              console.log('[Content] Backend OCR response:', data);
+              if (data.success) {
+                sendResponse({ success: true, text: data.text || '', mcqs: data.mcqs || [] });
+              } else {
+                sendResponse({ success: false, error: data.error || 'Backend OCR failed.' });
+              }
+            } catch (serverErr) {
+              console.error('[Content] Backend OCR error:', serverErr);
+              sendResponse({ success: false, error: serverErr.message || String(serverErr) });
+            }
+          }
+        } catch (err) {
+          console.error('[Content] Error in performOCR handler:', err);
+          sendResponse({ success: false, error: err.message || String(err) });
+        }
+      })();
+      return true; // async
+    }
+
+    if (message.action === "getLastCaptureDataUrl") {
+      sendResponse({ dataUrl: lastCaptureDataUrl });
+      return true;
     }
 
     return true
@@ -369,11 +423,16 @@ function scanAndAnswerMCQs() {
       stats: stats,
     })
 
+    // Throttle: Use 2 seconds per MCQ to avoid captureVisibleTab quota
     mcqs.forEach((mcq, index) => {
-      // Add a delay to make it look more natural
-      setTimeout(() => {
-        processMCQ(mcq)
-      }, index * 1000) // Process one MCQ per second
+      setTimeout(async () => {
+        try {
+          await processMCQ(mcq)
+        } catch (error) {
+          console.error("Error processing MCQ (caught):", error)
+          chrome.runtime.sendMessage({ action: "aiError", error: error.message || String(error) })
+        }
+      }, index * 2000) // 2 seconds per MCQ
     })
   }
 }
@@ -1121,8 +1180,8 @@ function findCustomMCQs() {
       for (let i = 0; i < 5 && node; i++) {
         if (node.nodeType === Node.ELEMENT_NODE && (node.tagName === 'B' || node.tagName === 'SPAN')) {
           questionText = node.textContent.trim()
-          break
-        }
+            break
+          }
         if (node.nodeType === Node.TEXT_NODE && node.textContent.trim().length > 5) {
           questionText = node.textContent.trim()
           break
@@ -1133,7 +1192,7 @@ function findCustomMCQs() {
     if (!questionText) questionText = container.textContent.trim().split('\n')[0]
     const options = Array.from(container.querySelectorAll('input[type="radio"], input[type="checkbox"]')).map(input => {
       return { element: input, text: extractOptionText(input) }
-    })
+            })
     if (questionText && options.some(opt => opt.text)) {
       mcqs.push({
         type: options[0]?.element.type || 'unknown',
@@ -1146,143 +1205,142 @@ function findCustomMCQs() {
   return mcqs
 }
 
-// Helper to run OCR in the content script if Tesseract is available
-async function runOCRWithTesseract(imageData, language = "eng", detectBounds = true) {
-  if (!window.Tesseract) {
-    throw new Error("Tesseract.js is not loaded in content script.");
-  }
-  const worker = await window.Tesseract.createWorker();
-  await worker.loadLanguage(language);
-  await worker.initialize(language);
-  const { data } = await worker.recognize(imageData);
-  const result = {
-    success: true,
-    text: data.text,
-    confidence: data.confidence,
-  };
-  if (detectBounds) {
-    const { data: boxData } = await worker.recognize(imageData, {
-      rectangle: { top: 0, left: 0, width: 0, height: 0 },
-    });
-    result.words = boxData.words;
-    result.lines = boxData.lines;
-    result.paragraphs = boxData.paragraphs;
-  }
-  await worker.terminate();
-  return result;
+// --- Global throttling for screen capture ---
+let lastCaptureTime = 0;
+const MIN_CAPTURE_INTERVAL = 1200; // 1.2 seconds
+async function throttledCaptureScreen() {
+  return new Promise((resolve, reject) => {
+    const now = Date.now();
+    const timeSinceLast = now - lastCaptureTime;
+    const doCapture = () => {
+      lastCaptureTime = Date.now();
+      captureScreen().then((dataUrl) => {
+        lastCaptureDataUrl = dataUrl;
+        resolve(dataUrl);
+      }).catch(reject);
+    };
+    if (timeSinceLast >= MIN_CAPTURE_INTERVAL) {
+      doCapture();
+    } else {
+      setTimeout(doCapture, MIN_CAPTURE_INTERVAL - timeSinceLast);
+    }
+  });
 }
 
-// Update findMCQsWithOCR to use runOCRWithTesseract if available, fallback to background
+// --- TESSERACT.JS INJECTION UTILITY ---
+async function ensureTesseractLoaded() {
+  if (window.Tesseract) return true;
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = chrome.runtime.getURL('tesseract.min.js');
+    script.onload = () => {
+      if (window.Tesseract) resolve(true);
+      else {
+        console.error('[MCQ-BOT] Tesseract.js failed to load after script injection.');
+        chrome.runtime.sendMessage({ action: 'ocrError', error: 'Tesseract.js failed to load.' });
+        reject(new Error('Tesseract.js failed to load'));
+      }
+    };
+    script.onerror = () => {
+      console.error('[MCQ-BOT] Failed to inject Tesseract.js script.');
+      chrome.runtime.sendMessage({ action: 'ocrError', error: 'Failed to inject Tesseract.js script.' });
+      reject(new Error('Failed to load Tesseract.js'));
+    };
+    document.head.appendChild(script);
+  });
+}
+
+// Enhanced runOCRWithTesseract with better error handling
+async function runOCRWithTesseract(imageData, language = "eng", detectBounds = true) {
+  await ensureTesseractLoaded();
+  if (!window.Tesseract) {
+    chrome.runtime.sendMessage({ action: 'ocrError', error: 'Tesseract.js is not loaded in content script.' });
+    throw new Error("Tesseract.js is not loaded in content script.");
+  }
+  if (!imageData || typeof imageData !== 'string' || !imageData.startsWith('data:image')) {
+    chrome.runtime.sendMessage({ action: 'ocrError', error: 'Invalid image data for OCR.' });
+    throw new Error('Invalid image data for OCR.');
+  }
+  let worker;
+  try {
+    worker = await window.Tesseract.createWorker();
+    await worker.loadLanguage(language);
+    await worker.initialize(language);
+    const { data } = await worker.recognize(imageData);
+    const result = {
+      success: true,
+      text: data.text,
+      confidence: data.confidence,
+    };
+    if (detectBounds) {
+      const { data: boxData } = await worker.recognize(imageData, {
+        rectangle: { top: 0, left: 0, width: 0, height: 0 },
+      });
+      result.words = boxData.words;
+      result.lines = boxData.lines;
+      result.paragraphs = boxData.paragraphs;
+    }
+    await worker.terminate();
+    return result;
+  } catch (err) {
+    if (worker) await worker.terminate();
+    chrome.runtime.sendMessage({ action: 'ocrError', error: '[MCQ-BOT] Tesseract.js error: ' + err.message });
+    throw err;
+  }
+}
+
+// Enhanced findMCQsWithOCR with more robust fallback and error logging
 async function findMCQsWithOCR() {
   if (!ocrEnabled) return [];
   const mcqs = [];
   try {
     const imageData = await captureScreen();
+    chrome.runtime.sendMessage({ action: "ocrError", error: "[MCQ-BOT] Image data captured." });
     let result = null;
-    if (window.Tesseract) {
-      try {
+    try {
+      await ensureTesseractLoaded();
+      if (window.Tesseract) {
         result = await runOCRWithTesseract(imageData, ocrLanguage, true);
-      } catch (e) {
-        console.warn("Tesseract OCR in content script failed, falling back to background:", e);
+        chrome.runtime.sendMessage({ action: "ocrError", error: `[MCQ-BOT] Tesseract.js result: ${result && result.success ? 'Success' : 'Error'}${result && result.error ? ' - ' + result.error : ''}` });
       }
-    }
-    if (!result) {
-      // Fallback: send to background for OCR (legacy)
-      if (typeof chrome !== "undefined" && chrome.runtime) {
-        result = await new Promise((resolve) => {
-          chrome.runtime.sendMessage(
-            {
-              action: "performOCR",
-              imageData: imageData,
-              language: ocrLanguage,
-              detectBounds: true,
-            },
-            resolve,
-          );
+    } catch (e) {
+      chrome.runtime.sendMessage({ action: "ocrError", error: `[MCQ-BOT] Tesseract.js error: ${e.message}` });
+      try {
+        const response = await fetch('http://localhost:8000/api/ocr-detect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image_data: imageData })
         });
-      } else {
-        console.warn("Chrome runtime API not available. OCR will not be performed.");
+        const data = await response.json();
+        chrome.runtime.sendMessage({ action: "ocrError", error: `[MCQ-BOT] Backend OCR result: ${data && data.success ? 'Success' : 'Error'}${data && data.error ? ' - ' + data.error : ''}` });
+        if (data.success && data.mcqs) return data.mcqs;
+        chrome.runtime.sendMessage({ action: "ocrError", error: data.error || "Server OCR failed." });
+        return [];
+      } catch (serverErr) {
+        chrome.runtime.sendMessage({ action: "ocrError", error: `[MCQ-BOT] Backend unreachable or error: ${serverErr.message}` });
         return [];
       }
     }
-    if (!result.success) {
-      console.error("OCR failed:", result.error);
+    if (!result || !result.success) {
+      chrome.runtime.sendMessage({ action: "ocrError", error: result && result.error ? result.error : "OCR failed." });
       return [];
     }
     // ... (rest of your MCQ extraction logic from OCR text)
     const lines = result.text.split("\n").filter((line) => line.trim());
-    // Look for question patterns
-    for (let i = 0; i < lines.length; i++) {
+      // Look for question patterns
+      for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
-      if (line.endsWith("?") || /what|which|when|where|why|how/i.test(line)) {
+        if (line.endsWith("?") || /what|which|when|where|why|how/i.test(line)) {
         const questionText = line;
         const options = [];
-        for (let j = i + 1; j < Math.min(i + 10, lines.length); j++) {
-          const optionLine = lines[j].trim();
-          if (/^[A-Za-z0-9][.)]\s+/.test(optionLine)) {
-            const optionElement = findElementByText(optionLine);
-            options.push({
-              element: optionElement,
-              text: optionLine,
-            });
-          }
-        }
-        if (options.length >= 2) {
-          mcqs.push({
-            type: "ocr",
-            question: questionText,
-            options: options,
-            answered: false,
-          });
-          i += options.length;
-        }
-      }
-    }
-    // ... (rest of your MCQ extraction logic from OCR bounding boxes, if needed)
-    if (result.words && result.words.length > 0) {
-      // Group words by line
-      const lines = [];
-      let currentLine = [];
-      let lastTop = -1;
-      result.words.forEach((word) => {
-        if (lastTop === -1 || Math.abs(word.bbox.y0 - lastTop) < 10) {
-          currentLine.push(word)
-        } else {
-          if (currentLine.length > 0) {
-            lines.push(currentLine)
-          }
-          currentLine = [word]
-        }
-        lastTop = word.bbox.y0
-      })
-      if (currentLine.length > 0) {
-        lines.push(currentLine)
-      }
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i]
-        const lineText = line.map((word) => word.text).join(" ").trim()
-        if (lineText.endsWith("?") || /what|which|when|where|why|how/i.test(lineText)) {
-          const questionText = lineText
-          const options = []
           for (let j = i + 1; j < Math.min(i + 10, lines.length); j++) {
-            const optionLine = lines[j]
-            const optionText = optionLine.map((word) => word.text).join(" ").trim()
-            if (/^[A-Za-z0-9][.)]\s+/.test(optionText)) {
-              const firstWord = optionLine[0]
-              const lastWord = optionLine[optionLine.length - 1]
-              const centerX = (firstWord.bbox.x0 + lastWord.bbox.x1) / 2
-              const centerY = (firstWord.bbox.y0 + lastWord.bbox.y1) / 2
-              const element = document.elementFromPoint(centerX, centerY)
+          const optionLine = lines[j].trim();
+            if (/^[A-Za-z0-9][.)]\s+/.test(optionLine)) {
+            const optionElement = findElementByText(optionLine);
               options.push({
-                element: element,
-                text: optionText,
-                bbox: {
-                  x0: firstWord.bbox.x0,
-                  y0: firstWord.bbox.y0,
-                  x1: lastWord.bbox.x1,
-                  y1: lastWord.bbox.y1,
-                },
-              })
+                element: optionElement,
+                text: optionLine,
+            });
             }
           }
           if (options.length >= 2) {
@@ -1290,17 +1348,75 @@ async function findMCQsWithOCR() {
               type: "ocr",
               question: questionText,
               options: options,
-              answered: false,
-            })
-            i += options.length
+            answered: false,
+          });
+          i += options.length;
           }
         }
       }
+    // ... (rest of your MCQ extraction logic from OCR bounding boxes, if needed)
+      if (result.words && result.words.length > 0) {
+        // Group words by line
+      const lines = [];
+      let currentLine = [];
+      let lastTop = -1;
+        result.words.forEach((word) => {
+          if (lastTop === -1 || Math.abs(word.bbox.y0 - lastTop) < 10) {
+            currentLine.push(word)
+          } else {
+            if (currentLine.length > 0) {
+              lines.push(currentLine)
+            }
+            currentLine = [word]
+          }
+          lastTop = word.bbox.y0
+        })
+        if (currentLine.length > 0) {
+          lines.push(currentLine)
+        }
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i]
+        const lineText = line.map((word) => word.text).join(" ").trim()
+          if (lineText.endsWith("?") || /what|which|when|where|why|how/i.test(lineText)) {
+            const questionText = lineText
+            const options = []
+            for (let j = i + 1; j < Math.min(i + 10, lines.length); j++) {
+              const optionLine = lines[j]
+            const optionText = optionLine.map((word) => word.text).join(" ").trim()
+              if (/^[A-Za-z0-9][.)]\s+/.test(optionText)) {
+                const firstWord = optionLine[0]
+                const lastWord = optionLine[optionLine.length - 1]
+                const centerX = (firstWord.bbox.x0 + lastWord.bbox.x1) / 2
+                const centerY = (firstWord.bbox.y0 + lastWord.bbox.y1) / 2
+                const element = document.elementFromPoint(centerX, centerY)
+                options.push({
+                  element: element,
+                  text: optionText,
+                  bbox: {
+                    x0: firstWord.bbox.x0,
+                    y0: firstWord.bbox.y0,
+                    x1: lastWord.bbox.x1,
+                    y1: lastWord.bbox.y1,
+                  },
+                })
+              }
+            }
+            if (options.length >= 2) {
+              mcqs.push({
+                type: "ocr",
+                question: questionText,
+                options: options,
+                answered: false,
+              })
+              i += options.length
+            }
+          }
+        }
     }
   } catch (error) {
-    console.error("Error in OCR MCQ detection:", error)
+    chrome.runtime.sendMessage({ action: "ocrError", error: error.message || "Error in OCR MCQ detection." });
   }
-  return mcqs
+  return mcqs;
 }
 
 // Find image-based MCQs
@@ -1730,47 +1846,28 @@ function findElementByText(text) {
   return elements[0] || null
 }
 
-// Capture the screen as a data URL
+// Robust screen capture function
 async function captureScreen() {
   return new Promise((resolve, reject) => {
     if (window.location.protocol === 'file:') {
       const msg = 'Screen capture will fail on file:// URLs. Please use http://localhost/ or a real server.';
-      console.error(msg);
+      sendPopupMessage({ action: "ocrError", error: msg });
       reject(new Error(msg));
       return;
     }
-    if (typeof chrome === "undefined" || !chrome.runtime) {
-      console.error("Chrome runtime API not available");
-      reject(new Error("Chrome runtime API not available"));
-      return;
-    }
-    console.log("Initiating screen capture...");
-    chrome.runtime.sendMessage({ 
-      action: "captureTabScreenshot",
-      timestamp: Date.now() // Add timestamp to prevent caching
-    }, (response) => {
+    chrome.runtime.sendMessage({ action: "captureTabScreenshot", timestamp: Date.now() }, (response) => {
       if (chrome.runtime.lastError) {
-        console.error("Runtime error during capture:", chrome.runtime.lastError);
-        if (chrome.runtime.lastError.message.includes('not allowed')) {
-          console.error('Screen capture failed: Make sure the tab is focused and you are not on a restricted page.');
-        }
-        reject(new Error(chrome.runtime.lastError.message));
+        const msg = "Screen capture failed: " + chrome.runtime.lastError.message;
+        sendPopupMessage({ action: "ocrError", error: msg });
+        reject(new Error(msg));
         return;
       }
-      if (!response) {
-        console.error("No response received from capture request");
-        reject(new Error("No response from capture request"));
+      if (!response || !response.success || !response.dataUrl) {
+        const msg = "Capture failed: " + (response && response.error ? response.error : "No image data received from capture");
+        sendPopupMessage({ action: "ocrError", error: msg });
+        reject(new Error(msg));
         return;
       }
-      if (!response.success) {
-        console.error("Capture failed:", response.error);
-        if (response.error && response.error.includes('permission')) {
-          console.error('Screen capture failed: Check extension permissions and tab focus.');
-        }
-        reject(new Error(response.error || "Screen capture failed"));
-        return;
-      }
-      console.log("Screen capture successful");
       resolve(response.dataUrl);
     });
   });
@@ -1823,11 +1920,19 @@ async function processMCQ(mcq) {
     }
   }
 
-  // Send to AI for prediction
-  const prediction = await predictAnswer(mcq.question, optionsText, imageData)
+  // Send to AI for prediction (with error handling)
+  let prediction = null
+  try {
+    prediction = await predictAnswer(mcq.question, optionsText, imageData)
+  } catch (error) {
+    console.error("Failed to predict answer (caught):", error)
+    chrome.runtime.sendMessage({ action: "aiError", error: error.message || String(error) })
+    return
+  }
 
   if (!prediction.success) {
     console.error("Failed to predict answer:", prediction.error)
+    chrome.runtime.sendMessage({ action: "aiError", error: prediction.error || "Unknown error" })
     return
   }
 
@@ -1895,18 +2000,39 @@ async function predictAnswer(question, options, imageData = null) {
         options: options,
         imageData: imageData,
       }, (result) => {
+        try {
         if (chrome.runtime && chrome.runtime.lastError) {
+            if (typeof chrome !== "undefined" && chrome.runtime) {
+              chrome.runtime.sendMessage({
+                action: "aiError",
+                error: chrome.runtime.lastError.message
+              });
+            }
           reject(new Error(chrome.runtime.lastError.message))
           return
         }
         if (!result || !result.success) {
+            if (typeof chrome !== "undefined" && chrome.runtime) {
+              chrome.runtime.sendMessage({
+                action: "aiError",
+                error: result ? result.error : "Unknown error"
+              });
+            }
           reject(new Error(result ? result.error : "Unknown error"))
         } else {
           resolve(result)
+          }
+        } catch (err) {
+          reject(err)
         }
       })
     } else {
-      console.warn("Chrome runtime API not available. Answer prediction will not be performed.")
+      if (typeof chrome !== "undefined" && chrome.runtime) {
+        chrome.runtime.sendMessage({
+          action: "aiError",
+          error: "Chrome runtime API not available."
+        });
+      }
       resolve({ success: false, error: "Chrome runtime API not available." })
     }
   })
@@ -2334,3 +2460,127 @@ function findLooseCheckboxGroups() {
   }
   return mcqs;
 }
+
+// Utility to convert data URL to HTMLImageElement
+function dataUrlToImage(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const img = new window.Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
+}
+
+// Utility to check if popup is open (by sending a ping and expecting a response)
+async function isPopupOpen() {
+  return new Promise((resolve) => {
+    chrome.runtime.sendMessage({ action: "ping" }, (response) => {
+      resolve(response && response.pong === true);
+    });
+  });
+}
+
+// When sending updateStats, updateLastMCQ, aiError, ocrError, first check if popup is open
+async function sendPopupMessage(message) {
+  if (await isPopupOpen()) {
+    chrome.runtime.sendMessage(message);
+  }
+}
+
+// Store the last captured image dataUrl for debugging
+let lastCaptureDataUrl = null;
+
+// --- Parse MCQs from OCR text ---
+function parseMCQsFromOCRText(text) {
+  const mcqs = [];
+  if (!text || typeof text !== 'string') return mcqs;
+  const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
+  let currentQuestion = '';
+  let currentOptions = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    // Simple heuristic: question ends with ? or is long and contains what/which/who/when/where/why/how
+    if (line.endsWith('?') || (/\b(what|which|who|when|where|why|how)\b/i.test(line) && line.length > 10)) {
+      // Save previous MCQ if valid
+      if (currentQuestion && currentOptions.length >= 2) {
+        mcqs.push({ question: currentQuestion, options: [...currentOptions] });
+      }
+      currentQuestion = line;
+      currentOptions = [];
+    } else if (/^[A-D1-9][.)\-\s]+/.test(line) || (line.length > 0 && line.length < 50)) {
+      // Option: starts with A. B. 1. 2. etc. or is a short line
+      currentOptions.push(line.replace(/^[A-D1-9][.)\-\s]+/, '').trim());
+    }
+  }
+  // Save last MCQ
+  if (currentQuestion && currentOptions.length >= 2) {
+    mcqs.push({ question: currentQuestion, options: [...currentOptions] });
+  }
+  return mcqs;
+}
+
+// --- Inject high-contrast, large-font style for better OCR accuracy ---
+let ocrStyleInjected = false;
+function injectOCRStyle() {
+  if (ocrStyleInjected) return;
+  const style = document.createElement('style');
+  style.id = 'mcq-ocr-style';
+  style.textContent = `
+    body, .question, .mcq, .quiz-question, label, li, p, h1, h2, h3, h4, h5, h6 {
+      font-size: 22px !important;
+      color: #000 !important;
+      background: #fff !important;
+      text-shadow: none !important;
+      filter: none !important;
+      opacity: 1 !important;
+    }
+    * {
+      text-shadow: none !important;
+      filter: none !important;
+      opacity: 1 !important;
+    }
+  `;
+  document.head.appendChild(style);
+  ocrStyleInjected = true;
+  console.log('[MCQ-BOT] OCR style injected for better Tesseract accuracy.');
+}
+
+// Heuristic: Find MCQ block (radio/checkbox group with question text)
+function findMCQBlock() {
+  const candidates = Array.from(document.querySelectorAll('form, div, section, article'));
+  for (const el of candidates) {
+    const radios = el.querySelectorAll('input[type="radio"], input[type="checkbox"]');
+    if (radios.length >= 2) {
+      // Optionally, check for question text pattern
+      return el;
+    }
+  }
+  return null;
+}
+
+function getMCQRect(el) {
+  const rect = el.getBoundingClientRect();
+  return {
+    x: Math.round(rect.left + window.scrollX),
+    y: Math.round(rect.top + window.scrollY),
+    width: Math.round(rect.width),
+    height: Math.round(rect.height)
+  };
+}
+
+// Listen for background trigger
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.type === "autoDetectMCQ") {
+    const mcqEl = findMCQBlock();
+    if (mcqEl) {
+      mcqEl.scrollIntoView({behavior: "smooth", block: "center"});
+      setTimeout(() => {
+        const rect = getMCQRect(mcqEl);
+        sendResponse({success: true, rect});
+      }, 500); // Wait for scroll
+      return true; // async response
+    } else {
+      sendResponse({success: false, error: "No MCQ block found"});
+    }
+  }
+});

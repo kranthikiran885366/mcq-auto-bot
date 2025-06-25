@@ -13,18 +13,6 @@ let deepseekKey = ""
 let deepseekModel = "deepseek-chat"
 let promptTemplate = ""
 
-// Dynamically import Tesseract.js for OCR in MV3 service worker using ESM CDN
-let Tesseract = null;
-(async () => {
-  try {
-    const tesseractModule = await import('https://cdn.skypack.dev/tesseract.js@2.1.5');
-    Tesseract = tesseractModule.default || tesseractModule.Tesseract || tesseractModule;
-    console.log('Tesseract loaded in background service worker from CDN.');
-  } catch (e) {
-    console.error('Failed to load Tesseract.js from CDN:', e);
-  }
-})();
-
 // Initialize settings
 chrome.runtime.onInstalled.addListener(() => {
   chrome.storage.sync.get(
@@ -53,87 +41,108 @@ chrome.runtime.onInstalled.addListener(() => {
 
 // Listen for messages from popup and content scripts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === "testConnection") {
-    console.log("Test connection received");
-    sendResponse({ success: true, message: "Extension is working!" });
-    return true;
-  }
-
-  if (message.action === "testApiConnection") {
-    testApiConnection(message.provider, message.apiKey, message.model)
-      .then((result) => sendResponse(result))
-      .catch((error) => sendResponse({ success: false, error: error.message }))
-    return true // Indicates async response
-  }
-
-  if (message.action === "predictAnswer") {
-    predictAnswer(message.question, message.options, message.imageData)
-      .then((result) => sendResponse(result))
-      .catch((error) => sendResponse({ success: false, error: error.message }))
-    return true // Indicates async response
-  }
-
-  if (message.action === "performOCR") {
-    performOCR(message.imageData, message.language, message.detectBounds)
-      .then((result) => sendResponse(result))
-      .catch((error) => sendResponse({ success: false, error: error.message }))
-    return true // Indicates async response
-  }
-
-  if (message.action === "detectMathEquation") {
-    detectMathEquation(message.imageData)
-      .then((result) => sendResponse(result))
-      .catch((error) => sendResponse({ success: false, error: error.message }))
-    return true // Indicates async response
-  }
-
   if (message.action === "captureTabScreenshot") {
     try {
       chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+        console.log("[captureTabScreenshot] Queried tabs:", tabs);
+        console.log("[captureTabScreenshot] Sender:", sender);
+        console.log("[captureTabScreenshot] Message:", message);
         if (!tabs || !tabs[0]) {
-          console.error("No active tab found");
+          console.error("[captureTabScreenshot] No active tab found. Tabs:", tabs);
           sendResponse({ success: false, error: "No active tab found" });
           return;
         }
-        
         chrome.tabs.captureVisibleTab(
           tabs[0].windowId,
           { format: "png" },
           function(dataUrl) {
             if (chrome.runtime.lastError) {
-              console.error("Capture failed:", chrome.runtime.lastError);
-              sendResponse({ 
-                success: false, 
-                error: chrome.runtime.lastError.message || "Screen capture failed"
-              });
+              console.error("[captureTabScreenshot] captureVisibleTab error:", chrome.runtime.lastError.message, "Tabs:", tabs, "Sender:", sender, "Message:", message);
+              sendResponse({ success: false, error: chrome.runtime.lastError.message });
               return;
             }
             if (!dataUrl) {
-              console.error("No data URL returned from capture");
-              sendResponse({ 
-                success: false, 
-                error: "No image data received from capture" 
-              });
+              console.error("[captureTabScreenshot] No image data received from capture. Tabs:", tabs, "Sender:", sender, "Message:", message);
+              sendResponse({ success: false, error: "No image data received from capture" });
               return;
             }
-            console.log("Screen capture successful");
+            console.log("[captureTabScreenshot] Capture successful. DataUrl length:", dataUrl.length);
             sendResponse({ success: true, dataUrl: dataUrl });
           }
         );
       });
-      return true; // Indicates async response
+      return true; // async
     } catch (error) {
-      console.error("Screen capture error:", error);
+      console.error("[captureTabScreenshot] Exception:", error, "Sender:", sender, "Message:", message);
       sendResponse({ success: false, error: error.message });
       return true;
     }
   }
 
-  // Default handler for unhandled actions
-  if (!['testConnection', 'testApiConnection', 'predictAnswer', 'performOCR', 'detectMathEquation'].includes(message.action)) {
-    console.warn('No handler for action:', message.action);
-    sendResponse({ success: false, error: 'No handler for action: ' + message.action });
+  // --- Robust handler for 'performOCR' ---
+  if (message.action === "performOCR") {
+    (async () => {
+      try {
+        console.log("[BG] Received performOCR:", message);
+        const { imageData, language } = message;
+        if (!imageData || typeof imageData !== 'string' || !imageData.startsWith('data:image')) {
+          sendResponse({ success: false, error: 'Invalid image data for OCR.' });
+          return;
+        }
+        // Fallback: Use backend OCR API
+        try {
+          const response = await fetch('http://localhost:5000/api/ocr-detect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image_data: imageData, language: language || 'eng' })
+          });
+          const data = await response.json();
+          console.log('[BG] Backend OCR response:', data);
+          if (data.success) {
+            sendResponse({ success: true, text: data.text || '', mcqs: data.mcqs || [] });
+          } else {
+            sendResponse({ success: false, error: data.error || 'Backend OCR failed.' });
+          }
+        } catch (err) {
+          console.error('[BG] Backend OCR error:', err);
+          sendResponse({ success: false, error: err.message || String(err) });
+        }
+      } catch (err) {
+        console.error('[BG] Error in performOCR handler:', err);
+        sendResponse({ success: false, error: err.message || String(err) });
+      }
+    })();
+    return true; // async
   }
+
+  // --- Robust handler for 'predictAnswer' ---
+  if (message.action === "predictAnswer") {
+    (async () => {
+      try {
+        console.log("[BG] Received predictAnswer:", message);
+        const { question, options, imageData } = message;
+        let result = { success: false, error: "No AI provider configured" };
+        if (!question || !options || !Array.isArray(options) || options.length === 0) {
+          result = { success: false, error: "Missing question or options" };
+        } else {
+          // Use the main predictAnswer function (already defined in this file)
+          result = await predictAnswer(question, options, imageData);
+        }
+        if (!result || typeof result !== "object") {
+          sendResponse({ success: false, error: "AI returned no result" });
+        } else {
+          sendResponse(result);
+        }
+      } catch (err) {
+        console.error("[BG] Error in predictAnswer handler:", err);
+        sendResponse({ success: false, error: err.message || String(err) });
+      }
+    })();
+    return true; // async
+  }
+
+  // Always respond for unhandled actions to close the port
+  sendResponse({});
 })
 
 // Listen for storage changes
@@ -593,38 +602,6 @@ Instructions:
   }
 }
 
-// Perform OCR on image
-async function performOCR(imageData, language = "eng", detectBounds = true) {
-  try {
-    if (!Tesseract) throw new Error('Tesseract.js is not loaded.');
-    const worker = await Tesseract.createWorker({
-      logger: (m) => console.log(m),
-    });
-    await worker.loadLanguage(language);
-    await worker.initialize(language);
-    // Basic text recognition
-    const { data } = await worker.recognize(imageData);
-    const result = {
-      success: true,
-      text: data.text,
-      confidence: data.confidence,
-    };
-    // Get detailed data with bounding boxes if requested
-    if (detectBounds) {
-      const { data: boxData } = await worker.recognize(imageData, {
-        rectangle: { top: 0, left: 0, width: 0, height: 0 },
-      });
-      result.words = boxData.words;
-      result.lines = boxData.lines;
-      result.paragraphs = boxData.paragraphs;
-    }
-    await worker.terminate();
-    return result;
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-}
-
 // Detect math equations in image
 async function detectMathEquation(imageData) {
   try {
@@ -754,5 +731,47 @@ async function detectMathEquation(imageData) {
     return { success: false, error: error.message }
   }
 }
+
+// All Tesseract.js dynamic imports and performOCR handler have been removed. OCR is now only handled in the content script or via backend server fallback.
+
+// Helper: Crop image using canvas
+function cropImage(base64, rect, callback) {
+  const img = new Image();
+  img.onload = function() {
+    const canvas = new OffscreenCanvas(rect.width, rect.height);
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, rect.x, rect.y, rect.width, rect.height, 0, 0, rect.width, rect.height);
+    canvas.convertToBlob().then(blob => {
+      const reader = new FileReader();
+      reader.onloadend = () => callback(reader.result);
+      reader.readAsDataURL(blob);
+    });
+  };
+  img.src = base64;
+}
+
+// Listen for popup trigger
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg.type === "startAutoMCQ") {
+    // 1. Ask content script for MCQ rect
+    chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+      chrome.tabs.sendMessage(tabs[0].id, {type: "autoDetectMCQ"}, (resp) => {
+        if (!resp || !resp.success) {
+          sendResponse({success: false, error: resp ? resp.error : "No response"});
+          return;
+        }
+        // 2. Capture visible tab
+        chrome.tabs.captureVisibleTab(null, {format: "png"}, (dataUrl) => {
+          // 3. Crop to rect
+          cropImage(dataUrl, resp.rect, (croppedBase64) => {
+            // 4. Send cropped image to popup for OCR
+            sendResponse({success: true, image: croppedBase64, rect: resp.rect});
+          });
+        });
+      });
+    });
+    return true; // async
+  }
+});
 
 

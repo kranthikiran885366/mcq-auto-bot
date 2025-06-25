@@ -243,6 +243,7 @@
       <div id="statusDot" class="status-dot inactive"></div>
       <div id="statusText" class="status-text">Bot is inactive</div>
     </div>
+    <div id="errorMessage" style="display:none; color:#F44336; background:#fff3f3; border:1px solid #F44336; border-radius:4px; padding:8px; margin-bottom:10px; font-size:13px;"></div>
     
     <div class="toggle-container">
       <span class="toggle-label">Enable Bot</span>
@@ -314,6 +315,18 @@
   
   <a href="options.html" class="settings-link">Settings & API Configuration</a>
   
+  <button id="start-auto">Auto Detect & OCR</button>
+  <select id="lang-select">
+    <option value="eng">English</option>
+    <option value="hin">Hindi</option>
+    <!-- Add more as needed -->
+  </select>
+  <button id="re-ocr">Re-OCR</button>
+  <div id="status"></div>
+  <img id="preview" style="max-width:100%;max-height:200px;"/>
+  <pre id="ocr-result"></pre>
+  
+  <script src="tesseract.min.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

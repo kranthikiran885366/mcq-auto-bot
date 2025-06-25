@@ -13,8 +13,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const mcqsAnsweredEl = document.getElementById("mcqsAnswered")
   const accuracyEl = document.getElementById("accuracy")
   const themeToggle = document.getElementById("themeToggle")
+  const errorMessage = document.getElementById("errorMessage")
+  const startAuto = document.getElementById("start-auto")
+  const reOCR = document.getElementById("re-ocr")
+  const langSelect = document.getElementById("lang-select")
+  const preview = document.getElementById("preview")
+  const ocrResult = document.getElementById("ocr-result")
 
   let isDarkMode = false
+  let lastImage = null
+  let lastLang = 'eng'
 
   // Theme toggle
   themeToggle.addEventListener("click", () => {
@@ -129,6 +137,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Scan for MCQs button
   scanButton.addEventListener("click", () => {
+    clearError()
     statusText.textContent = "Scanning for MCQs..."
 
     // Send message to content script
@@ -161,6 +170,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Capture screen button
   captureButton.addEventListener("click", () => {
+    clearError()
     statusText.textContent = "Capturing screen..."
     // Send message to content script
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -179,6 +189,26 @@ document.addEventListener("DOMContentLoaded", () => {
             mcqInfo.querySelector(".mcq-question").textContent =
               `OCR Text: ${response.ocrText.substring(0, 100)}${response.ocrText.length > 100 ? "..." : ""}`
           }
+          // --- Show captured image preview for debugging ---
+          let imgPreview = document.getElementById("capturePreview");
+          if (!imgPreview) {
+            imgPreview = document.createElement("img");
+            imgPreview.id = "capturePreview";
+            imgPreview.style.maxWidth = "100%";
+            imgPreview.style.maxHeight = "200px";
+            imgPreview.style.display = "block";
+            imgPreview.style.margin = "10px auto";
+            statusText.parentNode.insertBefore(imgPreview, statusText.nextSibling);
+          }
+          // The image dataUrl is not returned in the current response, so request it from the content script
+          chrome.tabs.sendMessage(tabs[0].id, { action: "getLastCaptureDataUrl" }, (imgResp) => {
+            if (imgResp && imgResp.dataUrl) {
+              imgPreview.src = imgResp.dataUrl;
+              imgPreview.style.display = "block";
+            } else {
+              imgPreview.style.display = "none";
+            }
+          });
         } else {
           statusText.textContent = "Screen capture failed: " + (response && response.error ? response.error : "Unknown error");
         }
@@ -200,6 +230,13 @@ document.addEventListener("DOMContentLoaded", () => {
         `Question: ${message.mcq.question.substring(0, 100)}${message.mcq.question.length > 100 ? "..." : ""}`
       mcqInfo.querySelector(".mcq-answer").textContent = `Answer: ${message.mcq.answer || "Pending..."}`
     }
+
+    if (message.action === "ocrError" || message.action === "aiError") {
+      showError(message.error || "Unknown error");
+      // Enhanced: Log all errors to the console for debugging
+      console.error("[MCQ-BOT] Error:", message.error);
+      return;
+    }
   })
 
   function updateStatusIndicator(isEnabled) {
@@ -210,5 +247,124 @@ document.addEventListener("DOMContentLoaded", () => {
       statusDot.className = "status-dot inactive"
       statusText.textContent = "Bot is inactive"
     }
+  }
+
+  function showError(msg) {
+    errorMessage.textContent = msg;
+    errorMessage.style.display = "block";
+    // Enhanced: Log error to console for debugging
+    console.error("[MCQ-BOT] Popup error:", msg);
+  }
+
+  function clearError() {
+    errorMessage.textContent = "";
+    errorMessage.style.display = "none";
+  }
+
+  startAuto.onclick = () => {
+    document.getElementById('status').textContent = "Detecting MCQ...";
+    chrome.runtime.sendMessage({type: "startAutoMCQ"}, (resp) => {
+      if (!resp || !resp.success) {
+        document.getElementById('status').textContent = "Error: " + (resp ? resp.error : "Unknown");
+        return;
+      }
+      lastImage = resp.image;
+      document.getElementById('preview').src = lastImage;
+      runOCR(lastImage, lastLang, 2);
+    });
+  };
+
+  reOCR.onclick = () => {
+    if (lastImage) runOCR(lastImage, lastLang, 2);
+  };
+
+  langSelect.onchange = (e) => {
+    lastLang = e.target.value;
+    if (lastImage) runOCR(lastImage, lastLang, 2);
+  };
+
+  // Add image preprocessing for better OCR accuracy
+  function preprocessImage(base64, callback) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      // Grayscale and binarize
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      for (let i = 0; i < imageData.data.length; i += 4) {
+        const avg = (imageData.data[i] + imageData.data[i+1] + imageData.data[i+2]) / 3;
+        const bin = avg > 128 ? 255 : 0;
+        imageData.data[i] = imageData.data[i+1] = imageData.data[i+2] = bin;
+      }
+      ctx.putImageData(imageData, 0, 0);
+      callback(canvas.toDataURL('image/png'));
+    };
+    img.src = base64;
+  }
+
+  // Tesseract.js presence check
+  if (typeof Tesseract === 'undefined') {
+    document.addEventListener('DOMContentLoaded', function() {
+      const status = document.getElementById('status');
+      if (status) {
+        status.textContent = 'Tesseract.js is not loaded! Please check your popup.html script order.';
+      }
+      console.error('Tesseract.js is not loaded!');
+    });
+  }
+
+  function getErrorMessage(err) {
+    if (!err) return 'Unknown error';
+    if (typeof err === 'object' && 'message' in err) return err.message;
+    if (typeof err === 'string') return err;
+    try { return JSON.stringify(err); } catch { return 'Unserializable error'; }
+  }
+
+  function runOCR(image, lang, retries) {
+    const statusEl = document.getElementById('status');
+    if (typeof Tesseract === 'undefined') {
+      if (statusEl) statusEl.textContent = 'Tesseract.js is not loaded!';
+      console.error('Tesseract.js is not loaded!');
+      return;
+    }
+    if (statusEl) statusEl.textContent = "Running OCR (" + lang + ")...";
+    preprocessImage(image, (processedImage) => {
+      Tesseract.recognize(processedImage, lang, { logger: m => console.log(m) })
+        .then(result => {
+          if (!result.data.text.trim() && retries > 0) {
+            if (statusEl) statusEl.textContent = "Retrying OCR...";
+            runOCR(processedImage, lang, retries - 1);
+          } else if (!result.data.text.trim()) {
+            // Fallback: send to backend
+            if (statusEl) statusEl.textContent = "Trying backend OCR...";
+            fetch('http://localhost:5000/api/ocr-detect', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({image: processedImage, lang})
+            })
+            .then(r => r.json())
+            .then(data => {
+              if (statusEl) statusEl.textContent = "Backend OCR: " + (data.text || "No text found");
+              document.getElementById('ocr-result').textContent = data.text || "";
+            })
+            .catch(err => {
+              const msg = getErrorMessage(err);
+              if (statusEl) statusEl.textContent = "Backend OCR error: " + msg;
+              console.error('Backend OCR error:', err);
+            });
+          } else {
+            if (statusEl) statusEl.textContent = "OCR Success!";
+            document.getElementById('ocr-result').textContent = result.data.text;
+          }
+        })
+        .catch(err => {
+          const msg = getErrorMessage(err);
+          if (statusEl) statusEl.textContent = "Tesseract error: " + msg;
+          console.error('Tesseract error:', err);
+        });
+    });
   }
 })
