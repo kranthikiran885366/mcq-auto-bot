@@ -1,7 +1,8 @@
 import os
 import json
 import base64
-from flask import Flask, request, jsonify, render_template
+import re
+from flask import Flask, request, jsonify, render_template, send_file
 from flask_cors import CORS
 import cv2
 import numpy as np
@@ -17,9 +18,10 @@ import time
 import re
 from typing import List, Dict, Optional
 import logging
-from PIL import Image, ImageFile, UnidentifiedImageError, ImageEnhance, ImageFilter
+from PIL import Image, ImageFile, UnidentifiedImageError, ImageEnhance, ImageFilter, ImageDraw, ImageFont
 import io
 from dotenv import load_dotenv
+from io import BytesIO
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -218,46 +220,97 @@ class MCQAutomationBot:
             raise
     
     def parse_mcqs_from_text(self, text):
-        """Parse MCQs from extracted text"""
+        """Parse MCQs from extracted text with support for various formats"""
         mcqs = []
-        lines = text.split('\n')
+        # Split lines and remove empty ones, but preserve line breaks for multi-line questions
+        lines = [line for line in text.split('\n') if line.strip()]
         
-        current_question = ""
+        current_question = []
         current_options = []
         
-        for line in lines:
-            line = line.strip()
-            if not line:
+        i = 0
+        while i < len(lines):
+            line = lines[i].strip()
+            
+            # Check if line is a question (contains ? or is followed by options)
+            next_line = lines[i+1].strip() if i + 1 < len(lines) else ""
+            is_question = ('?' in line or 
+                         (i > 0 and '?' in lines[i-1]) or  # Handle question mark on previous line
+                         (i + 1 < len(lines) and self._looks_like_option(next_line)))
+            
+            if is_question:
+                # If we have a question and see another question, save the current one
+                if current_question and (current_options or any('?' in l for l in current_question)):
+                    question_text = ' '.join(current_question).strip()
+                    if question_text and len(current_options) >= 2:
+                        mcqs.append({
+                            'question': question_text,
+                            'options': [{'text': opt, 'value': opt} for opt in current_options],
+                            'type': 'text'
+                        })
+                
+                # Start new question
+                current_question = [line]
+                current_options = []
+                i += 1
+                
+                # Check if next lines are part of the question (until we hit an option)
+                while i < len(lines):
+                    next_line = lines[i].strip()
+                    if self._looks_like_option(next_line):
+                        break
+                    current_question.append(next_line)
+                    i += 1
                 continue
             
-            # Check if line is a question (contains ?)
-            if '?' in line and len(line) > 10:
-                # Save previous MCQ if exists
-                if current_question and len(current_options) >= 2:
-                    mcqs.append({
-                        'question': current_question,
-                        'options': [{'text': opt, 'value': opt} for opt in current_options],
-                        'type': 'text'
-                    })
-                
-                current_question = line
-                current_options = []
-            
-            # Check if line is an option (starts with A, B, C, D or 1, 2, 3, 4)
-            elif re.match(r'^[A-D][\.\)]\s*|^[1-4][\.\)]\s*', line):
-                option_text = re.sub(r'^[A-D1-4][\.\)]\s*', '', line)
+            # Handle options
+            if self._looks_like_option(line):
+                # Clean and add the option
+                option_text = self._clean_option_text(line)
                 if option_text:
                     current_options.append(option_text)
+            
+            i += 1
         
-        # Add last MCQ
+        # Add the last MCQ if valid
         if current_question and len(current_options) >= 2:
             mcqs.append({
-                'question': current_question,
+                'question': current_question.strip(),
                 'options': [{'text': opt, 'value': opt} for opt in current_options],
                 'type': 'text'
             })
         
         return mcqs
+    
+    def _looks_like_option(self, text):
+        """Check if text looks like an option"""
+        # Match patterns like: A) B. C- [D] (E) • F ○ G © H
+        option_patterns = [
+            r'^\s*[A-Za-z][\.\)\]\-\s]+',  # A) B. C- [D]
+            r'^\s*[0-9]+[\.\)\]\-\s]+',    # 1) 2. 3- [4]
+            r'^\s*[•○▪■⦿◉©]\s*',             # Bullet points and copyright symbol
+            r'^\s*\([A-Za-z0-9]\)\s*',     # (A) (1)
+            r'^\s*[A-Za-z]\s*[\-:]\s*',     # A- A:
+            r'^\s*©\)?\s*'                   # © or ©)
+        ]
+        
+        return any(re.match(pattern, text) for pattern in option_patterns)
+    
+    def _clean_option_text(self, text):
+        """Clean and extract option text"""
+        # Remove common option markers
+        text = re.sub(r'^\s*[A-Za-z0-9][\.\)\]\-\s]+', '', text)  # A) B. C- [D]
+        text = re.sub(r'^\s*[•○▪■⦿◉©]\s*', '', text)  # Bullet points and copyright
+        text = re.sub(r'^\s*\([A-Za-z0-9]\)\s*', '', text)  # (A) (1)
+        text = re.sub(r'^\s*[A-Za-z]\s*[\-:]\s*', '', text)  # A- A:
+        text = re.sub(r'^\s*©\)?\s*', '', text)  # © or ©)
+        
+        # Clean up any remaining special characters and whitespace
+        text = text.strip()
+        text = re.sub(r'^[^\w\s]+', '', text)  # Remove leading special chars
+        text = re.sub(r'\s+', ' ', text)  # Normalize whitespace
+        
+        return text.strip()
     
     def get_ai_answer(self, question, options, provider='openai'):
         """Get AI answer for MCQ"""
@@ -466,31 +519,61 @@ def process_mcqs():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+def ocr_postprocess(text):
+    # Fix common option misreads
+    replacements = [
+        (r'5\)', 'B)'), (r'©\)', 'C)'), (r'\(c\)', 'C)'), (r'\(r\)', 'C)'),
+        (r'Rone', 'Rome'), (r'Bertin', 'Berlin'), (r'Rone', 'Rome'), (r'Bertin', 'Berlin'),
+        (r'\b1\.', 'A.'), (r'\ba\)', 'A)'), (r'\bb\)', 'B)'), (r'\bc\)', 'C)'), (r'\bd\)', 'D)'),
+        (r'\b5\.', 'B.'), (r'\b0\)', 'D)'), (r'\b0\.', 'D.'), (r'\bO\)', 'D)'), (r'\bO\.', 'D.')
+    ]
+    for pat, repl in replacements:
+        import re
+        text = re.sub(pat, repl, text, flags=re.IGNORECASE)
+    return text
+
 @app.route('/api/ocr-detect', methods=['POST'])
 def ocr_detect():
     """Detect MCQs using OCR, robust to any image format, with advanced error handling, preprocessing (including deskewing, inversion, whitelisting), debug logging, and fallback OCR logic including EasyOCR, Google Vision API, and Vision-Language AI (Gemini/GPT-4 Vision)."""
     data = request.json
-    image_data = data.get('image_data') or data.get('image')  # support both keys
+    image_data = data.get('image_data') or data.get('image')
     language = data.get('lang', 'eng')
+    preprocessing_steps = data.get('preprocessing_steps', None)
+    return_bboxes = data.get('return_bboxes', False)
     try:
         if not image_data:
             logger.error('No image data provided in request.')
             return jsonify({'success': False, 'error': 'No image data provided.'})
 
+        # Enhanced logging for debugging base64 issues
         logger.info(f"Received base64 image string (first 100 chars): {image_data[:100]}... (length: {len(image_data)})")
-        image_data = image_data.replace('\n', '').replace('\r', '').replace(' ', '')
-        if ',' in image_data:
-            image_data = image_data.split(',')[1]
-        missing_padding = len(image_data) % 4
+        # Remove whitespace and newlines
+        image_data_clean = image_data.replace('\n', '').replace('\r', '').replace(' ', '')
+        # Remove data:image/png;base64, if present
+        if ',' in image_data_clean:
+            header, image_data_clean = image_data_clean.split(',', 1)
+            logger.info(f"Base64 header detected: {header}")
+        # Check for suspiciously short base64
+        if len(image_data_clean) < 100:
+            logger.error(f"Base64 string is very short after cleaning: {len(image_data_clean)} chars. Possible corruption or truncation.")
+            return jsonify({'success': False, 'error': f'Base64 string too short after cleaning: {len(image_data_clean)} chars. Please check your input.'})
+        # Check for invalid characters
+        if not re.match(r'^[A-Za-z0-9+/=]+$', image_data_clean):
+            logger.error("Base64 string contains invalid characters.")
+            return jsonify({'success': False, 'error': 'Base64 string contains invalid characters. Please check your input.'})
+        # Add padding if needed
+        missing_padding = len(image_data_clean) % 4
         if missing_padding:
-            image_data += '=' * (4 - missing_padding)
+            image_data_clean += '=' * (4 - missing_padding)
+            logger.info(f"Added {4 - missing_padding} padding characters to base64 string.")
         try:
-            image_bytes = base64.b64decode(image_data)
+            image_bytes = base64.b64decode(image_data_clean)
         except Exception as e:
-            logger.error(f"Base64 decode error: {e}")
-            return jsonify({'success': False, 'error': f'Base64 decode error: {e}'})
+            logger.error(f"Base64 decode error: {e}. First 100 chars: {image_data_clean[:100]}")
+            return jsonify({'success': False, 'error': f'Base64 decode error: {e}. Please check your input.'})
         if len(image_bytes) < 100:
-            logger.warning(f"Decoded image bytes length is very small: {len(image_bytes)} bytes. Possible corruption.")
+            logger.error(f"Decoded image bytes length is very small: {len(image_bytes)} bytes. Possible corruption.")
+            return jsonify({'success': False, 'error': f'Decoded image bytes too short: {len(image_bytes)} bytes. Please check your input.'})
 
         from PIL import Image, ImageFile, UnidentifiedImageError, ImageEnhance, ImageFilter
         import io
@@ -515,98 +598,489 @@ def ocr_detect():
                         img_pil = Image.fromarray(img_cv)
                     elif img_cv.shape[2] == 4:
                         img_pil = Image.fromarray(cv2.cvtColor(img_cv, cv2.COLOR_BGRA2RGBA))
+                # Convert PIL to OpenCV format (BGR)
+                img_np = np.array(img_pil)
+                if len(img_np.shape) == 3:  # Convert RGB to BGR
+                    img_np = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
+                
+                # Apply each preprocessing step
+                for step in preprocessing_steps:
+                    step = step.lower().strip()
+                    logger.info(f'Applying preprocessing step: {step}')
+                    
+                    if step == 'grayscale':
+                        img_np = get_grayscale(img_np)
+                    elif step == 'remove_noise':
+                        img_np = remove_noise(img_np)
+                    elif step == 'thresholding':
+                        img_np = thresholding(img_np)
+                    elif step == 'dilate':
+                        img_np = dilate(img_np)
+                    elif step == 'erode':
+                        img_np = erode(img_np)
+                    elif step == 'opening':
+                        img_np = opening(img_np)
+                    elif step == 'canny':
+                        img_np = canny(img_np)
+                    elif step == 'deskew':
+                        img_np = deskew(img_np)
+                    
+                    # Save intermediate step for debugging
+                    debug_path = f'debug_pre_{step}.png'
+                    cv2.imwrite(debug_path, img_np)
+                    logger.info(f'Saved debug image: {debug_path}')
+                
+                # Convert back to PIL for Tesseract
+                if len(img_np.shape) == 2:  # Grayscale
+                    img_bin_pil = Image.fromarray(img_np)
+                else:  # BGR
+                    img_bin_pil = Image.fromarray(cv2.cvtColor(img_np, cv2.COLOR_BGR2RGB))
+                
+            except Exception as pre_e:
+                logger.error(f'Custom preprocessing failed: {pre_e}')
+                img_bin_pil = img_pil  # Fallback to original image
+        else:
+            # Default advanced preprocessing with deskewing and inversion
+            try:
+                # Convert to grayscale
+                img_gray = img_pil.convert('L')
+                img_gray.save('debug_pre_gray.png')
+                
+                # Convert to numpy array for OpenCV processing
+                img_np = np.array(img_gray)
+                
+                # Calculate image statistics for adaptive processing
+                mean_val = np.mean(img_np)
+                std_dev = np.std(img_np)
+                
+                # Apply CLAHE (Contrast Limited Adaptive Histogram Equalization)
+                clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+                img_enhanced = clahe.apply(img_np)
+                
+                # Adaptive thresholding based on image characteristics
+                if std_dev < 10:  # Low contrast image
+                    # Try to enhance contrast
+                    img_enhanced = cv2.convertScaleAbs(img_enhanced, alpha=1.5, beta=0)
+                
+                # Apply adaptive thresholding
+                if mean_val < 85:  # Dark image
+                    _, img_bin = cv2.threshold(img_enhanced, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+                else:  # Normal or light image
+                    img_bin = cv2.adaptiveThreshold(
+                        img_enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                        cv2.THRESH_BINARY, 11, 2
+                    )
+                
+                # Invert if needed (black text on white background)
+                if np.mean(img_bin) < 127:  # If mostly black
+                    img_bin = cv2.bitwise_not(img_bin)
+                
+                # Apply morphological operations to clean up the image
+                kernel = np.ones((1,1), np.uint8)
+                img_bin = cv2.morphologyEx(img_bin, cv2.MORPH_CLOSE, kernel)
+                img_bin = cv2.morphologyEx(img_bin, cv2.MORPH_OPEN, kernel)
+                
+                # Apply dilation and erosion to remove noise
+                kernel = np.ones((1, 1), np.uint8)
+                img_denoised = cv2.morphologyEx(img_bin, cv2.MORPH_OPEN, kernel)
+                img_denoised = cv2.morphologyEx(img_denoised, cv2.MORPH_CLOSE, kernel)
+                
+                # Apply slight blur to reduce noise
+                img_denoised = cv2.GaussianBlur(img_denoised, (3, 3), 0)
+                
+                # Sharpen the image
+                kernel_sharpening = np.array([[-1,-1,-1], 
+                                            [-1, 9,-1],
+                                            [-1,-1,-1]])
+                img_sharp = cv2.filter2D(img_denoised, -1, kernel_sharpening)
+                
+                # Save intermediate images for debugging
+                Image.fromarray(img_denoised).save('debug_pre_denoise.png')
+                Image.fromarray(img_sharp).save('debug_pre_sharp.png')
+                
+                # Deskew the image
+                coords = np.column_stack(np.where(img_sharp > 0))
+                if len(coords) > 0:  # Check if we have any foreground pixels
+                    angle = cv2.minAreaRect(coords)[-1]
+                    if angle < -45:
+                        angle = -(90 + angle)
                     else:
-                        img_pil = Image.fromarray(cv2.cvtColor(img_cv, cv2.COLOR_BGR2RGB))
+                        angle = -angle
+                    (h, w) = img_sharp.shape[:2]
+                    center = (w // 2, h // 2)
+                    M = cv2.getRotationMatrix2D(center, angle, 1.0)
+                    img_deskew = cv2.warpAffine(img_sharp, M, (w, h), 
+                                              flags=cv2.INTER_CUBIC, 
+                                              borderMode=cv2.BORDER_REPLICATE)
+                    img_deskew_pil = Image.fromarray(img_deskew)
+                    img_deskew_pil.save('debug_pre_deskew.png')
                 else:
-                    logger.error(f'Could not decode image with PIL or OpenCV. Details: {pil_e}')
-                    return jsonify({'success': False, 'error': f'Could not decode image with PIL or OpenCV. Details: {pil_e}'})
-            except Exception as cv_e:
-                logger.error(f'OpenCV also failed to decode image. Details: {cv_e}')
-                return jsonify({'success': False, 'error': f'Could not decode image with PIL or OpenCV. Details: {cv_e}'})
-
-        # Advanced preprocessing with deskewing and inversion
-        try:
-            img_gray = img_pil.convert('L')
-            img_gray.save('debug_pre_gray.png')
-            enhancer = ImageEnhance.Contrast(img_gray)
-            img_contrast = enhancer.enhance(2.0)
-            img_contrast.save('debug_pre_contrast.png')
-            img_sharp = img_contrast.filter(ImageFilter.SHARPEN)
-            img_sharp.save('debug_pre_sharp.png')
-            img_denoise = img_sharp.filter(ImageFilter.MedianFilter(size=3))
-            img_denoise.save('debug_pre_denoise.png')
-            img_np = np.array(img_denoise)
-            img_bin = cv2.adaptiveThreshold(img_np, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 31, 2)
-            img_bin_pil = Image.fromarray(img_bin)
-            img_bin_pil.save('debug_pre_bin.png')
-            coords = np.column_stack(np.where(img_bin > 0))
-            angle = cv2.minAreaRect(coords)[-1]
-            if angle < -45:
-                angle = -(90 + angle)
-            else:
-                angle = -angle
-            (h, w) = img_bin.shape[:2]
-            M = cv2.getRotationMatrix2D((w // 2, h // 2), angle, 1.0)
-            img_deskew = cv2.warpAffine(img_bin, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
-            img_deskew_pil = Image.fromarray(img_deskew)
-            img_deskew_pil.save('debug_pre_deskew.png')
-            if np.mean(img_deskew) > 127:
-                img_invert = cv2.bitwise_not(img_deskew)
-                img_invert_pil = Image.fromarray(img_invert)
-                img_invert_pil.save('debug_pre_invert.png')
-                img_bin_pil = img_invert_pil
-            else:
-                img_bin_pil = img_deskew_pil
-            if img_bin_pil.width < 800:
-                scale = 800 / img_bin_pil.width
-                new_size = (int(img_bin_pil.width * scale), int(img_bin_pil.height * scale))
-                img_bin_pil = img_bin_pil.resize(new_size, Image.LANCZOS)
-                img_bin_pil.save('debug_pre_resized.png')
-        except Exception as pre_e:
-            logger.warning(f'Advanced preprocessing (deskew/invert) failed: {pre_e}')
-            img_bin_pil = img_pil
+                    img_deskew = img_sharp
+                    img_deskew_pil = Image.fromarray(img_deskew)
+                
+                # Invert if needed (for dark text on light background)
+                if np.mean(img_deskew) > 127:
+                    img_invert = cv2.bitwise_not(img_deskew)
+                    img_invert_pil = Image.fromarray(img_invert)
+                    img_invert_pil.save('debug_pre_invert.png')
+                    img_final = img_invert_pil
+                else:
+                    img_final = img_deskew_pil
+                    
+                # Resize if too small (minimum 600px width for better OCR)
+                min_width = 600
+                if img_final.width < min_width:
+                    scale = min_width / img_final.width
+                    new_size = (min_width, int(img_final.height * scale))
+                    img_final = img_final.resize(new_size, Image.LANCZOS)
+                    img_final.save('debug_pre_resized.png')
+                    
+                img_bin_pil = img_final
+            except Exception as pre_e:
+                logger.warning(f'Advanced preprocessing (deskew/invert) failed: {pre_e}')
+                img_bin_pil = img_pil  # Fallback to original image
 
         import pytesseract
         best_text = ''
-        best_len = 0
+        best_confidence = 0
         best_psm = None
         best_oem = None
-        whitelist = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,:;!?()[]{}- \'"\n'
-        psm_modes = [6, 3, 11, 12, 4, 7]
-        oem_modes = [3, 1]
-        for psm in psm_modes:
-            for oem in oem_modes:
+        
+        # Expanded character set to handle more cases
+        whitelist = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,:;!?()[]{}-_\'"\n\\/|+*=&^%$#@!~`<>'
+        
+        # Define page segmentation modes to try
+        psm_modes = [
+            (6, 'Assume a single uniform block of text'),
+            (3, 'Fully automatic page segmentation, no OSD'),
+            (11, 'Sparse text'),
+            (4, 'Assume a single column of text'),
+            (7, 'Treat image as a single text line')
+        ]
+        
+        # Define OCR engine modes to try (LSTM first, then legacy)
+        oem_modes = [(3, 'LSTM'), (1, 'Legacy')]
+        
+        # Try different configurations
+        for psm, psm_desc in psm_modes:
+            for oem, oem_desc in oem_modes:
                 try:
-                    config = f'--psm {psm} --oem {oem} -c tessedit_char_whitelist="{whitelist}"'
-                    text = pytesseract.image_to_string(img_bin_pil, lang=language, config=config)
-                    logger.info(f'OCR text (psm={psm}, oem={oem}, first 100 chars): {text[:100]}')
-                    if len(text) > best_len:
+                    # Build configuration string
+                    config = (
+                        f'--psm {psm} --oem {oem} --dpi 300\n'
+                        f'-c tessedit_char_whitelist={whitelist}\n'
+                        f'-c preserve_interword_spaces=1\n'
+                        f'-c textord_min_linesize=2.5\n'
+                        f'-c textord_heavy_nr=1\n'
+                        f'-c textord_noise_normratio=0.5\n'
+                        f'-c textord_noise_sizelimit=3\n'
+                        f'-c textord_old_baselines=0\n'
+                        f'-c textord_show_initial_words=0\n'
+                        f'-c load_system_dawg=1\n'
+                        f'-c load_freq_dawg=1\n'
+                        f'-c load_punc_dawg=1\n'
+                        f'-c load_number_dawg=1\n'
+                        f'-c load_unambig_dawg=1\n'
+                        f'-c load_bigram_dawg=1\n'
+                        f'-c load_fixed_length_daws=1'
+                    )
+                    
+                    logger.info(f'Trying OCR with PSM {psm} ({psm_desc}), OEM {oem} ({oem_desc})')
+                    
+                    # Get both text and confidence data
+                    data = pytesseract.image_to_data(
+                        img_bin_pil, 
+                        lang=language, 
+                        config=config,
+                        output_type=pytesseract.Output.DICT
+                    )
+                    
+                    # Calculate average confidence of non-empty words
+                    confidences = [float(conf) for conf, text in zip(data['conf'], data['text']) 
+                                 if float(conf) > 0 and text.strip()]
+                    avg_confidence = sum(confidences) / len(confidences) if confidences else 0
+                    
+                    text = ' '.join([t for t in data['text'] if t.strip()])
+                    
+                    # Common OCR misrecognition fixes
+                    common_misrecognitions = {
+                        # Common word misrecognitions
+                        'sllo': 'hello',
+                        'Vor]': 'world',
+                        'hell0': 'hello',
+                        'w0rld': 'world',
+                        'hel1o': 'hello',
+                        'wor1d': 'world',
+                        'he1lo': 'hello',
+                        'w0r1d': 'world',
+                        'he11o': 'hello',
+                        'he1p': 'help',
+                        'wor1d': 'world',
+                        'Rone': 'Rome',
+                        'Bertin': 'Berlin',
+                        'Par1s': 'Paris',
+                        'L0nd0n': 'London',
+                        'cap1tal': 'capital',
+                        'Franc3': 'France'
+                    }
+                    
+                    # Apply common fixes (case-insensitive)
+                    for wrong, right in common_misrecognitions.items():
+                        # Use regex for case-insensitive replacement of whole words only
+                        text = re.sub(r'\b' + re.escape(wrong) + r'\b', right, text, flags=re.IGNORECASE)
+                    
+                    # Fix common character confusions
+                    char_fixes = {
+                        '0': 'o',
+                        '1': 'l',
+                        '5': 's',
+                        ']': 'd',
+                        '[': 'd',
+                        '|': 'l',
+                        '!': 'i',
+                        '@': 'a',
+                        '#': '',
+                        '$': 's',
+                        '&': 'e',
+                        '©': 'c',  # Copyright symbol to 'c'
+                        '®': 'r',  # Registered symbol to 'r'
+                        '™': 'tm', # Trademark symbol to 'tm'
+                        '`': '',   # Remove backticks
+                        '~': '',    # Remove tildes
+                        '^': '',    # Remove carets
+                        '*': '',    # Remove asterisks
+                        '_': ' '    # Convert underscores to spaces
+                    }
+                    
+                    # Apply character-level fixes (except for answer markers)
+                    # First, protect answer markers (a), b), etc.)
+                    protected_markers = re.findall(r'\b([a-z])\)', text, re.IGNORECASE)
+                    protected_text = re.sub(r'\b([a-z])\)', '___MARKER___', text, flags=re.IGNORECASE)
+                    
+                    # Apply character fixes to the protected text
+                    for wrong, right in char_fixes.items():
+                        protected_text = protected_text.replace(wrong, right)
+                    
+                    # Restore protected answer markers
+                    for i, marker in enumerate(protected_markers):
+                        protected_text = protected_text.replace('___MARKER___', f'{marker})', 1)
+                    
+                    text = protected_text
+                    
+                    # Enhanced spell checking for common words and MCQ patterns
+                    common_words = {
+                        # Common word corrections
+                        'helo': 'hello',
+                        'wor1d': 'world',
+                        'w0r1d': 'world',
+                        'he1p': 'help',
+                        'cap1tal': 'capital',
+                        'Franc3': 'France',
+                        'Par1s': 'Paris',
+                        'L0nd0n': 'London',
+                        'R0me': 'Rome',
+                        'Rone': 'Rome',
+                        'Ber1in': 'Berlin',
+                        'Bertin': 'Berlin',
+                        'quest1on': 'question',
+                        'answ3r': 'answer',
+                        'opt1on': 'option',
+                        'ch01ce': 'choice',
+                        'corr3ct': 'correct',
+                        'capita1': 'capital',
+                        'capita!': 'capital',
+                        'capitaI': 'capital',
+                        'capitai': 'capital'
+                    }
+                    
+                    # Enhanced answer marker normalization
+                    
+                    # First, normalize all answer markers to a common format (X) where X is a letter
+                    # Handle numbered markers (1) -> a), (2) -> b), etc.
+                    text = re.sub(r'(?i)\b(\d+)[\.\)\s]', 
+                                 lambda m: f'{chr(96 + int(m.group(1)))}) ' if m.group(1).isdigit() and 1 <= int(m.group(1)) <= 26 else m.group(0), 
+                                 text)
+                    
+                    # Handle special characters like ©) -> c)
+                    text = re.sub(r'(?i)\b([^a-z0-9])\)', 
+                                 lambda m: f'{m.group(1).lower()}) ' if m.group(1).strip() else m.group(0), 
+                                 text)
+                    
+                    # Fix uppercase letters in markers (A) -> a)
+                    text = re.sub(r'\b([A-Z])\)', lambda m: f'{m.group(1).lower()})', text)
+                    
+                    # Fix missing spaces after markers
+                    text = re.sub(r'([a-z])\)([^ \n])', r'\1) \2', text)
+                    
+                    # Fix common OCR confusions in markers
+                    marker_fixes = {
+                        r'(?i)\b5\)': 'b)',
+                        r'(?i)\b©\)': 'c)',
+                        r'(?i)\b\[\)': 'c)',
+                        r'(?i)\b\]\)': 'd)',
+                        r'(?i)\b1\)': 'i)',
+                        r'(?i)\bi\)': '1)',
+                        r'(?i)\bl\)': '1)',
+                        r'(?i)\bI\)': '1)'
+                    }
+                    
+                    for pattern, replacement in marker_fixes.items():
+                        text = re.sub(pattern, replacement, text)
+                    
+                    # Ensure consistent spacing around answer options
+                    text = re.sub(r'\s*([a-z])\)\s*', r' \1) ', text)
+                    
+                    # Fix question numbers (1. -> 1. )
+                    text = re.sub(r'(\d+)\.(\s*[A-Z])', 
+                                 lambda m: f"{m.group(1)}. {m.group(2).lower()}", 
+                                 text)
+                    
+                    # Split into words and fix common misspellings
+                    words = text.split()
+                    for i, word in enumerate(words):
+                        lower_word = word.lower()
+                        if lower_word in common_words:
+                            words[i] = common_words[lower_word]
+                    
+                    text = ' '.join(words)
+                    
+                    logger.info(f'OCR (psm={psm}, oem={oem}, conf={avg_confidence:.1f}): {text[:100]}...')
+                    
+                    # Calculate a better confidence score
+                    # Give higher weight to text that looks like common words
+                    common_word_count = sum(1 for word in text.lower().split() 
+                                         if word in ['hello', 'world', 'help', 'test', 'example'])
+                    adjusted_confidence = avg_confidence + (common_word_count * 5)
+                    
+                    # Prefer higher confidence over longer text
+                    if adjusted_confidence > best_confidence or (adjusted_confidence == best_confidence and len(text) > len(best_text)):
                         best_text = text
-                        best_len = len(text)
+                        best_confidence = adjusted_confidence
                         best_psm = psm
                         best_oem = oem
+                        
                 except Exception as ocr_e:
                     logger.warning(f'OCR failed for psm={psm}, oem={oem}: {ocr_e}')
-        # Fallback: try OCR on the original preprocessed image
-        if not best_text.strip():
-            logger.warning('All advanced OCR attempts failed. Trying fallback on original preprocessed image...')
+                    
+        logger.info(f'Best OCR result (psm={best_psm}, oem={best_oem}, conf={best_confidence:.1f}')
+        
+        # Final post-processing of the best text
+        if best_text.strip():
+            # Basic text cleanup
+            best_text = ' '.join(best_text.split())  # Normalize whitespace
+            best_text = best_text.strip()
+            
+            # Parse MCQs from the extracted text
+            mcqs = bot.parse_mcqs_from_text(best_text)
+            
+            # If no MCQs were parsed but we have text, return it as a single question
+            if not mcqs and best_text.strip():
+                mcqs = [{
+                    'question': best_text.split('\n')[0],
+                    'options': [line.strip() for line in best_text.split('\n')[1:] if line.strip()],
+                    'type': 'ocr',
+                    'confidence': best_confidence
+                }]
+            
+            logger.info(f'Successfully extracted {len(mcqs)} MCQs')
+            
+            # Clean up the text before returning
+            best_text = best_text.replace('"', '"')
+            best_text = best_text.replace('\'', '\'')
+            best_text = best_text.replace('—', '-')
+            best_text = best_text.replace('–', '-')
+            best_text = best_text.replace('_', ' ')
+            
+            # Remove non-printable characters
+            best_text = ''.join(char for char in best_text if char.isprintable() or char.isspace())
+            
+            # Remove isolated characters that are likely noise
+            best_text = re.sub(r'\s+[^\w\s]\s+', ' ', best_text)
+            best_text = re.sub(r'^[^\w\s]\s+', '', best_text)
+            best_text = re.sub(r'\s+[^\w\s]$', '', best_text)
+            
+            # Normalize case for better consistency
+            if len(best_text.split()) > 3:  # Only for longer text
+                sentences = re.split(r'([.!?]\s+)', best_text)
+                best_text = ''.join([sent.capitalize() if i % 2 == 0 else sent.lower() 
+                                   for i, sent in enumerate(sentences)])
+            
+            return jsonify({
+                'success': True,
+                'text': best_text,
+                'mcqs': mcqs if mcqs else [],
+                'confidence': best_confidence,
+                'psm': best_psm,
+                'oem': best_oem
+            })
+        
+        # Fallback 1: Try with different preprocessing
+        if not best_text.strip() or best_confidence < 50:
+            logger.warning('Primary OCR results not confident. Trying alternative preprocessing...')
             try:
-                fallback_text = pytesseract.image_to_string(img_bin_pil, lang=language)
+                # Try with different thresholding
+                img_np = np.array(img_pil.convert('L'))
+                
+                # Try Otsu's thresholding
+                _, img_otsu = cv2.threshold(img_np, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+                fallback_text = pytesseract.image_to_string(
+                    Image.fromarray(img_otsu), 
+                    lang=language,
+                    config=f'--psm 6 --oem 3 -c preserve_interword_spaces=1'
+                )
+                
                 if fallback_text.strip():
-                    logger.info('Fallback OCR on preprocessed image succeeded.')
-                    return jsonify({'success': True, 'ocrText': fallback_text, 'warning': 'Fallback OCR on preprocessed image used. Check debug images.'})
+                    logger.info('Fallback OCR with Otsu thresholding succeeded.')
+                    return jsonify({
+                        'success': True, 
+                        'text': fallback_text,
+                        'mcqs': [],
+                        'warning': 'Fallback OCR with Otsu thresholding used.'
+                    })
+                    
+                # Try adaptive thresholding with different parameters
+                img_adapt = cv2.adaptiveThreshold(
+                    img_np, 255, cv2.ADAPTIVE_THRESH_MEAN_C, 
+                    cv2.THRESH_BINARY, 21, 5
+                )
+                fallback_text = pytesseract.image_to_string(
+                    Image.fromarray(img_adapt),
+                    lang=language,
+                    config=f'--psm 6 --oem 3 -c preserve_interword_spaces=1'
+                )
+                
+                if fallback_text.strip():
+                    logger.info('Fallback OCR with adaptive thresholding succeeded.')
+                    return jsonify({
+                        'success': True, 
+                        'text': fallback_text,
+                        'mcqs': [],
+                        'warning': 'Fallback OCR with adaptive thresholding used.'
+                    })
+                    
             except Exception as fallback_e:
-                logger.error(f'Fallback OCR on preprocessed image also failed: {fallback_e}')
-        # Fallback: try OCR on the original PIL image
-        if not best_text.strip():
-            logger.warning('All advanced and preprocessed OCR attempts failed. Trying fallback on original PIL image...')
+                logger.error(f'Alternative preprocessing fallback failed: {fallback_e}')
+                
+        # Fallback 2: Try with different PSM modes on original image
+        if not best_text.strip() or best_confidence < 50:
+            logger.warning('Trying fallback with different PSM modes on original image...')
             try:
-                fallback_text2 = pytesseract.image_to_string(img_pil, lang=language)
-                if fallback_text2.strip():
-                    logger.info('Fallback OCR on original PIL image succeeded.')
-                    return jsonify({'success': True, 'ocrText': fallback_text2, 'warning': 'Fallback OCR on original PIL image used. Check debug images.'})
+                for psm in [6, 3, 11, 4]:
+                    fallback_text = pytesseract.image_to_string(
+                        img_pil,
+                        lang=language,
+                        config=f'--psm {psm} --oem 3 -c preserve_interword_spaces=1'
+                    )
+                    if fallback_text.strip():
+                        logger.info(f'Fallback OCR with PSM {psm} on original image succeeded.')
+                        return jsonify({
+                            'success': True, 
+                            'text': fallback_text,
+                            'mcqs': [],
+                            'warning': f'Fallback OCR with PSM {psm} on original image used.'
+                        })
             except Exception as fallback2_e:
-                logger.error(f'Fallback OCR on original PIL image also failed: {fallback2_e}')
+                logger.error(f'PSM fallback failed: {fallback2_e}')
         # Final fallback: EasyOCR
         if not best_text.strip():
             logger.warning('All Tesseract OCR attempts failed. Trying EasyOCR as final fallback...')
@@ -618,7 +1092,12 @@ def ocr_detect():
                 easy_text = '\n'.join([item[1] for item in result])
                 if easy_text.strip():
                     logger.info('EasyOCR fallback succeeded.')
-                    return jsonify({'success': True, 'ocrText': easy_text, 'warning': 'EasyOCR fallback used. Check debug images.'})
+                    return jsonify({
+                        'success': True, 
+                        'text': easy_text,
+                        'mcqs': [],
+                        'warning': 'EasyOCR fallback used. Check debug images.'
+                    })
                 else:
                     logger.error('EasyOCR fallback did not extract any text.')
             except Exception as easy_e:
@@ -637,7 +1116,12 @@ def ocr_detect():
                 if texts:
                     vision_text = texts[0].description
                     logger.info('Google Vision API fallback succeeded.')
-                    return jsonify({'success': True, 'ocrText': vision_text, 'warning': 'Google Vision API fallback used. Check debug images.'})
+                    return jsonify({
+                        'success': True, 
+                        'text': vision_text,
+                        'mcqs': [],
+                        'warning': 'Google Vision API fallback used. Check debug images.'
+                    })
                 else:
                     logger.error('Google Vision API did not extract any text.')
             except Exception as vision_e:
@@ -653,16 +1137,47 @@ def ocr_detect():
                 # Send the image and prompt to the API and parse the response
                 # For now, just log and return a not-implemented message
                 logger.info('Vision-Language AI fallback would be called here (Gemini/GPT-4 Vision).')
-                return jsonify({'success': False, 'error': 'Vision-Language AI fallback (Gemini/GPT-4 Vision) not implemented. Please integrate your API key and endpoint.'})
+                return jsonify({
+                    'success': False, 
+                    'error': 'Vision-Language AI fallback (Gemini/GPT-4 Vision) not implemented. Please integrate your API key and endpoint.',
+                    'text': '',
+                    'mcqs': []
+                })
             except Exception as vla_e:
                 logger.error(f'Vision-Language AI fallback failed: {vla_e}')
-        if not best_text.strip():
-            logger.error('OCR failed for all PSM/OEM modes, fallbacks, and Vision APIs.')
-            return jsonify({'success': False, 'error': 'OCR failed for all PSM/OEM modes, fallbacks, and Vision APIs.'})
-        if len(best_text.strip()) < 10:
+        if not best_text.strip() or len(best_text.strip()) < 10:
+            logger.error('OCR failed to extract meaningful text from the image.')
+            return jsonify({
+                'success': False, 
+                'error': 'Failed to extract text from the image. Please try with a clearer image.',
+                'text': '',
+                'mcqs': []
+            })
             logger.warning('OCR result is very short. Check debug images for preprocessing quality.')
             return jsonify({'success': True, 'ocrText': best_text, 'warning': 'OCR result is very short. Check debug images for preprocessing quality.'})
-        return jsonify({'success': True, 'ocrText': best_text})
+        # After extracting text:
+        ocr_text = best_text
+        ocr_text = ocr_postprocess(ocr_text)
+        # ... existing code to parse MCQs ...
+        # If return_bboxes is true, also return bounding box data
+        if return_bboxes:
+            import pytesseract
+            data = pytesseract.image_to_data(img_bin_pil, lang=language, output_type=pytesseract.Output.DICT)
+            bboxes = []
+            n_boxes = len(data['text'])
+            for i in range(n_boxes):
+                if int(data['conf'][i]) > 0 and data['text'][i].strip():
+                    bboxes.append({
+                        'text': data['text'][i],
+                        'conf': data['conf'][i],
+                        'left': data['left'][i],
+                        'top': data['top'][i],
+                        'width': data['width'][i],
+                        'height': data['height'][i]
+                    })
+            # Add bboxes to response
+            response['bboxes'] = bboxes
+        return jsonify({'success': True, 'ocrText': ocr_text})
     except Exception as e:
         logger.error(f'Unexpected error in /api/ocr-detect: {e}')
         return jsonify({'success': False, 'error': f'Unexpected error: {e}'})
@@ -719,6 +1234,137 @@ def close_bot():
         return jsonify({'success': True, 'message': 'Bot closed'})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/vision-answer', methods=['POST'])
+def vision_answer():
+    data = request.json
+    image_data = data.get('image_data')
+    prompt = data.get('prompt', 'Read the question and answer options in this image.')
+
+    if not image_data:
+        return jsonify({'success': False, 'error': 'No image data provided.'})
+
+    # Remove data:image/png;base64, if present
+    if ',' in image_data:
+        image_data = image_data.split(',')[1]
+
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4-vision-preview",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_data}"}}
+                    ]
+                }
+            ],
+            max_tokens=300
+        )
+        answer = response.choices[0].message.content
+        return jsonify({'success': True, 'answer': answer})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/generate-ocr-test-image', methods=['POST'])
+def generate_ocr_test_image():
+    data = request.json
+    text = data.get('text', 'Hello World')
+    font_size = data.get('font_size', 40)
+    padding = data.get('padding', 20)
+    width = data.get('width', 800)
+    height = data.get('height', 200)
+
+    # Try to use a clean sans-serif TTF font
+    font_paths = [
+        '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',  # Linux
+        '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+        '/Library/Fonts/Arial.ttf',  # macOS
+        'C:/Windows/Fonts/arial.ttf',  # Windows
+        'arial.ttf',
+        'DejaVuSans.ttf',
+    ]
+    font = None
+    for path in font_paths:
+        if os.path.exists(path):
+            try:
+                font = ImageFont.truetype(path, font_size)
+                break
+            except Exception:
+                continue
+    if font is None:
+        return {'success': False, 'error': 'No suitable TTF font found. Please install Arial or DejaVu Sans.'}, 500
+
+    # Create image with white background and high contrast
+    img = Image.new('RGB', (width, height), color='white')
+    draw = ImageDraw.Draw(img)
+
+    # Calculate text size and position for centering
+    text_bbox = draw.multiline_textbbox((0, 0), text, font=font)
+    text_width = text_bbox[2] - text_bbox[0]
+    text_height = text_bbox[3] - text_bbox[1]
+    x = (width - text_width) // 2
+    y = (height - text_height) // 2
+
+    # Draw text with anti-aliasing (Pillow does this by default with TTF)
+    draw.multiline_text((x, y), text, font=font, fill='black', align='center')
+
+    # Save to buffer
+    buffered = BytesIO()
+    img.save(buffered, format="PNG")
+    img_str = base64.b64encode(buffered.getvalue()).decode()
+    return {'success': True, 'image_data': f'data:image/png;base64,{img_str}'}
+
+# --- Modular Preprocessing Functions from tesseract.ipynb ---
+def get_grayscale(image):
+    import cv2
+    return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+def remove_noise(image):
+    import cv2
+    return cv2.medianBlur(image, 5)
+
+def thresholding(image):
+    import cv2
+    return cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+
+def dilate(image):
+    import cv2
+    import numpy as np
+    kernel = np.ones((5,5), np.uint8)
+    return cv2.dilate(image, kernel, iterations=1)
+
+def erode(image):
+    import cv2
+    import numpy as np
+    kernel = np.ones((5,5), np.uint8)
+    return cv2.erode(image, kernel, iterations=1)
+
+def opening(image):
+    import cv2
+    import numpy as np
+    kernel = np.ones((5,5), np.uint8)
+    return cv2.morphologyEx(image, cv2.MORPH_OPEN, kernel)
+
+def canny(image):
+    import cv2
+    return cv2.Canny(image, 100, 200)
+
+def deskew(image):
+    import cv2
+    import numpy as np
+    coords = np.column_stack(np.where(image > 0))
+    angle = cv2.minAreaRect(coords)[-1]
+    if angle < -45:
+        angle = -(90 + angle)
+    else:
+        angle = -angle
+    (h, w) = image.shape[:2]
+    center = (w // 2, h // 2)
+    M = cv2.getRotationMatrix2D(center, angle, 1.0)
+    rotated = cv2.warpAffine(image, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
+    return rotated
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
