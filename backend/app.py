@@ -23,6 +23,7 @@ import io
 from dotenv import load_dotenv
 from io import BytesIO
 import requests
+import string
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -415,12 +416,81 @@ class MCQAutomationBot:
             "\nInstructions: Respond ONLY with the letter (A, B, C, D, etc.) or the exact answer text. Do not explain.\nAnswer:"
         )
         try:
+            def clean_text(s):
+                return s.strip().lower().translate(str.maketrans('', '', string.punctuation)).replace('  ', ' ')
+
             if provider == 'openai':
-                # ... existing OpenAI logic ...
-                pass
+                if not self.openai_client:
+                    raise ValueError('OpenAI client not initialized')
+                response = self.openai_client.chat.completions.create(
+                    model="gpt-4",
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.1,
+                    max_tokens=16
+                )
+                answer_text = response.choices[0].message.content.strip()
+                logger.info(f'OpenAI raw answer: {answer_text}')
+                answer_text_clean = clean_text(answer_text)
+                logger.info(f'OpenAI cleaned answer: {answer_text_clean}')
+                # Regex: letter (A-D), number (1-4), or option text
+                import re
+                match = re.search(r'\b([a-d])\b', answer_text_clean)
+                if match:
+                    idx = ord(match.group(1)) - ord('a')
+                    if 0 <= idx < len(options):
+                        return idx
+                match = re.search(r'\b([1-9])\b', answer_text_clean)
+                if match:
+                    idx = int(match.group(1)) - 1
+                    if 0 <= idx < len(options):
+                        return idx
+                # Try to match option text
+                for i, opt in enumerate(options):
+                    opt_clean = clean_text(opt['text'])
+                    if opt_clean == answer_text_clean:
+                        return i
+                for i, opt in enumerate(options):
+                    opt_clean = clean_text(opt['text'])
+                    if opt_clean in answer_text_clean or answer_text_clean in opt_clean:
+                        return i
+                # Try 'the answer is ...' or 'option ...'
+                for i, opt in enumerate(options):
+                    opt_clean = clean_text(opt['text'])
+                    if f"the answer is {opt_clean}" in answer_text_clean or f"option {opt_clean}" in answer_text_clean:
+                        return i
+                return None
             elif provider == 'gemini':
-                # ... existing Gemini logic ...
-                pass
+                if not self.genai_client:
+                    raise ValueError('Gemini client not initialized')
+                response = self.genai_client.generate_content(prompt)
+                answer_text = response.text.strip()
+                logger.info(f'Gemini raw answer: {answer_text}')
+                answer_text_clean = clean_text(answer_text)
+                logger.info(f'Gemini cleaned answer: {answer_text_clean}')
+                import re
+                match = re.search(r'\b([a-d])\b', answer_text_clean)
+                if match:
+                    idx = ord(match.group(1)) - ord('a')
+                    if 0 <= idx < len(options):
+                        return idx
+                match = re.search(r'\b([1-9])\b', answer_text_clean)
+                if match:
+                    idx = int(match.group(1)) - 1
+                    if 0 <= idx < len(options):
+                        return idx
+                for i, opt in enumerate(options):
+                    opt_clean = clean_text(opt['text'])
+                    if opt_clean == answer_text_clean:
+                        return i
+                for i, opt in enumerate(options):
+                    opt_clean = clean_text(opt['text'])
+                    if opt_clean in answer_text_clean or answer_text_clean in opt_clean:
+                        return i
+                for i, opt in enumerate(options):
+                    opt_clean = clean_text(opt['text'])
+                    if f"the answer is {opt_clean}" in answer_text_clean or f"option {opt_clean}" in answer_text_clean:
+                        return i
+                return None
             elif provider == 'huggingface':
                 if not self.huggingface_key or not self.huggingface_model:
                     raise ValueError('Hugging Face API key or model not set')
@@ -437,7 +507,7 @@ class MCQAutomationBot:
                     else:
                         answer_text = str(result)
                     logger.info(f'Hugging Face raw answer: {answer_text}')
-                    answer_text_clean = answer_text.strip().lower()
+                    answer_text_clean = clean_text(answer_text)
                     for i, opt in enumerate(options):
                         letter = chr(65 + i).lower()
                         if answer_text_clean == letter or answer_text_clean == f"{letter}." or answer_text_clean.startswith(letter + "."):
