@@ -3,97 +3,307 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Advanced AI MCQ Bot</title>
+  <title>Advanced AI MCQ Bot - MVK Solutions</title>
   <style>
-    body {
-      width: 340px;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      padding: 15px;
-      background-color: #f9f9f9;
-      margin: 0;
+    :root {
+      --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      --warning-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+      --dark-gradient: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+      --glass-bg: rgba(255, 255, 255, 0.25);
+      --glass-border: rgba(255, 255, 255, 0.18);
+      --shadow-light: 0 8px 32px rgba(31, 38, 135, 0.37);
+      --shadow-dark: 0 8px 32px rgba(0, 0, 0, 0.3);
+      --border-radius: 16px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 380px;
+      min-height: 600px;
+      font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--primary-gradient);
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    .main-container {
+      position: relative;
+      z-index: 1;
+      padding: 20px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Company Header */
+    .company-header {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--border-radius);
+      padding: 16px;
+      margin-bottom: 20px;
+      text-align: center;
+      box-shadow: var(--shadow-light);
+      transition: var(--transition);
+    }
+
+    .company-header:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(31, 38, 135, 0.5);
+    }
+
+    .company-logo {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 12px;
+      background: var(--primary-gradient);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: bold;
+      color: white;
+      box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .company-logo::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
+      transform: rotate(45deg);
+      animation: shine 3s infinite;
+    }
+
+    @keyframes shine {
+      0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+      50% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+      100% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+    }
+
+    .company-name {
+      font-size: 18px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 4px;
+      letter-spacing: -0.5px;
+    }
+
+    .company-tagline {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.8);
+      font-weight: 500;
+    }
+
+    /* Theme Toggle */
+    .theme-toggle {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 18px;
+      transition: var(--transition);
+      z-index: 10;
+    }
+
+    .theme-toggle:hover {
+      transform: scale(1.1) rotate(15deg);
+      box-shadow: var(--shadow-light);
+    }
+
+    /* Header */
     .header {
       display: flex;
       align-items: center;
-      margin-bottom: 18px;
-      padding-bottom: 12px;
-      border-bottom: 1.5px solid #e5e7eb;
+      margin-bottom: 24px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--border-radius);
+      padding: 20px;
+      box-shadow: var(--shadow-light);
     }
+
     .logo {
-      width: 44px;
-      height: 44px;
-      margin-right: 12px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      width: 48px;
+      height: 48px;
+      margin-right: 16px;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+      transition: var(--transition);
     }
+
+    .logo:hover {
+      transform: scale(1.05) rotate(5deg);
+    }
+
     h1 {
       font-size: 20px;
       font-weight: 700;
-      color: #22223b;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
       letter-spacing: -0.5px;
     }
+
+    /* Glass Container */
     .container {
-      background: linear-gradient(135deg, #f8fafc 0%, #e0e7ef 100%);
-      border-radius: 16px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1.5px 4px rgba(0,0,0,0.04);
-      padding: 20px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--border-radius);
+      padding: 24px;
       margin-bottom: 20px;
-      transition: background 0.3s, box-shadow 0.3s;
+      box-shadow: var(--shadow-light);
+      transition: var(--transition);
+      flex: 1;
+      overflow-y: auto;
     }
+
+    .container:hover {
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Status Indicator */
     .status {
       display: flex;
       align-items: center;
-      margin-bottom: 15px;
+      margin-bottom: 20px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
     }
+
     .status-dot {
-      width: 14px;
-      height: 14px;
+      width: 16px;
+      height: 16px;
       border-radius: 50%;
-      margin-right: 10px;
-      background: #cbd5e1;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.10);
-      transition: background 0.3s;
+      margin-right: 12px;
+      position: relative;
+      transition: var(--transition);
     }
+
+    .status-dot::before {
+      content: '';
+      position: absolute;
+      top: -4px;
+      left: -4px;
+      right: -4px;
+      bottom: -4px;
+      border-radius: 50%;
+      opacity: 0.3;
+      animation: pulse 2s infinite;
+    }
+
     .status-dot.active {
-      background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);
-      animation: pulse-green 1.2s infinite;
+      background: #10b981;
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
     }
+
+    .status-dot.active::before {
+      background: #10b981;
+    }
+
     .status-dot.inactive {
-      background: linear-gradient(90deg, #f43f5e 0%, #be123c 100%);
-      animation: pulse-red 1.2s infinite;
+      background: #ef4444;
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
     }
-    @keyframes pulse-green {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
-      50% { box-shadow: 0 0 0 8px rgba(34,197,94,0.1); }
+
+    .status-dot.inactive::before {
+      background: #ef4444;
     }
-    @keyframes pulse-red {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(244,63,94,0.4); }
-      50% { box-shadow: 0 0 0 8px rgba(244,63,94,0.1); }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 0.3; }
+      50% { transform: scale(1.2); opacity: 0.1; }
     }
+
     .status-text {
       font-size: 14px;
+      font-weight: 600;
+      color: white;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
     }
+
+    /* Toggle Switches */
     .toggle-container {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 15px;
+      margin-bottom: 20px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: var(--transition);
     }
+
+    .toggle-container:hover {
+      background: rgba(255, 255, 255, 0.15);
+      transform: translateX(4px);
+    }
+
     .toggle-label {
       font-size: 14px;
-      font-weight: 500;
+      font-weight: 600;
+      color: white;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
     }
+
     .toggle {
       position: relative;
       display: inline-block;
-      width: 52px;
-      height: 28px;
+      width: 56px;
+      height: 32px;
     }
+
     .toggle input {
       opacity: 0;
       width: 0;
       height: 0;
     }
+
     .slider {
       position: absolute;
       cursor: pointer;
@@ -101,319 +311,518 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: #cbd5e1;
-      transition: background 0.3s;
-      border-radius: 28px;
+      background: rgba(255, 255, 255, 0.3);
+      transition: var(--transition);
+      border-radius: 32px;
+      border: 1px solid rgba(255, 255, 255, 0.4);
     }
+
     .toggle input:checked + .slider {
-      background: linear-gradient(90deg, #6366f1 0%, #06b6d4 100%);
+      background: var(--success-gradient);
+      box-shadow: 0 0 20px rgba(79, 172, 254, 0.4);
     }
+
     .slider:before {
       position: absolute;
       content: "";
-      height: 20px;
-      width: 20px;
+      height: 24px;
+      width: 24px;
       left: 4px;
-      bottom: 4px;
-      background: #fff;
-      transition: transform 0.3s;
+      bottom: 3px;
+      background: white;
+      transition: var(--transition);
       border-radius: 50%;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     }
+
     .toggle input:checked + .slider:before {
       transform: translateX(24px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
+
+    /* Mode Selector */
+    .mode-selector {
+      margin-bottom: 20px;
+    }
+
+    .mode-selector select {
+      width: 100%;
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      color: white;
+      font-size: 14px;
+      font-weight: 500;
+      transition: var(--transition);
+    }
+
+    .mode-selector select:focus {
+      outline: none;
+      border-color: rgba(255, 255, 255, 0.6);
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+    }
+
+    .mode-selector select option {
+      background: #2c3e50;
+      color: white;
+    }
+
+    /* Buttons */
     .button {
       width: 100%;
-      padding: 12px;
-      background: linear-gradient(90deg, #6366f1 0%, #06b6d4 100%);
-      color: #fff;
+      padding: 16px;
       border: none;
-      border-radius: 8px;
+      border-radius: 12px;
       font-size: 15px;
       font-weight: 600;
       cursor: pointer;
-      box-shadow: 0 2px 8px rgba(99,102,241,0.08);
-      margin-bottom: 10px;
-      transition: background 0.2s, box-shadow 0.2s;
+      margin-bottom: 12px;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
+
+    .button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.5s;
+    }
+
+    .button:hover::before {
+      left: 100%;
+    }
+
     .button:hover {
-      background: linear-gradient(90deg, #4f46e5 0%, #0ea5e9 100%);
-      box-shadow: 0 4px 16px rgba(99,102,241,0.12);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
     }
+
+    .button:active {
+      transform: translateY(0);
+    }
+
     .button:disabled {
-      background-color: #cccccc;
+      opacity: 0.6;
       cursor: not-allowed;
+      transform: none;
     }
+
+    .button.primary {
+      background: var(--primary-gradient);
+      color: white;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
     .button.secondary {
-      background: #f1f5f9;
-      color: #22223b;
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: var(--shadow-light);
     }
-    .button.secondary:hover {
-      background: #e0e7ef;
+
+    .button.success {
+      background: var(--success-gradient);
+      color: white;
+      box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
     }
-    .dark-mode .button.secondary {
-      background: #23272f;
-      color: #fff;
+
+    /* MCQ Info */
+    .mcq-info {
+      margin-top: 20px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      max-height: 120px;
+      overflow-y: auto;
+      backdrop-filter: blur(10px);
     }
+
+    .mcq-question, .mcq-answer {
+      font-size: 12px;
+      color: white;
+      margin-bottom: 8px;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    .mcq-question {
+      font-weight: 600;
+    }
+
+    .mcq-answer {
+      color: #10b981;
+      font-weight: 500;
+    }
+
+    /* API Status */
+    .api-status {
+      font-size: 12px;
+      text-align: center;
+      margin: 16px 0;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .api-status.connected {
+      background: rgba(16, 185, 129, 0.2);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .api-status.disconnected {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    /* Stats */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .stats-item {
+      text-align: center;
+      padding: 16px 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: var(--transition);
+    }
+
+    .stats-item:hover {
+      transform: translateY(-4px);
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .stats-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      margin-bottom: 4px;
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .stats-item div:last-child {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.8);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Settings Link */
     .settings-link {
       display: block;
       text-align: center;
-      margin-top: 15px;
-      color: #64748b;
+      margin-top: 16px;
+      color: rgba(255, 255, 255, 0.8);
       text-decoration: none;
       font-size: 12px;
       font-weight: 500;
-      transition: color 0.2s;
+      padding: 12px;
+      border-radius: 8px;
+      transition: var(--transition);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
+
     .settings-link:hover {
-      color: #6366f1;
-      text-decoration: underline;
+      color: white;
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-2px);
     }
-    .api-status {
-      font-size: 12px;
-      color: #666;
-      margin-top: 10px;
-      text-align: center;
+
+    /* Error Message */
+    #errorMessage {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      font-weight: 500;
+      backdrop-filter: blur(10px);
     }
-    .api-status.connected {
-      color: #4CAF50;
+
+    /* OCR Controls */
+    .ocr-controls {
+      margin-top: 20px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
     }
-    .api-status.disconnected {
-      color: #F44336;
-    }
-    .mode-selector {
-      margin-bottom: 15px;
-    }
-    .mode-selector select {
+
+    .ocr-controls select {
       width: 100%;
-      padding: 8px;
-      border-radius: 4px;
-      border: 1px solid #ddd;
-    }
-    .stats {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 10px;
+      padding: 12px;
+      margin: 8px 0;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
       font-size: 12px;
-      color: #666;
     }
-    .stats-item {
-      text-align: center;
+
+    .ocr-controls select option {
+      background: #2c3e50;
+      color: white;
     }
-    .stats-value {
-      font-size: 20px;
-      font-weight: 700;
-      color: #6366f1;
+
+    #preview {
+      max-width: 100%;
+      max-height: 150px;
+      border-radius: 8px;
+      margin: 12px 0;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
-    .dark-mode .stats-value {
-      color: #38bdf8;
-    }
-    .theme-toggle {
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      background: none;
-      border: none;
-      cursor: pointer;
-      font-size: 18px;
-    }
-    .dark-mode {
-      background-color: #222;
-      color: #eee;
-    }
-    .dark-mode .container {
-      background: linear-gradient(135deg, #23272f 0%, #18181b 100%);
-      box-shadow: 0 4px 24px rgba(0,0,0,0.32), 0 1.5px 4px rgba(0,0,0,0.16);
-    }
-    .dark-mode h1, .dark-mode .toggle-label {
-      color: #fff;
-    }
-    .dark-mode .button.secondary {
-      background-color: #444;
-      color: #eee;
-    }
-    .mcq-info {
-      margin-top: 10px;
-      padding: 10px;
-      background-color: #f5f5f5;
-      border-radius: 4px;
-      font-size: 12px;
+
+    #ocr-result {
+      background: rgba(0, 0, 0, 0.3);
+      color: white;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 11px;
       max-height: 100px;
       overflow-y: auto;
+      white-space: pre-wrap;
+      font-family: 'Courier New', monospace;
     }
-    .dark-mode .mcq-info {
-      background-color: #444;
+
+    #status {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.8);
+      text-align: center;
+      margin: 8px 0;
+      font-weight: 500;
     }
-    .mcq-question {
-      font-weight: bold;
-      margin-bottom: 5px;
+
+    /* Dark Mode */
+    .dark-mode {
+      --glass-bg: rgba(0, 0, 0, 0.4);
+      --glass-border: rgba(255, 255, 255, 0.1);
     }
-    .mcq-answer {
-      color: #4CAF50;
+
+    .dark-mode body {
+      background: var(--dark-gradient);
     }
-    .dark-mode .mcq-answer {
-      color: #8BC34A;
+
+    .dark-mode .company-name {
+      background: linear-gradient(135deg, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
-    /* Responsive */
-    @media (max-width: 400px) {
-      .container { padding: 10px; }
-      h1 { font-size: 16px; }
-      .button { font-size: 13px; padding: 10px; }
-    }
-    /* Banner Styles */
+
+    /* Banner */
     .banner {
-      width: 100%;
-      background: linear-gradient(90deg, #6366f1 0%, #06b6d4 100%);
-      color: #fff;
+      background: var(--primary-gradient);
+      color: white;
       font-weight: 600;
-      font-size: 13px;
-      padding: 10px 16px 10px 36px;
+      font-size: 11px;
+      padding: 8px 32px 8px 40px;
       position: relative;
-      text-align: left;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 100;
-      box-shadow: 0 2px 8px rgba(99,102,241,0.08);
-      border-bottom-left-radius: 8px;
-      border-bottom-right-radius: 8px;
-      margin-bottom: 10px;
-      animation: fadeIn 0.6s;
+      text-align: center;
+      border-radius: 0 0 12px 12px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-light);
     }
-    .banner a {
-      color: #fff;
-      text-decoration: underline;
-      margin-left: 6px;
-      font-weight: 700;
-      font-size: 13px;
-    }
+
     .banner .close-btn {
       position: absolute;
       left: 8px;
       top: 50%;
       transform: translateY(-50%);
-      background: rgba(0,0,0,0.12);
+      background: rgba(255, 255, 255, 0.2);
       border: none;
-      color: #fff;
-      font-size: 16px;
+      color: white;
+      font-size: 14px;
       border-radius: 50%;
-      width: 22px;
-      height: 22px;
+      width: 20px;
+      height: 20px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.2s;
+      transition: var(--transition);
     }
+
     .banner .close-btn:hover {
-      background: rgba(0,0,0,0.22);
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-50%) scale(1.1);
+    }
+
+    .banner a {
+      color: white;
+      text-decoration: underline;
+      margin-left: 4px;
+      font-weight: 700;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.5);
+    }
+
+    /* Responsive */
+    @media (max-width: 400px) {
+      .main-container { padding: 16px; }
+      .container { padding: 16px; }
+      h1 { font-size: 18px; }
+      .button { font-size: 13px; padding: 14px; }
     }
   </style>
 </head>
-<body class="min-w-[340px] bg-background text-foreground p-4 dark:bg-[#18181b] dark:text-white transition-colors duration-300">
+<body class="min-w-[380px] bg-background text-foreground transition-colors duration-300">
   <div class="banner" id="installBanner">
-    <img src="./icons/icon48.png" alt="Logo" style="width:24px;height:24px;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,0.10);margin-right:8px;">
-    <span style="font-weight:700;margin-right:8px;">Advanced AI MCQ Bot</span>
     <button class="close-btn" onclick="this.parentElement.style.display='none'" aria-label="Close">&times;</button>
-    Add this extension to Chrome for the best experience!
-    <a href="https://chrome.google.com/webstore/category/extensions" target="_blank">Get it on Chrome Web Store</a>
+    Advanced AI MCQ Bot by MVK Solutions - Professional Edition
+    <a href="https://chrome.google.com/webstore/category/extensions" target="_blank">Get Pro Version</a>
   </div>
   
-  <button id="themeToggle" class="theme-toggle">🌙</button>
-  
-  <div class="header">
-    <img src="icons/icon48.png" alt="Logo" class="logo">
-    <h1>Advanced AI MCQ Bot</h1>
+  <div class="main-container">
+    <button id="themeToggle" class="theme-toggle">🌙</button>
+    
+    <!-- Company Header -->
+    <div class="company-header">
+      <div class="company-logo">MVK</div>
+      <div class="company-name">MVK Solutions</div>
+      <div class="company-tagline">AI-Powered Automation Excellence</div>
+    </div>
+    
+    <div class="header">
+      <img src="icons/icon48.png" alt="Logo" class="logo">
+      <h1>Advanced AI MCQ Bot</h1>
+    </div>
+    
+    <div class="container">
+      <div class="status">
+        <div id="statusDot" class="status-dot inactive"></div>
+        <div id="statusText" class="status-text">Bot is inactive</div>
+      </div>
+      
+      <div id="errorMessage" style="display:none;"></div>
+      
+      <div class="toggle-container">
+        <span class="toggle-label">Enable Bot</span>
+        <label class="toggle">
+          <input type="checkbox" id="botToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      
+      <div class="mode-selector">
+        <select id="modeSelect">
+          <option value="learning">🎓 Learning Mode</option>
+          <option value="safe">🛡️ Safe Mode</option>
+          <option value="stealth">🥷 Stealth Mode</option>
+        </select>
+      </div>
+      
+      <div class="toggle-container">
+        <span class="toggle-label">Voice Narration</span>
+        <label class="toggle">
+          <input type="checkbox" id="voiceToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      
+      <div class="toggle-container">
+        <span class="toggle-label">Auto-Answer</span>
+        <label class="toggle">
+          <input type="checkbox" id="autoAnswerToggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      
+      <div class="toggle-container">
+        <span class="toggle-label">Human-like Movement</span>
+        <label class="toggle">
+          <input type="checkbox" id="humanMouseMovementToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+      
+      <button id="scanButton" class="button primary">🔍 Scan for MCQs</button>
+      <button id="captureButton" class="button secondary">📸 Capture Screen</button>
+      
+      <div id="mcqInfo" class="mcq-info" style="display: none;">
+        <div class="mcq-question">Question: </div>
+        <div class="mcq-answer">Answer: </div>
+      </div>
+      
+      <div id="apiStatus" class="api-status disconnected">
+        API Status: Not Connected
+      </div>
+      
+      <div class="stats">
+        <div class="stats-item">
+          <div class="stats-value" id="mcqsFound">0</div>
+          <div>MCQs Found</div>
+        </div>
+        <div class="stats-item">
+          <div class="stats-value" id="mcqsAnswered">0</div>
+          <div>Answered</div>
+        </div>
+        <div class="stats-item">
+          <div class="stats-value" id="accuracy">0%</div>
+          <div>Accuracy</div>
+        </div>
+      </div>
+
+      <!-- OCR Controls -->
+      <div class="ocr-controls">
+        <button id="start-auto" class="button success">🤖 Auto Detect & OCR</button>
+        <select id="lang-select">
+          <option value="eng">🇺🇸 English</option>
+          <option value="hin">🇮🇳 Hindi</option>
+          <option value="spa">🇪🇸 Spanish</option>
+          <option value="fra">🇫🇷 French</option>
+        </select>
+        <button id="re-ocr" class="button secondary">🔄 Re-OCR</button>
+        <div id="status"></div>
+        <img id="preview" style="display:none;"/>
+        <pre id="ocr-result"></pre>
+      </div>
+    </div>
+    
+    <a href="options.html" class="settings-link">⚙️ Settings & API Configuration</a>
   </div>
-  
-  <div class="container">
-    <div class="status">
-      <div id="statusDot" class="status-dot inactive"></div>
-      <div id="statusText" class="status-text">Bot is inactive</div>
-    </div>
-    <div id="errorMessage" style="display:none; color:#F44336; background:#fff3f3; border:1px solid #F44336; border-radius:4px; padding:8px; margin-bottom:10px; font-size:13px;"></div>
-    
-    <div class="toggle-container">
-      <span class="toggle-label">Enable Bot</span>
-      <label class="toggle">
-        <input type="checkbox" id="botToggle">
-        <span class="slider"></span>
-      </label>
-    </div>
-    
-    <div class="mode-selector">
-      <select id="modeSelect">
-        <option value="learning">Learning Mode</option>
-        <option value="safe">Safe Mode</option>
-        <option value="stealth">Stealth Mode</option>
-      </select>
-    </div>
-    
-    <div class="toggle-container">
-      <span class="toggle-label">Voice Narration</span>
-      <label class="toggle">
-        <input type="checkbox" id="voiceToggle">
-        <span class="slider"></span>
-      </label>
-    </div>
-    
-    <div class="toggle-container">
-      <span class="toggle-label">Auto-Answer</span>
-      <label class="toggle">
-        <input type="checkbox" id="autoAnswerToggle" checked>
-        <span class="slider"></span>
-      </label>
-    </div>
-    
-    <div style="margin-top: 10px;">
-      <label style="display: flex; align-items: center; gap: 8px;">
-        <input type="checkbox" id="humanMouseMovementToggle">
-        Human-like Mouse Movement
-      </label>
-      <small style="color: #888;">(Simulates random mouse movement, clicks, and scrolling for advanced human-like behavior.)</small>
-    </div>
-    
-    <button id="scanButton" class="button">Scan for MCQs</button>
-    <button id="captureButton" class="button secondary">Capture Screen</button>
-    
-    <div id="mcqInfo" class="mcq-info" style="display: none;">
-      <div class="mcq-question">Question: </div>
-      <div class="mcq-answer">Answer: </div>
-    </div>
-    
-    <div id="apiStatus" class="api-status disconnected">
-      API Status: Not Connected
-    </div>
-    
-    <div class="stats">
-      <div class="stats-item">
-        <div class="stats-value" id="mcqsFound">0</div>
-        <div>MCQs Found</div>
-      </div>
-      <div class="stats-item">
-        <div class="stats-value" id="mcqsAnswered">0</div>
-        <div>Answered</div>
-      </div>
-      <div class="stats-item">
-        <div class="stats-value" id="accuracy">0%</div>
-        <div>Accuracy</div>
-      </div>
-    </div>
-  </div>
-  
-  <a href="options.html" class="settings-link">Settings & API Configuration</a>
-  
-  <button id="start-auto">Auto Detect & OCR</button>
-  <select id="lang-select">
-    <option value="eng">English</option>
-    <option value="hin">Hindi</option>
-    <!-- Add more as needed -->
-  </select>
-  <button id="re-ocr">Re-OCR</button>
-  <div id="status"></div>
-  <img id="preview" style="max-width:100%;max-height:200px;"/>
-  <pre id="ocr-result"></pre>
   
   <script src="tesseract.min.js"></script>
   <script src="popup.js"></script>

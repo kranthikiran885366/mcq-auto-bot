@@ -3,69 +3,181 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Advanced AI MCQ Bot Settings</title>
+  <title>Advanced AI MCQ Bot Settings - MVK Solutions</title>
   <style>
-    html, body {
-      width: 100vw;
-      height: 100vh;
-      min-height: 100vh;
-      min-width: 100vw;
+    :root {
+      --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      --warning-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+      --dark-gradient: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+      --glass-bg: rgba(255, 255, 255, 0.25);
+      --glass-border: rgba(255, 255, 255, 0.18);
+      --shadow-light: 0 8px 32px rgba(31, 38, 135, 0.37);
+      --shadow-dark: 0 8px 32px rgba(0, 0, 0, 0.3);
+      --border-radius: 20px;
+      --transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      --text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      background: var(--background, #f8fafc);
     }
-    body {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
+
+    html, body {
+      width: 100vw;
       min-height: 100vh;
-      min-width: 100vw;
-      padding: 0;
+      font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--primary-gradient);
+      position: relative;
+      overflow-x: hidden;
     }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
     .fullscreen-center {
+      position: relative;
+      z-index: 1;
       width: 100vw;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
-      padding-top: 0;
+      padding: 20px;
     }
+
+    /* Company Banner */
+    .company-banner {
+      width: 100%;
+      max-width: 1200px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--border-radius);
+      padding: 24px;
+      margin-bottom: 30px;
+      text-align: center;
+      box-shadow: var(--shadow-light);
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .company-banner::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+      transform: rotate(45deg);
+      animation: shine 4s infinite;
+    }
+
+    @keyframes shine {
+      0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+      50% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+      100% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+    }
+
+    .company-logo-large {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 20px;
+      background: var(--primary-gradient);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      font-weight: bold;
+      color: white;
+      box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
+      position: relative;
+      z-index: 1;
+    }
+
+    .company-title {
+      font-size: 32px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+      letter-spacing: -1px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .company-subtitle {
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.9);
+      font-weight: 600;
+      margin-bottom: 16px;
+      text-shadow: var(--text-shadow);
+      position: relative;
+      z-index: 1;
+    }
+
+    .company-description {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.8);
+      font-weight: 500;
+      line-height: 1.6;
+      max-width: 600px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Banner */
     .banner {
-      width: 100vw;
-      background: linear-gradient(90deg, #6366f1 0%, #06b6d4 100%);
-      color: #fff;
+      width: 100%;
+      max-width: 1200px;
+      background: var(--secondary-gradient);
+      color: white;
       font-weight: 600;
       font-size: 16px;
       padding: 18px 24px 18px 48px;
       position: relative;
-      text-align: left;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 100;
-      box-shadow: 0 2px 8px rgba(99,102,241,0.08);
-      border-bottom-left-radius: 12px;
-      border-bottom-right-radius: 12px;
+      text-align: center;
+      border-radius: var(--border-radius);
       margin-bottom: 24px;
-      animation: fadeIn 0.6s;
+      box-shadow: var(--shadow-light);
+      animation: slideInDown 0.6s ease-out;
     }
-    .banner a {
-      color: #fff;
-      text-decoration: underline;
-      margin-left: 8px;
-      font-weight: 700;
+
+    @keyframes slideInDown {
+      from { transform: translateY(-100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
     }
+
     .banner .close-btn {
       position: absolute;
       left: 16px;
       top: 50%;
       transform: translateY(-50%);
-      background: rgba(0,0,0,0.12);
+      background: rgba(255, 255, 255, 0.2);
       border: none;
-      color: #fff;
+      color: white;
       font-size: 20px;
       border-radius: 50%;
       width: 32px;
@@ -74,133 +186,218 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.2s;
+      transition: var(--transition);
     }
+
     .banner .close-btn:hover {
-      background: rgba(0,0,0,0.22);
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-50%) scale(1.1);
     }
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      padding: 20px;
-      max-width: 800px;
-      margin: 0 auto;
-      background-color: #f9f9f9;
-      transition: background-color 0.3s, color 0.3s;
+
+    .banner a {
+      color: white;
+      text-decoration: underline;
+      margin-left: 8px;
+      font-weight: 700;
     }
+
+    /* Theme Toggle */
+    .theme-toggle {
+      position: fixed;
+      top: 30px;
+      right: 30px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 24px;
+      transition: var(--transition);
+      z-index: 1000;
+      box-shadow: var(--shadow-light);
+    }
+
+    .theme-toggle:hover {
+      transform: scale(1.1) rotate(15deg);
+      box-shadow: 0 12px 40px rgba(31, 38, 135, 0.5);
+    }
+
+    /* Header */
     .header {
       display: flex;
       align-items: center;
-      margin-bottom: 24px;
+      margin-bottom: 32px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--border-radius);
+      padding: 24px;
+      box-shadow: var(--shadow-light);
+      width: 100%;
+      max-width: 1200px;
     }
+
     .logo {
-      width: 48px;
-      height: 48px;
-      margin-right: 16px;
-      border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      width: 64px;
+      height: 64px;
+      margin-right: 20px;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      transition: var(--transition);
     }
+
+    .logo:hover {
+      transform: scale(1.05) rotate(5deg);
+    }
+
     h1 {
-      font-size: 26px;
+      font-size: 28px;
       font-weight: 800;
-      color: #22223b;
+      color: white;
+      text-shadow: var(--text-shadow);
       letter-spacing: -0.5px;
     }
+
+    /* Container */
     .container {
-      background: linear-gradient(135deg, #f8fafc 0%, #e0e7ef 100%);
-      border-radius: 18px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1.5px 4px rgba(0,0,0,0.04);
-      padding: 28px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--border-radius);
+      padding: 32px;
       margin-bottom: 24px;
-      transition: background 0.3s, box-shadow 0.3s;
+      box-shadow: var(--shadow-light);
+      transition: var(--transition);
+      width: 100%;
+      max-width: 1200px;
     }
+
+    .container:hover {
+      border-color: rgba(255, 255, 255, 0.3);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(31, 38, 135, 0.5);
+    }
+
     h2 {
+      font-size: 22px;
+      margin-bottom: 24px;
+      color: white;
+      text-shadow: var(--text-shadow);
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    h2::before {
+      content: '';
+      width: 4px;
+      height: 24px;
+      background: var(--primary-gradient);
+      border-radius: 2px;
+    }
+
+    h3 {
       font-size: 18px;
-      margin-top: 0;
-      margin-bottom: 15px;
-      color: #333;
+      margin-bottom: 16px;
+      color: white;
+      text-shadow: var(--text-shadow);
+      font-weight: 600;
     }
+
+    /* Form Elements */
     .form-group {
-      margin-bottom: 15px;
+      margin-bottom: 24px;
     }
+
     label {
       display: block;
-      margin-bottom: 5px;
-      font-weight: 500;
-    }
-    input[type="text"], input[type="password"], select, textarea, input[type="number"] {
-      background: #f8fafc;
-      color: #22223b;
-      border: 1.5px solid #e5e7eb;
-      border-radius: 6px;
-      padding: 10px;
-      font-size: 15px;
-      transition: border 0.2s, background 0.2s;
-    }
-    input:focus, select:focus, textarea:focus {
-      border-color: #6366f1;
-      outline: none;
-      background: #fff;
-    }
-    .dark-mode input, .dark-mode select, .dark-mode textarea {
-      background: #23272f;
-      color: #fff;
-      border-color: #23272f;
-    }
-    .dark-mode input:focus, .dark-mode select:focus, .dark-mode textarea:focus {
-      background: #18181b;
-      border-color: #38bdf8;
-    }
-    .button {
-      padding: 12px 20px;
-      background: linear-gradient(90deg, #6366f1 0%, #06b6d4 100%);
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      font-size: 15px;
+      margin-bottom: 8px;
       font-weight: 600;
-      cursor: pointer;
-      box-shadow: 0 2px 8px rgba(99,102,241,0.08);
-      margin-bottom: 10px;
-      transition: background 0.2s, box-shadow 0.2s;
+      color: white;
+      text-shadow: var(--text-shadow);
+      font-size: 14px;
     }
-    .button:hover {
-      background: linear-gradient(90deg, #4f46e5 0%, #0ea5e9 100%);
-      box-shadow: 0 4px 16px rgba(99,102,241,0.12);
+
+    input[type="text"], 
+    input[type="password"], 
+    input[type="number"],
+    select, 
+    textarea {
+      width: 100%;
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      color: white;
+      font-size: 14px;
+      font-weight: 500;
+      transition: var(--transition);
     }
-    .button.secondary {
-      background: #f1f5f9;
-      color: #22223b;
+
+    input:focus, 
+    select:focus, 
+    textarea:focus {
+      outline: none;
+      border-color: rgba(255, 255, 255, 0.6);
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.15);
     }
-    .button.secondary:hover {
-      background: #e0e7ef;
+
+    input::placeholder,
+    textarea::placeholder {
+      color: rgba(255, 255, 255, 0.6);
     }
-    .button-group {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      margin-top: 15px;
+
+    select option {
+      background: #2c3e50;
+      color: white;
     }
+
+    /* Toggle Switches */
     .toggle-container {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 15px;
+      margin-bottom: 20px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: var(--transition);
     }
+
+    .toggle-container:hover {
+      background: rgba(255, 255, 255, 0.15);
+      transform: translateX(4px);
+    }
+
     .toggle-label {
       font-size: 14px;
-      font-weight: 500;
+      font-weight: 600;
+      color: white;
+      text-shadow: var(--text-shadow);
     }
+
     .toggle {
       position: relative;
       display: inline-block;
-      width: 52px;
-      height: 28px;
+      width: 60px;
+      height: 34px;
     }
+
     .toggle input {
       opacity: 0;
       width: 0;
       height: 0;
     }
+
     .slider {
       position: absolute;
       cursor: pointer;
@@ -208,243 +405,463 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: #cbd5e1;
-      transition: background 0.3s;
-      border-radius: 28px;
+      background: rgba(255, 255, 255, 0.3);
+      transition: var(--transition);
+      border-radius: 34px;
+      border: 1px solid rgba(255, 255, 255, 0.4);
     }
+
     .toggle input:checked + .slider {
-      background: linear-gradient(90deg, #6366f1 0%, #06b6d4 100%);
+      background: var(--success-gradient);
+      box-shadow: 0 0 20px rgba(79, 172, 254, 0.4);
     }
+
     .slider:before {
       position: absolute;
       content: "";
-      height: 20px;
-      width: 20px;
+      height: 26px;
+      width: 26px;
       left: 4px;
-      bottom: 4px;
-      background: #fff;
-      transition: transform 0.3s;
+      bottom: 3px;
+      background: white;
+      transition: var(--transition);
       border-radius: 50%;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     }
+
     .toggle input:checked + .slider:before {
-      transform: translateX(24px);
+      transform: translateX(26px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
-    .status {
-      margin-top: 10px;
-      padding: 10px;
-      border-radius: 6px;
-      font-size: 15px;
-      font-weight: 500;
-    }
-    .status.success {
-      background: #e8f5e9;
-      color: #22c55e;
-    }
-    .status.error {
-      background: #ffebee;
-      color: #f43f5e;
-    }
-    .dark-mode .status.success {
-      background: #23272f;
-      color: #22d3ee;
-    }
-    .dark-mode .status.error {
-      background: #2a1a1d;
-      color: #fda4af;
-    }
-    .tab-container {
-      margin-bottom: 20px;
-    }
-    .tab-buttons {
-      display: flex;
-      border-bottom: 2px solid #e5e7eb;
-      margin-bottom: 18px;
-      gap: 2px;
-    }
-    .tab-button {
-      padding: 12px 22px;
-      background: none;
+
+    /* Buttons */
+    .button {
+      padding: 16px 24px;
       border: none;
+      border-radius: 12px;
       font-size: 15px;
       font-weight: 600;
-      color: #64748b;
       cursor: pointer;
-      border-radius: 10px 10px 0 0;
-      transition: color 0.2s, background 0.2s;
+      margin-right: 12px;
+      margin-bottom: 12px;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
-    .tab-button.active, .tab-button:focus {
-      color: #6366f1;
-      background: #f1f5f9;
-      outline: none;
+
+    .button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.5s;
     }
-    .dark-mode .tab-button.active, .dark-mode .tab-button:focus {
-      background: #23272f;
-      color: #38bdf8;
+
+    .button:hover::before {
+      left: 100%;
     }
+
+    .button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
+    }
+
+    .button:active {
+      transform: translateY(-1px);
+    }
+
+    .button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .button.primary {
+      background: var(--primary-gradient);
+      color: white;
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .button.secondary {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: var(--shadow-light);
+    }
+
+    .button.success {
+      background: var(--success-gradient);
+      color: white;
+      box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4);
+    }
+
+    .button.warning {
+      background: var(--warning-gradient);
+      color: white;
+      box-shadow: 0 6px 20px rgba(250, 112, 154, 0.4);
+    }
+
+    .button-group {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 24px;
+      flex-wrap: wrap;
+    }
+
+    /* Tabs */
+    .tab-container {
+      margin-bottom: 32px;
+      width: 100%;
+      max-width: 1200px;
+    }
+
+    .tab-buttons {
+      display: flex;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+      margin-bottom: 24px;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .tab-button {
+      padding: 16px 24px;
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.7);
+      cursor: pointer;
+      border-radius: 12px 12px 0 0;
+      transition: var(--transition);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .tab-button.active, 
+    .tab-button:hover {
+      color: white;
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-bottom: none;
+      transform: translateY(-2px);
+    }
+
     .tab-content {
       display: none;
-      animation: fadeIn 0.4s;
+      animation: fadeInUp 0.5s ease-out;
     }
+
     .tab-content.active {
       display: block;
     }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    .theme-toggle {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      background: none;
-      border: none;
+
+    /* Status Messages */
+    .status {
+      padding: 16px;
+      border-radius: 12px;
+      margin: 16px 0;
+      font-weight: 600;
+      backdrop-filter: blur(10px);
+    }
+
+    .status.success {
+      background: rgba(16, 185, 129, 0.2);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .status.error {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .status.info {
+      background: rgba(59, 130, 246, 0.2);
+      color: #3b82f6;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    /* Range Inputs */
+    .range-container {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .range-value {
+      min-width: 60px;
+      font-weight: 700;
+      color: white;
+      text-shadow: var(--text-shadow);
+      background: rgba(255, 255, 255, 0.1);
+      padding: 8px 12px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    input[type="range"] {
+      flex: 1;
+      height: 8px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.3);
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--primary-gradient);
       cursor: pointer;
-      font-size: 24px;
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
     }
-    .dark-mode {
-      background-color: #222;
-      color: #eee;
+
+    input[type="range"]::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--primary-gradient);
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
     }
-    .dark-mode .container {
-      background: linear-gradient(135deg, #23272f 0%, #18181b 100%);
-      box-shadow: 0 4px 24px rgba(0,0,0,0.32), 0 1.5px 4px rgba(0,0,0,0.16);
+
+    /* API Priority */
+    .api-list {
+      margin-bottom: 24px;
     }
-    .dark-mode h1, .dark-mode h2, .dark-mode label, .dark-mode .toggle-label {
-      color: #fff;
-    }
-    .dark-mode input[type="text"], .dark-mode input[type="password"], .dark-mode select, .dark-mode textarea {
-      background-color: #444;
-      color: #fff;
-      border-color: #555;
-    }
-    .dark-mode .button.secondary {
-      background-color: #444;
-      color: #eee;
-    }
-    .dark-mode .tab-button {
-      color: #aaa;
-    }
+
     .api-priority {
       display: flex;
       align-items: center;
-      margin-bottom: 10px;
+      margin-bottom: 16px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: var(--transition);
     }
+
+    .api-priority:hover {
+      background: rgba(255, 255, 255, 0.15);
+      transform: translateX(4px);
+    }
+
     .api-priority-number {
-      width: 24px;
-      height: 24px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
-      background-color: #2196F3;
+      background: var(--primary-gradient);
       color: white;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-right: 10px;
+      margin-right: 16px;
       font-weight: bold;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
     }
+
     .api-priority-controls {
       margin-left: auto;
       display: flex;
-      gap: 5px;
+      gap: 8px;
     }
+
     .api-priority-button {
-      width: 24px;
-      height: 24px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
       border: none;
-      background-color: #f1f1f1;
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: bold;
+      transition: var(--transition);
     }
-    .dark-mode .api-priority-button {
-      background-color: #444;
-      color: #fff;
+
+    .api-priority-button:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(1.1);
     }
-    .api-list {
-      margin-bottom: 20px;
+
+    .api-priority-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
     }
+
+    /* History */
+    .history-list {
+      max-height: 400px;
+      overflow-y: auto;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
     .history-item {
-      padding: 10px;
-      border-bottom: 1px solid #eee;
+      padding: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       font-size: 14px;
+      transition: var(--transition);
     }
-    .dark-mode .history-item {
-      border-bottom-color: #444;
+
+    .history-item:hover {
+      background: rgba(255, 255, 255, 0.1);
     }
+
+    .history-item:last-child {
+      border-bottom: none;
+    }
+
     .history-question {
-      font-weight: bold;
-      margin-bottom: 5px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: white;
+      text-shadow: var(--text-shadow);
     }
+
     .history-answer {
-      color: #4CAF50;
+      color: #10b981;
+      font-weight: 500;
     }
-    .dark-mode .history-answer {
-      color: #8BC34A;
-    }
+
     .history-time {
       font-size: 12px;
-      color: #999;
-      margin-top: 5px;
+      color: rgba(255, 255, 255, 0.6);
+      margin-top: 8px;
     }
-    .history-list {
-      max-height: 300px;
-      overflow-y: auto;
+
+    /* Dark Mode */
+    .dark-mode {
+      --glass-bg: rgba(0, 0, 0, 0.4);
+      --glass-border: rgba(255, 255, 255, 0.1);
     }
-    .range-container {
-      display: flex;
-      align-items: center;
+
+    .dark-mode body {
+      background: var(--dark-gradient);
     }
-    .range-value {
-      margin-left: 10px;
-      font-weight: bold;
-      min-width: 40px;
+
+    .dark-mode .company-title {
+      background: linear-gradient(135deg, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.5);
+    }
+
     /* Responsive */
-    @media (max-width: 600px) {
-      .container { padding: 12px; }
+    @media (max-width: 768px) {
+      .fullscreen-center { padding: 16px; }
+      .container { padding: 20px; }
+      .company-title { font-size: 24px; }
+      .company-subtitle { font-size: 16px; }
+      h1 { font-size: 22px; }
+      h2 { font-size: 18px; }
+      .tab-buttons { flex-direction: column; }
+      .tab-button { border-radius: 8px; margin-bottom: 4px; }
+      .button-group { justify-content: center; }
+      .range-container { flex-direction: column; align-items: stretch; }
+      .range-value { margin-top: 8px; }
+    }
+
+    @media (max-width: 480px) {
+      .company-banner { padding: 16px; }
+      .company-logo-large { width: 60px; height: 60px; font-size: 28px; }
+      .company-title { font-size: 20px; }
+      .company-subtitle { font-size: 14px; }
+      .header { padding: 16px; }
+      .logo { width: 48px; height: 48px; }
       h1 { font-size: 18px; }
-      .button { font-size: 13px; padding: 10px 12px; }
-      .tab-button { font-size: 13px; padding: 8px 10px; }
     }
   </style>
 </head>
-<body class="bg-background text-foreground min-h-screen p-6 dark:bg-[#18181b] dark:text-white transition-colors duration-300">
+<body class="bg-background text-foreground transition-colors duration-300">
   <div class="banner" id="installBanner">
     <button class="close-btn" onclick="this.parentElement.style.display='none'" aria-label="Close">&times;</button>
-    Add this extension to Chrome for the best experience!
-    <a href="https://chrome.google.com/webstore/category/extensions" target="_blank">Get it on Chrome Web Store</a>
+    🚀 Professional AI MCQ Bot by MVK Solutions - Enterprise Edition Available!
+    <a href="https://mvksolutions.com/enterprise" target="_blank">Get Enterprise License</a>
   </div>
+  
   <div class="fullscreen-center">
     <button id="themeToggle" class="theme-toggle">🌙</button>
     
+    <!-- Company Banner -->
+    <div class="company-banner">
+      <div class="company-logo-large">MVK</div>
+      <div class="company-title">MVK Solutions</div>
+      <div class="company-subtitle">AI-Powered Automation Excellence</div>
+      <div class="company-description">
+        Leading provider of intelligent automation solutions. Our Advanced AI MCQ Bot represents the pinnacle of 
+        educational technology, combining cutting-edge artificial intelligence with sophisticated automation 
+        capabilities to deliver unparalleled performance and reliability.
+      </div>
+    </div>
+    
     <div class="header">
       <img src="icons/icon48.png" alt="Logo" class="logo">
-      <h1>Advanced AI MCQ Bot Settings</h1>
+      <h1>🤖 Advanced AI MCQ Bot Settings</h1>
     </div>
     
     <div class="tab-container">
       <div class="tab-buttons">
-        <button class="tab-button active" data-tab="api">AI Configuration</button>
-        <button class="tab-button" data-tab="behavior">Behavior Settings</button>
-        <button class="tab-button" data-tab="detection">Detection Settings</button>
-        <button class="tab-button" data-tab="advanced">Advanced Settings</button>
-        <button class="tab-button" data-tab="history">Answer History</button>
+        <button class="tab-button active" data-tab="api">🧠 AI Configuration</button>
+        <button class="tab-button" data-tab="behavior">⚙️ Behavior Settings</button>
+        <button class="tab-button" data-tab="detection">🔍 Detection Settings</button>
+        <button class="tab-button" data-tab="advanced">🚀 Advanced Settings</button>
+        <button class="tab-button" data-tab="history">📊 Answer History</button>
       </div>
       
       <div id="apiTab" class="tab-content active">
         <div class="container">
-          <h2>AI API Configuration</h2>
+          <h2>🧠 AI API Configuration</h2>
           
           <div class="api-list">
-            <h3>API Priority Order</h3>
-            <p>The bot will try APIs in this order until it gets a successful response:</p>
+            <h3>🎯 API Priority Order</h3>
+            <p style="color: rgba(255,255,255,0.8); margin-bottom: 20px; font-size: 14px;">
+              The bot will try APIs in this order until it gets a successful response:
+            </p>
             
             <div class="api-priority">
               <div class="api-priority-number">1</div>
-              <div>OpenAI (ChatGPT)</div>
+              <div style="color: white; font-weight: 600;">🤖 OpenAI (ChatGPT)</div>
               <div class="api-priority-controls">
                 <button class="api-priority-button" disabled>↑</button>
                 <button class="api-priority-button">↓</button>
@@ -453,7 +870,7 @@
             
             <div class="api-priority">
               <div class="api-priority-number">2</div>
-              <div>Google Gemini Pro</div>
+              <div style="color: white; font-weight: 600;">🧠 Google Gemini Pro</div>
               <div class="api-priority-controls">
                 <button class="api-priority-button">↑</button>
                 <button class="api-priority-button">↓</button>
@@ -462,7 +879,7 @@
             
             <div class="api-priority">
               <div class="api-priority-number">3</div>
-              <div>DeepSeek</div>
+              <div style="color: white; font-weight: 600;">🔥 DeepSeek</div>
               <div class="api-priority-controls">
                 <button class="api-priority-button">↑</button>
                 <button class="api-priority-button" disabled>↓</button>
@@ -471,25 +888,25 @@
           </div>
           
           <div class="form-group">
-            <label for="apiProvider">Primary AI Provider</label>
+            <label for="apiProvider">🎯 Primary AI Provider</label>
             <select id="apiProvider">
-              <option value="openai">OpenAI (ChatGPT)</option>
-              <option value="gemini">Google Gemini Pro</option>
-              <option value="deepseek">DeepSeek</option>
-              <option value="huggingface">Hugging Face</option>
-              <option value="search">Search Engine</option>
-              <option value="auto">Auto (Try All)</option>
+              <option value="openai">🤖 OpenAI (ChatGPT)</option>
+              <option value="gemini">🧠 Google Gemini Pro</option>
+              <option value="deepseek">🔥 DeepSeek</option>
+              <option value="huggingface">🤗 Hugging Face</option>
+              <option value="search">🔍 Search Engine</option>
+              <option value="auto">🚀 Auto (Try All)</option>
             </select>
           </div>
           
           <div id="openaiSettings">
             <div class="form-group">
-              <label for="openaiKey">OpenAI API Key</label>
+              <label for="openaiKey">🔑 OpenAI API Key</label>
               <input type="password" id="openaiKey" placeholder="Enter your OpenAI API key">
             </div>
             
             <div class="form-group">
-              <label for="openaiModel">OpenAI Model</label>
+              <label for="openaiModel">🤖 OpenAI Model</label>
               <select id="openaiModel">
                 <option value="gpt-4-0125-preview">GPT-4 Turbo (Latest)</option>
                 <option value="gpt-4-1106-preview">GPT-4 Turbo (11/2023)</option>
@@ -500,24 +917,24 @@
           
           <div id="geminiSettings" style="display: none;">
             <div class="form-group">
-              <label for="geminiKey">Google Gemini API Key</label>
+              <label for="geminiKey">🔑 Google Gemini API Key</label>
               <input type="password" id="geminiKey" placeholder="Enter your Google Gemini API key">
             </div>
             
             <div class="form-group">
-              <label for="geminiModel">Gemini Model</label>
+              <label for="geminiModel">🧠 Gemini Model</label>
               <input type="text" id="geminiModel" placeholder="e.g. gemini-2.0-flash">
             </div>
           </div>
           
           <div id="deepseekSettings" style="display: none;">
             <div class="form-group">
-              <label for="deepseekKey">DeepSeek API Key</label>
+              <label for="deepseekKey">🔑 DeepSeek API Key</label>
               <input type="password" id="deepseekKey" placeholder="Enter your DeepSeek API key">
             </div>
             
             <div class="form-group">
-              <label for="deepseekModel">DeepSeek Model</label>
+              <label for="deepseekModel">🔥 DeepSeek Model</label>
               <select id="deepseekModel">
                 <option value="deepseek-chat">DeepSeek Chat</option>
                 <option value="deepseek-coder">DeepSeek Coder</option>
@@ -528,32 +945,35 @@
           
           <div id="huggingfaceSettings" style="display: none;">
             <div class="form-group">
-              <label for="huggingfaceKey">Hugging Face API Key</label>
+              <label for="huggingfaceKey">🔑 Hugging Face API Key</label>
               <input type="password" id="huggingfaceKey" placeholder="Enter your Hugging Face API key">
             </div>
             <div class="form-group">
-              <label for="huggingfaceModel">Hugging Face Model</label>
+              <label for="huggingfaceModel">🤗 Hugging Face Model</label>
               <input type="text" id="huggingfaceModel" placeholder="e.g. google/flan-t5-base">
             </div>
           </div>
           
           <div id="searchSettings" style="display: none;">
             <div class="form-group">
-              <label for="googleSearchApiKey">Google Search API Key</label>
+              <label for="googleSearchApiKey">🔑 Google Search API Key</label>
               <input type="text" id="googleSearchApiKey" placeholder="Enter your Google Search API key">
             </div>
             <div class="form-group">
-              <label for="googleSearchCx">Custom Search Engine ID (CX)</label>
+              <label for="googleSearchCx">🔍 Custom Search Engine ID (CX)</label>
               <input type="text" id="googleSearchCx" placeholder="Enter your Custom Search Engine ID (cx)">
             </div>
             <div class="form-group">
-              <small>Get your API key from <a href="https://console.developers.google.com/apis/credentials" target="_blank">Google Cloud Console</a> and your CX from <a href="https://programmablesearchengine.google.com/controlpanel/all" target="_blank">Programmable Search Engine</a>.</small>
+              <small style="color: rgba(255,255,255,0.7);">
+                Get your API key from <a href="https://console.developers.google.com/apis/credentials" target="_blank" style="color: #60a5fa;">Google Cloud Console</a> 
+                and your CX from <a href="https://programmablesearchengine.google.com/controlpanel/all" target="_blank" style="color: #60a5fa;">Programmable Search Engine</a>.
+              </small>
             </div>
           </div>
           
           <div class="form-group">
-            <label for="promptTemplate">AI Prompt Template</label>
-            <textarea id="promptTemplate" rows="5" placeholder="Enter your custom prompt template">You are an expert at answering multiple choice questions. Analyze the following question and options, then respond ONLY with the letter or number of the correct option (e.g., "A" or "1"). If multiple answers are correct, list them separated by commas.
+            <label for="promptTemplate">📝 AI Prompt Template</label>
+            <textarea id="promptTemplate" rows="6" placeholder="Enter your custom prompt template">You are an expert at answering multiple choice questions. Analyze the following question and options, then respond ONLY with the letter or number of the correct option (e.g., "A" or "1"). If multiple answers are correct, list them separated by commas.
 
 Question: {{question}}
 
@@ -566,18 +986,18 @@ Correct answer:</textarea>
           <div id="apiStatus" class="status" style="display: none;"></div>
           
           <div class="button-group">
-            <button id="testApiButton" class="button secondary">Test Connection</button>
-            <button id="saveApiButton" class="button">Save & Sync with Backend</button>
+            <button id="testApiButton" class="button secondary">🧪 Test Connection</button>
+            <button id="saveApiButton" class="button primary">💾 Save & Sync with Backend</button>
           </div>
         </div>
       </div>
       
       <div id="behaviorTab" class="tab-content">
         <div class="container">
-          <h2>Behavior Settings</h2>
+          <h2>⚙️ Behavior Settings</h2>
           
           <div class="toggle-container">
-            <span class="toggle-label">Auto-Answer Questions</span>
+            <span class="toggle-label">🤖 Auto-Answer Questions</span>
             <label class="toggle">
               <input type="checkbox" id="autoAnswerToggle" checked>
               <span class="slider"></span>
@@ -585,7 +1005,7 @@ Correct answer:</textarea>
           </div>
           
           <div class="form-group">
-            <label for="answerDelay">Minimum Answer Delay (seconds)</label>
+            <label for="answerDelay">⏱️ Minimum Answer Delay (seconds)</label>
             <div class="range-container">
               <input type="range" id="answerDelay" min="1" max="10" value="3" step="0.5">
               <span class="range-value" id="answerDelayValue">3s</span>
@@ -593,7 +1013,7 @@ Correct answer:</textarea>
           </div>
           
           <div class="form-group">
-            <label for="maxAnswerDelay">Maximum Answer Delay (seconds)</label>
+            <label for="maxAnswerDelay">⏰ Maximum Answer Delay (seconds)</label>
             <div class="range-container">
               <input type="range" id="maxAnswerDelay" min="2" max="15" value="6" step="0.5">
               <span class="range-value" id="maxAnswerDelayValue">6s</span>
@@ -601,7 +1021,7 @@ Correct answer:</textarea>
           </div>
           
           <div class="toggle-container">
-            <span class="toggle-label">Retry Wrong Answers</span>
+            <span class="toggle-label">🔄 Retry Wrong Answers</span>
             <label class="toggle">
               <input type="checkbox" id="retryWrongToggle" checked>
               <span class="slider"></span>
@@ -609,7 +1029,7 @@ Correct answer:</textarea>
           </div>
           
           <div class="form-group">
-            <label for="maxRetries">Maximum Retries</label>
+            <label for="maxRetries">🎯 Maximum Retries</label>
             <div class="range-container">
               <input type="range" id="maxRetries" min="1" max="5" value="3" step="1">
               <span class="range-value" id="maxRetriesValue">3</span>
@@ -617,7 +1037,7 @@ Correct answer:</textarea>
           </div>
           
           <div class="toggle-container">
-            <span class="toggle-label">Voice Narration</span>
+            <span class="toggle-label">🔊 Voice Narration</span>
             <label class="toggle">
               <input type="checkbox" id="voiceToggle">
               <span class="slider"></span>
@@ -625,7 +1045,7 @@ Correct answer:</textarea>
           </div>
           
           <div class="form-group">
-            <label for="voiceRate">Voice Speed</label>
+            <label for="voiceRate">🎵 Voice Speed</label>
             <div class="range-container">
               <input type="range" id="voiceRate" min="0.5" max="2" value="1" step="0.1">
               <span class="range-value" id="voiceRateValue">1x</span>
@@ -633,7 +1053,7 @@ Correct answer:</textarea>
           </div>
           
           <div class="toggle-container">
-            <span class="toggle-label">Auto-Scroll to MCQs</span>
+            <span class="toggle-label">📜 Auto-Scroll to MCQs</span>
             <label class="toggle">
               <input type="checkbox" id="autoScrollToggle" checked>
               <span class="slider"></span>
@@ -641,7 +1061,7 @@ Correct answer:</textarea>
           </div>
           
           <div class="toggle-container">
-            <span class="toggle-label">Highlight Selected Answers</span>
+            <span class="toggle-label">✨ Highlight Selected Answers</span>
             <label class="toggle">
               <input type="checkbox" id="highlightToggle" checked>
               <span class="slider"></span>
@@ -649,17 +1069,17 @@ Correct answer:</textarea>
           </div>
           
           <div class="button-group">
-            <button id="saveBehaviorButton" class="button">Save Behavior Settings</button>
+            <button id="saveBehaviorButton" class="button primary">💾 Save Behavior Settings</button>
           </div>
         </div>
       </div>
       
       <div id="detectionTab" class="tab-content">
         <div class="container">
-          <h2>Detection Settings</h2>
+          <h2>🔍 Detection Settings</h2>
           
           <div class="toggle-container">
-            <span class="toggle-label">DOM-based Detection</span>
+            <span class="toggle-label">🌐 DOM-based Detection</span>
             <label class="toggle">
               <input type="checkbox" id="domDetectionToggle" checked>
               <span class="slider"></span>
@@ -667,7 +1087,7 @@ Correct answer:</textarea>
           </div>
           
           <div class="toggle-container">
-            <span class="toggle-label">OCR Detection</span>
+            <span class="toggle-label">👁️ OCR Detection</span>
             <label class="toggle">
               <input type="checkbox" id="ocrToggle" checked>
               <span class="slider"></span>
@@ -675,20 +1095,20 @@ Correct answer:</textarea>
           </div>
           
           <div class="form-group">
-            <label for="ocrLanguage">OCR Language</label>
+            <label for="ocrLanguage">🌍 OCR Language</label>
             <select id="ocrLanguage">
-              <option value="eng">English</option>
-              <option value="eng+hin">English + Hindi</option>
-              <option value="eng+spa">English + Spanish</option>
-              <option value="eng+fra">English + French</option>
-              <option value="eng+deu">English + German</option>
-              <option value="eng+chi_sim">English + Chinese (Simplified)</option>
-              <option value="eng+ara">English + Arabic</option>
+              <option value="eng">🇺🇸 English</option>
+              <option value="eng+hin">🇮🇳 English + Hindi</option>
+              <option value="eng+spa">🇪🇸 English + Spanish</option>
+              <option value="eng+fra">🇫🇷 English + French</option>
+              <option value="eng+deu">🇩🇪 English + German</option>
+              <option value="eng+chi_sim">🇨🇳 English + Chinese (Simplified)</option>
+              <option value="eng+ara">🇸🇦 English + Arabic</option>
             </select>
           </div>
           
           <div class="toggle-container">
-            <span class="toggle-label">Shadow DOM Detection</span>
+            <span class="toggle-label">🌑 Shadow DOM Detection</span>
             <label class="toggle">
               <input type="checkbox" id="shadowDomToggle" checked>
               <span class="slider"></span>
@@ -696,7 +1116,7 @@ Correct answer:</textarea>
           </div>
           
           <div class="toggle-container">
-            <span class="toggle-label">Image-based MCQ Detection</span>
+            <span class="toggle-label">🖼️ Image-based MCQ Detection</span>
             <label class="toggle">
               <input type="checkbox" id="imageDetectionToggle" checked>
               <span class="slider"></span>
@@ -704,7 +1124,7 @@ Correct answer:</textarea>
           </div>
           
           <div class="toggle-container">
-            <span class="toggle-label">Math Equation Detection</span>
+            <span class="toggle-label">🧮 Math Equation Detection</span>
             <label class="toggle">
               <input type="checkbox" id="mathDetectionToggle" checked>
               <span class="slider"></span>
@@ -712,7 +1132,7 @@ Correct answer:</textarea>
           </div>
           
           <div class="form-group">
-            <label for="customSelectors">Custom CSS Selectors (one per line)</label>
+            <label for="customSelectors">🎯 Custom CSS Selectors (one per line)</label>
             <textarea id="customSelectors" rows="4" placeholder=".quiz-question
 .mcq-container
 .question-wrapper">.question
@@ -722,17 +1142,17 @@ Correct answer:</textarea>
           </div>
           
           <div class="button-group">
-            <button id="saveDetectionButton" class="button">Save Detection Settings</button>
+            <button id="saveDetectionButton" class="button primary">💾 Save Detection Settings</button>
           </div>
         </div>
       </div>
       
       <div id="advancedTab" class="tab-content">
         <div class="container">
-          <h2>Advanced Settings</h2>
+          <h2>🚀 Advanced Settings</h2>
           
           <div class="toggle-container">
-            <span class="toggle-label">Safe Mode (Disable in Proctored Environments)</span>
+            <span class="toggle-label">🛡️ Safe Mode (Disable in Proctored Environments)</span>
             <label class="toggle">
               <input type="checkbox" id="safeModeToggle" checked>
               <span class="slider"></span>
@@ -740,7 +1160,7 @@ Correct answer:</textarea>
           </div>
           
           <div class="toggle-container">
-            <span class="toggle-label">Detect Webcam</span>
+            <span class="toggle-label">📹 Detect Webcam</span>
             <label class="toggle">
               <input type="checkbox" id="detectWebcamToggle" checked>
               <span class="slider"></span>
@@ -748,7 +1168,7 @@ Correct answer:</textarea>
           </div>
           
           <div class="toggle-container">
-            <span class="toggle-label">Detect Fullscreen Mode</span>
+            <span class="toggle-label">🖥️ Detect Fullscreen Mode</span>
             <label class="toggle">
               <input type="checkbox" id="detectFullscreenToggle" checked>
               <span class="slider"></span>
@@ -756,7 +1176,7 @@ Correct answer:</textarea>
           </div>
           
           <div class="toggle-container">
-            <span class="toggle-label">Detect Virtual Machine</span>
+            <span class="toggle-label">💻 Detect Virtual Machine</span>
             <label class="toggle">
               <input type="checkbox" id="detectVMToggle" checked>
               <span class="slider"></span>
@@ -764,7 +1184,7 @@ Correct answer:</textarea>
           </div>
           
           <div class="toggle-container">
-            <span class="toggle-label">Stealth Mode (Reduce Detection Footprint)</span>
+            <span class="toggle-label">🥷 Stealth Mode (Reduce Detection Footprint)</span>
             <label class="toggle">
               <input type="checkbox" id="stealthModeToggle">
               <span class="slider"></span>
@@ -772,7 +1192,7 @@ Correct answer:</textarea>
           </div>
           
           <div class="toggle-container">
-            <span class="toggle-label">Save Answer History</span>
+            <span class="toggle-label">💾 Save Answer History</span>
             <label class="toggle">
               <input type="checkbox" id="saveHistoryToggle" checked>
               <span class="slider"></span>
@@ -780,7 +1200,7 @@ Correct answer:</textarea>
           </div>
           
           <div class="form-group">
-            <label for="maxHistoryItems">Maximum History Items</label>
+            <label for="maxHistoryItems">📊 Maximum History Items</label>
             <div class="range-container">
               <input type="range" id="maxHistoryItems" min="10" max="100" value="50" step="10">
               <span class="range-value" id="maxHistoryItemsValue">50</span>
@@ -788,7 +1208,7 @@ Correct answer:</textarea>
           </div>
           
           <div class="toggle-container">
-            <span class="toggle-label">Debug Mode</span>
+            <span class="toggle-label">🐛 Debug Mode</span>
             <label class="toggle">
               <input type="checkbox" id="debugModeToggle">
               <span class="slider"></span>
@@ -796,34 +1216,33 @@ Correct answer:</textarea>
           </div>
           
           <div class="button-group">
-            <button id="exportDataButton" class="button secondary">Export Data</button>
-            <button id="importDataButton" class="button secondary">Import Data</button>
-            <button id="resetButton" class="button secondary">Reset to Defaults</button>
-            <button id="saveAdvancedButton" class="button">Save Advanced Settings</button>
+            <button id="exportDataButton" class="button secondary">📤 Export Data</button>
+            <button id="importDataButton" class="button secondary">📥 Import Data</button>
+            <button id="resetButton" class="button warning">🔄 Reset to Defaults</button>
+            <button id="saveAdvancedButton" class="button primary">💾 Save Advanced Settings</button>
           </div>
         </div>
       </div>
       
       <div id="historyTab" class="tab-content">
         <div class="container">
-          <h2>Answer History</h2>
+          <h2>📊 Answer History</h2>
           
-          <div class="button-group" style="justify-content: flex-start; margin-bottom: 15px;">
-            <button id="clearHistoryButton" class="button secondary">Clear History</button>
-            <button id="exportHistoryButton" class="button secondary">Export History</button>
+          <div class="button-group" style="justify-content: flex-start; margin-bottom: 24px;">
+            <button id="clearHistoryButton" class="button warning">🗑️ Clear History</button>
+            <button id="exportHistoryButton" class="button secondary">📤 Export History</button>
           </div>
           
           <div id="historyList" class="history-list">
-            <!-- History items will be added here dynamically -->
             <div class="history-item">
-              <div class="history-question">What is the capital of France?</div>
-              <div class="history-answer">Answer: Paris</div>
-              <div class="history-time">2023-06-15 14:32:45</div>
+              <div class="history-question">🤔 What is the capital of France?</div>
+              <div class="history-answer">✅ Answer: Paris</div>
+              <div class="history-time">⏰ 2023-06-15 14:32:45</div>
             </div>
             <div class="history-item">
-              <div class="history-question">Which planet is known as the Red Planet?</div>
-              <div class="history-answer">Answer: Mars</div>
-              <div class="history-time">2023-06-15 14:30:12</div>
+              <div class="history-question">🪐 Which planet is known as the Red Planet?</div>
+              <div class="history-answer">✅ Answer: Mars</div>
+              <div class="history-time">⏰ 2023-06-15 14:30:12</div>
             </div>
           </div>
         </div>
