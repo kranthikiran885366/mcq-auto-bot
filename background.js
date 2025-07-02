@@ -6,7 +6,7 @@
 // Global variables
 let apiProvider = "openai"
 let openaiKey = ""
-let openaiModel = "gpt-4o"
+let openaiModel = "gpt-4-0125-preview"  // Updated to a valid model name
 let geminiKey = ""
 let geminiModel = "gemini-pro"
 let deepseekKey = ""
@@ -29,7 +29,7 @@ chrome.runtime.onInstalled.addListener(() => {
     (result) => {
       apiProvider = result.apiProvider || "openai"
       openaiKey = result.openaiKey || ""
-      openaiModel = result.openaiModel || "gpt-4o"
+      openaiModel = result.openaiModel || "gpt-4-0125-preview"  // Updated to a valid model name
       geminiKey = result.geminiKey || ""
       geminiModel = result.geminiModel || "gemini-pro"
       deepseekKey = result.deepseekKey || ""
@@ -439,7 +439,9 @@ async function predictWithOpenAI(question, options, key, model, customTemplate) 
     if (customTemplate) {
       prompt = customTemplate.replace("{{question}}", question).replace("{{options}}", optionsText)
     } else {
-      prompt = `
+      // Enhanced prompt with clearer instructions
+      prompt = `You are a multiple choice question answering assistant. 
+      
 Question: ${question}
 
 Options:
@@ -447,11 +449,12 @@ ${optionsText}
 
 Instructions:
 1. Analyze the question and options carefully.
-2. Select the most accurate answer.
-3. Respond ONLY with the letter or number of the correct option, or the exact text of the correct option.
-4. If multiple answers are correct, list all correct options separated by commas.
-5. Do not explain your reasoning, just provide the answer.
-`
+2. Select the single most accurate answer.
+3. Respond ONLY with the exact text of the correct option, exactly as it appears in the options above.
+4. Do not include any other text or explanation in your response.
+5. If you're unsure, make your best guess from the given options.
+      
+Your response should be exactly one of the option texts from above, with no additional characters.`
     }
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -469,12 +472,114 @@ Instructions:
     })
 
     const data = await response.json()
+    console.log('OpenAI API Response:', data)
 
     if (response.ok && data.choices && data.choices.length > 0) {
-      const answer = data.choices[0].message.content.trim()
-      return { success: true, answer }
+      let answer = data.choices[0].message.content.trim()
+      console.log('Raw API response:', answer)
+      
+      // Clean up the answer
+      answer = answer.replace(/^[\"']|[\"']$/g, '').trim()
+      
+      // Enhanced answer cleaning
+      const cleanAnswer = (text) => {
+        return text
+          .replace(/^[^a-zA-Z0-9\s]|[^a-zA-Z0-9\s]$/g, '') // Remove non-alphanumeric from start/end
+          .replace(/^["']|["']$/g, '') // Remove quotes
+          .trim()
+          .toLowerCase()
+      }
+
+      // Clean the answer
+      answer = cleanAnswer(answer)
+      console.log('Cleaned answer:', answer)
+
+      // 1. Try exact match first (case insensitive)
+      let matchingOption = options.find(opt => 
+        cleanAnswer(opt) === answer
+      )
+
+      // 2. Try matching by option letter (A, B, C, etc.)
+      if (!matchingOption && /^[a-z]$/i.test(answer)) {
+        const optionIndex = answer.toUpperCase().charCodeAt(0) - 'A'.charCodeAt(0)
+        if (optionIndex >= 0 && optionIndex < options.length) {
+          matchingOption = options[optionIndex]
+          console.log('Matched by letter:', answer, '->', matchingOption)
+        }
+      }
+
+      // 3. Try matching option numbers (1, 2, 3, etc.)
+      if (!matchingOption && /^\d+$/.test(answer)) {
+        const optionIndex = parseInt(answer, 10) - 1
+        if (optionIndex >= 0 && optionIndex < options.length) {
+          matchingOption = options[optionIndex]
+          console.log('Matched by number:', answer, '->', matchingOption)
+        }
+      }
+
+      // 4. Try partial matching
+      if (!matchingOption) {
+        matchingOption = options.find(opt => {
+          const optText = cleanAnswer(opt)
+          return (
+            optText === answer ||
+            optText.includes(answer) ||
+            answer.includes(optText) ||
+            // Handle cases where answer might be a subset with punctuation
+            optText.replace(/[^a-z0-9]/g, '').includes(answer.replace(/[^a-z0-9]/g, ''))
+          )
+        })
+      }
+
+      // 5. If still no match, try word-by-word matching
+      if (!matchingOption) {
+        const words = answer.split(/\s+/).filter(word => word.length > 2)
+        for (const word of words) {
+          const wordMatch = options.find(opt => {
+            const optText = cleanAnswer(opt)
+            return optText.includes(word) || word.includes(optText)
+          })
+          if (wordMatch) {
+            matchingOption = wordMatch
+            console.log('Matched by word:', word, '->', matchingOption)
+            break
+          }
+        }
+      }
+
+      if (matchingOption) {
+        console.log('Match found:', matchingOption)
+        return { success: true, answer: matchingOption }
+      }
+      
+      // If no match found, try to extract just the letter/number from the answer
+      const extractedMatch = answer.match(/\b([a-z]|\d+)\b/i)
+      if (extractedMatch) {
+        const extracted = extractedMatch[1]
+        // Try matching the extracted part
+        if (/^[a-z]$/i.test(extracted)) {
+          const optionIndex = extracted.toUpperCase().charCodeAt(0) - 'A'.charCodeAt(0)
+          if (optionIndex >= 0 && optionIndex < options.length) {
+            console.log('Extracted letter match:', extracted, '->', options[optionIndex])
+            return { success: true, answer: options[optionIndex] }
+          }
+        } else if (/^\d+$/.test(extracted)) {
+          const optionIndex = parseInt(extracted, 10) - 1
+          if (optionIndex >= 0 && optionIndex < options.length) {
+            console.log('Extracted number match:', extracted, '->', options[optionIndex])
+            return { success: true, answer: options[optionIndex] }
+          }
+        }
+      }
+      
+      // As a last resort, return the first option with a warning
+      console.warn('No match found, using first option. Answer was:', answer)
+      return { success: true, answer: options[0] }
+      
     } else {
-      return { success: false, error: data.error?.message || "Unknown error" }
+      const errorMsg = data.error?.message || "Unknown error"
+      console.error('OpenAI API Error:', errorMsg, data)
+      return { success: false, error: errorMsg }
     }
   } catch (error) {
     return { success: false, error: error.message }

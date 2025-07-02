@@ -26,6 +26,8 @@ let imageDetection = true
 let mathDetection = true
 let customSelectors = ""
 let humanMouseMovement = false
+// Add super debug mode
+let superDebug = true;
 
 // Stats
 let stats = {
@@ -1877,16 +1879,20 @@ async function findMCQsWithOCR() {
   const mcqs = [];
   try {
     const imageData = await captureScreen();
-    chrome.runtime.sendMessage({ action: "ocrError", error: "[MCQ-BOT] Image data captured." });
+    console.log('[MCQ-BOT][OCR] Image captured for OCR.');
     let result = null;
     try {
       await ensureTesseractLoaded();
       if (window.Tesseract) {
         result = await runOCRWithTesseract(imageData, ocrLanguage, true);
-        chrome.runtime.sendMessage({ action: "ocrError", error: `[MCQ-BOT] Tesseract.js result: ${result && result.success ? 'Success' : 'Error'}${result && result.error ? ' - ' + result.error : ''}` });
+        if (result && result.success) {
+          console.log('[MCQ-BOT][OCR] Extracted text:', result.text);
+        } else {
+          console.warn('[MCQ-BOT][OCR] Tesseract.js OCR failed.');
+        }
       }
     } catch (e) {
-      chrome.runtime.sendMessage({ action: "ocrError", error: `[MCQ-BOT] Tesseract.js error: ${e.message}` });
+      console.warn('[MCQ-BOT][OCR] Tesseract.js error:', e.message);
       try {
         const response = await fetch('http://localhost:8000/api/ocr-detect', {
           method: 'POST',
@@ -1894,22 +1900,31 @@ async function findMCQsWithOCR() {
           body: JSON.stringify({ image_data: imageData })
         });
         const data = await response.json();
-        chrome.runtime.sendMessage({ action: "ocrError", error: `[MCQ-BOT] Backend OCR result: ${data && data.success ? 'Success' : 'Error'}${data && data.error ? ' - ' + data.error : ''}` });
-        if (data.success && data.mcqs) return data.mcqs;
-        chrome.runtime.sendMessage({ action: "ocrError", error: data.error || "Server OCR failed." });
+        if (data.success && data.text) {
+          console.log('[MCQ-BOT][OCR] Backend OCR extracted text:', data.text);
+        }
+        if (data.success && data.mcqs) {
+          console.log('[MCQ-BOT][OCR->AI] Sending extracted OCR text to AI provider:', data.text);
+          for (const mcq of data.mcqs) {
+            console.log(`[MCQ-BOT][OCR->AI] Sending MCQ to AI:`, mcq.question, mcq.options.map(o => o.text));
+            await processMCQ(mcq);
+          }
+          return data.mcqs;
+        }
         return [];
       } catch (serverErr) {
-        chrome.runtime.sendMessage({ action: "ocrError", error: `[MCQ-BOT] Backend unreachable or error: ${serverErr.message}` });
+        console.error('[MCQ-BOT][OCR] Backend OCR error:', serverErr.message);
         return [];
       }
     }
     if (!result || !result.success) {
-      chrome.runtime.sendMessage({ action: "ocrError", error: result && result.error ? result.error : "OCR failed." });
+      console.warn('[MCQ-BOT][OCR] OCR failed.');
       return [];
     }
-    // ... (rest of your MCQ extraction logic from OCR text)
     const lines = result.text.split("\n").filter((line) => line.trim());
-      // Look for question patterns
+    if (lines.length > 0) {
+      console.log('[MCQ-BOT][OCR->AI] Sending extracted OCR text to AI provider:', result.text);
+    }
       for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
         if (line.endsWith("?") || /what|which|when|where|why|how/i.test(line)) {
@@ -1926,19 +1941,18 @@ async function findMCQsWithOCR() {
             }
           }
           if (options.length >= 2) {
-            mcqs.push({
+          const mcq = {
               type: "ocr",
               question: questionText,
               options: options,
             answered: false,
-          });
+          };
+          mcqs.push(mcq);
           i += options.length;
           }
         }
       }
-    // ... (rest of your MCQ extraction logic from OCR bounding boxes, if needed)
       if (result.words && result.words.length > 0) {
-        // Group words by line
       const lines = [];
       let currentLine = [];
       let lastTop = -1;
@@ -1984,19 +1998,28 @@ async function findMCQsWithOCR() {
               }
             }
             if (options.length >= 2) {
-              mcqs.push({
+            const mcq = {
                 type: "ocr",
                 question: questionText,
                 options: options,
                 answered: false,
-              })
-              i += options.length
-            }
+            };
+            mcqs.push(mcq);
+            i += options.length;
           }
         }
+      }
+    }
+    // After extracting all MCQs from OCR, send each to AI provider
+    if (mcqs.length > 0) {
+      console.log('[MCQ-BOT][OCR->AI] Sending extracted OCR text to AI provider:', result.text);
+    }
+    for (const mcq of mcqs) {
+      console.log(`[MCQ-BOT][OCR->AI] Sending MCQ to AI:`, mcq.question, mcq.options.map(o => o.text));
+      await processMCQ(mcq);
     }
   } catch (error) {
-    chrome.runtime.sendMessage({ action: "ocrError", error: error.message || "Error in OCR MCQ detection." });
+    console.error('[MCQ-BOT][OCR] Error in OCR MCQ detection:', error.message || error);
   }
   return mcqs;
 }
@@ -2457,6 +2480,9 @@ async function captureScreen() {
 
 // Process an MCQ
 async function processMCQ(mcq) {
+  if (superDebug) {
+    console.log('[MCQ-BOT][SUPERDEBUG] Full MCQ object:', mcq);
+  }
   if (!botEnabled || mcq.answered) return
 
   if (debugMode) {
@@ -2506,6 +2532,7 @@ async function processMCQ(mcq) {
   let prediction = null
   try {
     prediction = await predictAnswer(mcq.question, optionsText, imageData)
+    console.log('[MCQ-BOT][AI] AI answer received:', prediction.answer);
   } catch (error) {
     console.error("Failed to predict answer (caught):", error)
     chrome.runtime.sendMessage({ action: "aiError", error: error.message || String(error) })
@@ -2538,12 +2565,15 @@ async function processMCQ(mcq) {
   }
 
   // Find the matching option
-  const matchingOptions = findMatchingOptions(mcq.options, prediction.answer)
+  const matchingIndices = findMatchingOptions(mcq.options, prediction.answer)
 
-  if (matchingOptions.length === 0) {
+  if (matchingIndices.length === 0) {
     console.error("No matching option found for:", prediction.answer)
     return
   }
+  
+  // Get the original option objects with their elements
+  const matchingOptions = matchingIndices.map(idx => mcq.options[idx]);
 
   // Save to history if enabled
   if (saveHistory) {
@@ -2557,7 +2587,7 @@ async function processMCQ(mcq) {
 
     setTimeout(() => {
       selectOptions(mcq, matchingOptions)
-
+      console.log('[MCQ-BOT][AI] Selected answer automatically:', matchingOptions[0]?.text);
       // Update stats
       stats.answered++
       stats.accuracy = Math.round((stats.correct / stats.answered) * 100) || 0
@@ -2620,99 +2650,450 @@ async function predictAnswer(question, options, imageData = null) {
   })
 }
 
-// Find options that match the predicted answer
-function findMatchingOptions(options, predictedAnswer) {
-  const matches = []
-
-  // Normalize the predicted answer
-  const normalizedPrediction = predictedAnswer.toLowerCase().trim()
-
-  // Check for exact matches first
-  for (const option of options) {
-    const normalizedOption = option.text.toLowerCase().trim()
-
-    if (normalizedOption === normalizedPrediction) {
-      matches.push(option)
-    }
-  }
-
-  // If no exact matches, check for partial matches
-  if (matches.length === 0) {
-    for (const option of options) {
-      const normalizedOption = option.text.toLowerCase().trim()
-
-      if (normalizedOption.includes(normalizedPrediction) || normalizedPrediction.includes(normalizedOption)) {
-        matches.push(option)
-      }
-    }
-  }
-
-  // If still no matches, check for option indicators (A, B, C, 1, 2, 3, etc.)
-  if (matches.length === 0) {
-    // Check for letter indicators (A, B, C, etc.)
-    const letterMatch = normalizedPrediction.match(/^[a-z](\)|\.|\s|$)/)
-
-    if (letterMatch) {
-      const letterIndex = letterMatch[0].charCodeAt(0) - "a".charCodeAt(0)
-
-      if (letterIndex >= 0 && letterIndex < options.length) {
-        matches.push(options[letterIndex])
-      }
-    }
-
-    // Check for number indicators (1, 2, 3, etc.)
-    const numberMatch = normalizedPrediction.match(/^(\d+)(\)|\.|\s|$)/)
-
-    if (numberMatch) {
-      const numberIndex = Number.parseInt(numberMatch[1]) - 1
-
-      if (numberIndex >= 0 && numberIndex < options.length) {
-        matches.push(options[numberIndex])
-      }
-    }
-  }
-
-  // If still no matches, use fuzzy matching
-  if (matches.length === 0) {
-    let bestMatch = null
-    let bestScore = 0
-
-    for (const option of options) {
-      const score = calculateSimilarity(option.text.toLowerCase(), normalizedPrediction)
-
-      if (score > bestScore) {
-        bestScore = score
-        bestMatch = option
-      }
-    }
-
-    if (bestMatch && bestScore > 0.5) {
-      matches.push(bestMatch)
-    }
-  }
-
-  return matches
+// Aggressive normalization: remove all non-alphanumeric except spaces, lowercase, trim
+function normalizeForMatch(str) {
+  return (str || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]+/g, '') // remove all non-alphanumeric except space
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
-// Calculate similarity between two strings (simple Levenshtein distance)
-function calculateSimilarity(str1, str2) {
-  const len1 = str1.length;
-  const len2 = str2.length;
-  const dp = Array.from({ length: len1 + 1 }, () => Array(len2 + 1).fill(0));
-  for (let i = 0; i <= len1; i++) dp[i][0] = i;
-  for (let j = 0; j <= len2; j++) dp[0][j] = j;
-  for (let i = 1; i <= len1; i++) {
-    for (let j = 1; j <= len2; j++) {
-      if (str1[i - 1] === str2[j - 1]) {
-        dp[i][j] = dp[i - 1][j - 1];
-      } else {
-        dp[i][j] = 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+// Enhanced answer matching with multiple strategies
+function findMatchingOptions(options, predictedAnswer) {
+  const matches = new Map(); // Use Map to avoid duplicates
+  if (!predictedAnswer || !options || options.length === 0) return [];
+
+  // Enhanced normalization
+  const normalize = (str) => (str || '').toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+  
+  // Pre-process options with multiple representations
+  const processedOptions = options.map((option, idx) => ({
+    ...option,
+    idx,
+    normText: normalize(option.text),
+    // Add variations for matching
+    variations: [
+      normalize(option.text),
+      String(idx + 1), // 1-based index
+      String.fromCharCode(97 + idx), // a, b, c, ...
+      String.fromCharCode(65 + idx), // A, B, C, ...
+      String(idx + 1) + '.', // 1., 2., ...
+      String.fromCharCode(97 + idx) + ')', // a), b), ...
+      String.fromCharCode(65 + idx) + ')'  // A), B), ...
+    ]
+  }));
+
+
+  // Debug logging
+  if (superDebug) {
+    console.log('[MCQ-BOT][DEBUG] Raw options:', options.map(o => o.text));
+    console.log('[MCQ-BOT][DEBUG] Processed options:', processedOptions.map(o => ({
+      text: o.text,
+      normText: o.normText,
+      variations: o.variations
+    })));
+    console.log('[MCQ-BOT][DEBUG] Raw AI answer:', predictedAnswer);
+  }
+
+  // Clean the predicted answer
+  const cleanAnswer = (ans) => {
+    if (!ans) return '';
+    // Handle different formats:
+    // 1. Remove quotes
+    // 2. Remove trailing punctuation
+    // 3. Normalize whitespace
+    return ans
+      .replace(/^["']|["']$/g, '')
+      .replace(/[^a-zA-Z0-9\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
+  };
+
+  const normalizedAnswer = cleanAnswer(predictedAnswer);
+  console.log('[MCQ-BOT][DEBUG] Cleaned AI answer:', normalizedAnswer);
+
+  // 1. Try exact match first
+  for (const option of processedOptions) {
+    if (option.variations.some(v => v === normalizedAnswer)) {
+      matches.set(option.idx, true);
+    }
+  }
+
+  // 2. Try partial matches if no exact match
+  if (matches.size === 0) {
+    for (const option of processedOptions) {
+      // Check if any variation is included in the answer or vice versa
+      const hasMatch = option.variations.some(variation => 
+        normalizedAnswer.includes(variation) || 
+        variation.includes(normalizedAnswer)
+      );
+      
+      if (hasMatch) {
+        matches.set(option.idx, true);
       }
     }
   }
-  // Similarity: 1 - normalized edit distance
-  const maxLen = Math.max(len1, len2);
-  return maxLen === 0 ? 1 : 1 - dp[len1][len2] / maxLen;
+
+  // 3. Try word-by-word matching
+  if (matches.size === 0) {
+    const answerWords = normalizedAnswer.split(/\s+/).filter(w => w.length > 2);
+    for (const option of processedOptions) {
+      const optionWords = option.normText.split(/\s+/);
+      const hasCommonWord = answerWords.some(word => 
+        optionWords.some(ow => ow.includes(word) || word.includes(ow))
+      );
+      
+      if (hasCommonWord) {
+        matches.set(option.idx, true);
+      }
+    }
+  }
+
+  // 4. Try to extract option letter or number from answer
+  if (matches.size === 0) {
+    // Try to match A, B, C or 1, 2, 3
+    const letterMatch = normalizedAnswer.match(/\b([a-z])\b/i);
+    const numberMatch = normalizedAnswer.match(/\b(\d+)\b/);
+
+    if (letterMatch) {
+      const letter = letterMatch[1].toUpperCase();
+      // Convert letter to index (A=0, B=1, etc.)
+      const optionIndex = letter.charCodeAt(0) - 65;
+      if (optionIndex >= 0 && optionIndex < processedOptions.length) {
+        matches.set(optionIndex, true);
+      }
+    } else if (numberMatch) {
+      const optionIndex = parseInt(numberMatch[1], 10) - 1;
+      if (optionIndex >= 0 && optionIndex < processedOptions.length) {
+        matches.set(optionIndex, true);
+      }
+    }
+  }
+
+  // 5. If still no matches, try fuzzy matching with a threshold
+  if (matches.size === 0) {
+    const threshold = 0.7; // 70% similarity threshold
+    for (const option of processedOptions) {
+      const similarity = calculateSimilarity(normalizedAnswer, option.normText);
+      if (similarity >= threshold) {
+        matches.set(option.idx, true);
+      }
+    }
+    
+    // If we still have no matches, just return the first option as a fallback
+    if (matches.size === 0 && processedOptions.length > 0) {
+      console.warn('[MCQ] No good matches found, falling back to first option');
+      matches.set(0, true);
+    }  
+  }
+
+  // Get the matched indices
+  const matchedIndices = Array.from(matches.keys());
+  
+  if (matchedIndices.length === 0) {
+    console.warn('[MCQ-BOT][WARNING] No match found for answer:', predictedAnswer, 
+                'Options:', options.map(o => o.text));
+  } else {
+    console.log('[MCQ-BOT][INFO] Matched options:', matchedIndices.map(idx => ({
+      index: idx,
+      text: options[idx]?.text || 'Unknown'
+    })));
+  }
+  
+  return matchedIndices;
+}
+
+// Helper: Find the closest clickable ancestor (label, button, div, span)
+// Enhanced function to find clickable ancestor with better detection
+function findClickableAncestor(el, maxDepth = 10) {
+  if (!el) return null;
+  
+  const clickableSelectors = [
+    'a[href]', 'button', '[role="button"]', '[role="checkbox"]', 
+    '[role="radio"]', '[role="tab"]', '[onclick]', '[data-click]',
+    'label', '.btn', '.button', '.selectable', '.clickable',
+    'div[tabindex]', 'span[tabindex]', 'div[onclick]', 'span[onclick]',
+    'div[data-testid*="option"]', 'div[data-option]',
+    'div[class*="option"]', 'div[class*="select"]',
+    'div[class*="choice"]', 'div[class*="answer"]'
+  ];
+  
+  // Check if element itself is clickable
+  const isClickable = (element) => {
+    if (!element || !element.matches) return false;
+    
+    // Check common clickable elements
+    if (element.matches('a, button, input[type="button"], input[type="submit"]')) {
+      return true;
+    }
+    
+    // Check for click handlers
+    const hasClickHandler = [
+      'onclick', 'onmousedown', 'onmouseup', 'onpointerdown',
+      'onpointerup', 'data-click', 'data-onclick'
+    ].some(attr => element.hasAttribute(attr));
+    
+    if (hasClickHandler) return true;
+    
+    // Check for cursor pointer style
+    const style = window.getComputedStyle(element);
+    if (style.cursor === 'pointer' || style.pointerEvents === 'auto') {
+      return true;
+    }
+    
+    // Check for clickable role
+    const role = element.getAttribute('role');
+    if (role && ['button', 'checkbox', 'radio', 'tab', 'link'].includes(role)) {
+      return true;
+    }
+    
+    return false;
+  };
+  
+  // Check the element itself first
+  if (isClickable(el)) {
+    return el;
+  }
+  
+  // Check ancestors
+  let node = el;
+  let depth = 0;
+  
+  while (node && depth < maxDepth) {
+    // Check if node matches any clickable selector
+    if (node.matches && clickableSelectors.some(sel => node.matches(sel))) {
+      return node;
+    }
+    
+    // Check if node has clickable children
+    for (const selector of clickableSelectors) {
+      const match = node.closest ? node.closest(selector) : null;
+      if (match) return match;
+    }
+    
+    // Move up the DOM
+    node = node.parentElement;
+    depth++;
+  }
+  
+  // Last resort: return the original element if nothing else is found
+  return el;
+}
+
+// Enhanced function to traverse shadow roots and find elements with better detection
+function findInShadowRoots(el, selector = 'input, button, [role="button"], [role="checkbox"], [role="radio"]') {
+  if (!el) return null;
+  try {
+    // Try to find in current shadow root
+    if (el.shadowRoot) {
+      // Try exact selector match
+      const exactMatch = el.shadowRoot.querySelector(selector);
+      if (exactMatch) return exactMatch;
+      // Try common input types if specific selector not found
+      if (!selector.includes(',')) {
+        const commonSelectors = [
+          'input[type="radio"]', 'input[type="checkbox"]',
+          'input[type="button"]', 'button',
+          '[role="radio"]', '[role="checkbox"]',
+          '[role="button"]', '[role="option"]',
+          'label', '.option', '.choice', '.answer',
+          '[data-testid*="option"]', '[data-testid*="choice"]',
+          '[data-option]', '[data-choice]', '[data-answer]',
+          '[id*="option"]', '[id*="choice"]', '[id*="answer"]',
+          '[class*="option"]', '[class*="choice"]', '[class*="answer"]'
+        ];
+        for (const commonSelector of commonSelectors) {
+          const commonMatch = el.shadowRoot.querySelector(commonSelector);
+          if (commonMatch) return commonMatch;
+        }
+      }
+      // Recursively search deeper shadow roots
+      const walker = document.createTreeWalker(
+        el.shadowRoot,
+        NodeFilter.SHOW_ELEMENT,
+        {
+          acceptNode: (node) => {
+            // Skip large text nodes or non-interactive elements
+            if (node.nodeType !== Node.ELEMENT_NODE) return NodeFilter.FILTER_REJECT;
+            // Check if element matches common interactive patterns
+            const tag = node.tagName.toLowerCase();
+            const role = node.getAttribute('role');
+            const hasClick = [
+              'onclick', 'onmousedown', 'onmouseup', 'onchange',
+              'data-click', 'data-onclick'
+            ].some(attr => node.hasAttribute(attr));
+            const isInteractive = (
+              tag === 'input' ||
+              tag === 'button' ||
+              tag === 'select' ||
+              tag === 'textarea' ||
+              role === 'button' ||
+              role === 'checkbox' ||
+              role === 'radio' ||
+              role === 'option' ||
+              hasClick ||
+              node.tabIndex >= 0
+            );
+            return isInteractive ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+          }
+        }
+      );
+      // Check all interactive elements
+      while (walker.nextNode()) {
+        const node = walker.currentNode;
+        // If we're looking for a specific selector, check for match
+        if (selector && !node.matches(selector)) continue;
+        return node;
+      }
+      // If nothing found, recursively check child shadow roots
+      // (your recursive logic here, if any)
+    }
+  } catch (e) {
+    console.error('Error in findInShadowRoots:', e);
+  }
+  return null;
+}
+
+// --- Enhanced persistent answer highlight for MCQ options ---
+function removePreviousHighlights(mcq) {
+  if (!mcq || !mcq.options) return;
+  mcq.options.forEach(opt => {
+    let el = opt.element || opt.input || opt;
+    if (typeof el === 'string') el = document.querySelector(el);
+    if (el && el.classList) {
+      el.classList.remove('mcq-bot-highlight');
+      const checkIcon = el.querySelector && el.querySelector('.mcq-bot-checkmark');
+      if (checkIcon) checkIcon.remove();
+      el.removeAttribute('aria-live');
+    }
+  });
+}
+
+// Add highlight style to the page if not already present
+if (!document.getElementById('mcq-bot-highlight-style')) {
+  const style = document.createElement('style');
+  style.id = 'mcq-bot-highlight-style';
+  style.textContent = `
+    .mcq-bot-highlight {
+      position: relative !important;
+      border: 3px solid #43a047 !important;
+      background: rgba(76, 175, 80, 0.15) !important;
+      box-shadow: 0 0 0 4px #a5d6a7 !important;
+      transition: box-shadow 0.3s, border 0.3s, background 0.3s;
+      z-index: 10;
+    }
+    .mcq-bot-checkmark {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 22px;
+      height: 22px;
+      background: #43a047;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 16px;
+      z-index: 20;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+// ARIA live region for accessibility
+let ariaLive = document.getElementById('mcq-bot-aria-live');
+if (!ariaLive) {
+  ariaLive = document.createElement('div');
+  ariaLive.id = 'mcq-bot-aria-live';
+  ariaLive.setAttribute('aria-live', 'polite');
+  ariaLive.style.position = 'absolute';
+  ariaLive.style.left = '-9999px';
+  ariaLive.style.height = '1px';
+  ariaLive.style.overflow = 'hidden';
+  document.body.appendChild(ariaLive);
+}
+
+async function selectOptions(mcq, matchingOptions) {
+  if (!matchingOptions || matchingOptions.length === 0) {
+    console.warn('[MCQ] No matching options provided');
+    return;
+  }
+  const isCheckbox = mcq && (mcq.type === 'checkbox' || 
+    (Array.isArray(mcq.options) && mcq.options[0]?.element?.type === 'checkbox'));
+  const optionsToSelect = isCheckbox ? matchingOptions : [matchingOptions[0]];
+
+  // Remove previous highlights before selecting new ones
+  removePreviousHighlights(mcq);
+
+  // --- Enhancement: For checkboxes, ensure all correct are checked and others are unchecked ---
+  if (isCheckbox) {
+    // First, uncheck all options not in matchingOptions
+    mcq.options.forEach(opt => {
+      let el = opt.element || opt.input || opt;
+      if (typeof el === 'string') el = document.querySelector(el);
+      if (el && el.type === 'checkbox' && !optionsToSelect.includes(opt)) {
+        if (el.checked) {
+          el.checked = false;
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+          console.log('[MCQ-BOT][ENHANCE] Unchecked incorrect checkbox:', opt.text);
+        }
+      }
+    });
+  }
+
+  for (let i = 0; i < optionsToSelect.length; i++) {
+    const option = optionsToSelect[i];
+    let element = option.element || option.input || option;
+    const optionText = option.text || option.innerText || option.textContent || '';
+    if (!element) {
+      console.warn('[MCQ] No element found for option:', optionText);
+      continue;
+    }
+    if (typeof element === 'string') {
+      element = document.querySelector(element);
+      if (!element) {
+        console.warn('[MCQ] Could not find element with selector:', option);
+        continue;
+      }
+    }
+    // Add persistent highlight
+    element.classList.add('mcq-bot-highlight');
+    // Add checkmark icon if not present
+    if (!element.querySelector('.mcq-bot-checkmark')) {
+      const check = document.createElement('span');
+      check.className = 'mcq-bot-checkmark';
+      check.innerHTML = '&#10003;'; // Unicode checkmark
+      element.appendChild(check);
+    }
+    // ARIA update
+    element.setAttribute('aria-live', 'polite');
+    ariaLive.textContent = `Selected answer: ${optionText}`;
+    // Scroll into view
+    element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+    // --- Enhancement: Only select if not already selected ---
+    if (element.type === 'radio' || element.type === 'checkbox') {
+      if (!element.checked) {
+        element.checked = true;
+        element.dispatchEvent(new Event('change', { bubbles: true }));
+        element.dispatchEvent(new Event('input', { bubbles: true }));
+        element.dispatchEvent(new Event('click', { bubbles: true }));
+        console.log('[MCQ-BOT][ENHANCE] Selected option:', optionText);
+      } else {
+        console.log('[MCQ-BOT][ENHANCE] Option already selected:', optionText);
+      }
+    } else {
+      // For non-inputs, simulate click if not already selected (if possible)
+      if (!element.classList.contains('selected')) {
+        element.click && element.click();
+        console.log('[MCQ-BOT][ENHANCE] Clicked non-input option:', optionText);
+    }
+  }
+  }
 }
 
 // In findMCQs, call the new methods:
@@ -3165,4 +3546,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       sendResponse({success: false, error: "No MCQ block found"});
     }
   }
+  return undefined; // Required for Chrome extensions message listeners
 });
+
+// Add a no-op saveToHistory to prevent ReferenceError
+function saveToHistory(mcq, answer) {
+  // No-op for now. Implement if you want to store MCQ history.
+}

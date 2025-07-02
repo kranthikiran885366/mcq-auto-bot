@@ -367,4 +367,30 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
   }
+
+  // Example function to answer MCQ using backend
+  async function answerMCQWithBackend(question, options) {
+    // Get provider from storage
+    const settings = await new Promise((resolve) => {
+      chrome.storage.sync.get(["apiProvider"], resolve)
+    })
+    const provider = settings.apiProvider || "openai"
+    // POST to backend
+    const response = await fetch('http://localhost:5000/api/get-answer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        question: question,
+        options: options.map(text => ({ text })),
+        provider: provider
+      })
+    })
+    const data = await response.json()
+    if (data.success) {
+      // Show answer in popup UI (implement as needed)
+      statusText.textContent = `Answer: ${data.selected_option}`
+    } else {
+      statusText.textContent = `Error: ${data.error || 'No answer found'}`
+    }
+  }
 })

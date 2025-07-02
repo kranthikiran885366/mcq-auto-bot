@@ -126,6 +126,11 @@
                 </div>
                 
                 <div class="form-group">
+                    <label for="geminiModel">Gemini Model Name:</label>
+                    <input type="text" id="geminiModel" placeholder="e.g. gemini-pro, gemini-1.0-pro, gemini-2.0-flash, etc.">
+                </div>
+                
+                <div class="form-group">
                     <label for="aiProvider">AI Provider:</label>
                     <select id="aiProvider">
                         <option value="openai">OpenAI GPT-4</option>
@@ -182,6 +187,7 @@
             const config = {
                 openai_key: document.getElementById('openaiKey').value,
                 gemini_key: document.getElementById('geminiKey').value,
+                gemini_model: document.getElementById('geminiModel').value,
                 headless: document.getElementById('headless').checked,
                 config: {
                     auto_answer: document.getElementById('autoAnswer').checked,

@@ -24,6 +24,8 @@ from dotenv import load_dotenv
 from io import BytesIO
 import requests
 import string
+import difflib
+import unicodedata
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -101,15 +103,14 @@ class MCQAutomationBot:
         self.driver = webdriver.Chrome(options=chrome_options)
         self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
         
-    def setup_ai_clients(self, openai_key=None, gemini_key=None, huggingface_key=None, huggingface_model=None, google_search_api_key=None, google_search_cx=None):
+    def setup_ai_clients(self, openai_key=None, gemini_key=None, gemini_model=None, huggingface_key=None, huggingface_model=None, google_search_api_key=None, google_search_cx=None):
         """Setup AI clients"""
         if openai_key:
             self.openai_client = openai.OpenAI(api_key=openai_key)
-        
         if gemini_key:
             genai.configure(api_key=gemini_key)
-            self.genai_client = genai.GenerativeModel('gemini-pro')
-        
+            model_name = gemini_model or 'gemini-pro'
+            self.genai_client = genai.GenerativeModel(model_name)
         if huggingface_key:
             self.huggingface_key = huggingface_key
         if huggingface_model:
@@ -409,7 +410,7 @@ class MCQAutomationBot:
             return {'error': error_msg, 'success': False}
     
     def get_ai_answer(self, question, options, provider='openai'):
-        """Get answer from selected AI provider"""
+        """Get answer from selected AI provider with enhanced matching logic"""
         prompt = (
             f"Question: {question}\n"
             f"Options:\n" + "\n".join([f"{chr(65+i)}. {opt['text']}" for i, opt in enumerate(options)]) +
@@ -417,7 +418,14 @@ class MCQAutomationBot:
         )
         try:
             def clean_text(s):
-                return s.strip().lower().translate(str.maketrans('', '', string.punctuation)).replace('  ', ' ')
+                s = s.strip().lower()
+                s = unicodedata.normalize('NFKD', s)
+                s = s.translate(str.maketrans('', '', string.punctuation))
+                s = s.replace('  ', ' ')
+                return s
+
+            def fuzzy_match(a, b):
+                return difflib.SequenceMatcher(None, a, b).ratio()
 
             if provider == 'openai':
                 if not self.openai_client:
@@ -432,32 +440,76 @@ class MCQAutomationBot:
                 logger.info(f'OpenAI raw answer: {answer_text}')
                 answer_text_clean = clean_text(answer_text)
                 logger.info(f'OpenAI cleaned answer: {answer_text_clean}')
-                # Regex: letter (A-D), number (1-4), or option text
                 import re
+                # 1. Letter (A-D)
                 match = re.search(r'\b([a-d])\b', answer_text_clean)
                 if match:
                     idx = ord(match.group(1)) - ord('a')
                     if 0 <= idx < len(options):
+                        logger.info(f"Matched by letter: {match.group(1)}")
                         return idx
+                # 2. Number (1-9)
                 match = re.search(r'\b([1-9])\b', answer_text_clean)
                 if match:
                     idx = int(match.group(1)) - 1
                     if 0 <= idx < len(options):
+                        logger.info(f"Matched by number: {match.group(1)}")
                         return idx
-                # Try to match option text
+                # 3. Option text exact
                 for i, opt in enumerate(options):
                     opt_clean = clean_text(opt['text'])
                     if opt_clean == answer_text_clean:
+                        logger.info(f"Matched by exact text: {opt['text']}")
                         return i
+                # 4. Option text substring
                 for i, opt in enumerate(options):
                     opt_clean = clean_text(opt['text'])
                     if opt_clean in answer_text_clean or answer_text_clean in opt_clean:
+                        logger.info(f"Matched by substring: {opt['text']}")
                         return i
-                # Try 'the answer is ...' or 'option ...'
+                # 5. Fuzzy match
                 for i, opt in enumerate(options):
                     opt_clean = clean_text(opt['text'])
-                    if f"the answer is {opt_clean}" in answer_text_clean or f"option {opt_clean}" in answer_text_clean:
+                    score = fuzzy_match(opt_clean, answer_text_clean)
+                    if score > 0.8:
+                        logger.info(f"Matched by fuzzy ({score:.2f}): {opt['text']}")
                         return i
+                # 6. Patterns like 'option a', 'option 1', 'the answer is ...'
+                match = re.search(r'option\s*([a-d1-9])', answer_text_clean)
+                if match:
+                    val = match.group(1)
+                    if val.isalpha():
+                        idx = ord(val) - ord('a')
+                    else:
+                        idx = int(val) - 1
+                    if 0 <= idx < len(options):
+                        logger.info(f"Matched by pattern 'option': {val}")
+                        return idx
+                match = re.search(r'the answer is\s*([a-d1-9])', answer_text_clean)
+                if match:
+                    val = match.group(1)
+                    if val.isalpha():
+                        idx = ord(val) - ord('a')
+                    else:
+                        idx = int(val) - 1
+                    if 0 <= idx < len(options):
+                        logger.info(f"Matched by pattern 'the answer is': {val}")
+                        return idx
+                # 7. Patterns like 'A (Paris)', 'B (London)' etc.
+                match = re.search(r'([a-d])\s*\([^)]+\)', answer_text_clean)
+                if match:
+                    idx = ord(match.group(1)) - ord('a')
+                    if 0 <= idx < len(options):
+                        logger.info(f"Matched by pattern 'A (Option)': {match.group(1)}")
+                        return idx
+                # 8. Try matching after removing all spaces
+                answer_no_space = answer_text_clean.replace(' ', '')
+                for i, opt in enumerate(options):
+                    opt_no_space = clean_text(opt['text']).replace(' ', '')
+                    if opt_no_space == answer_no_space:
+                        logger.info(f"Matched by no-space exact: {opt['text']}")
+                        return i
+                logger.warning(f"No match found for answer: {answer_text}")
                 return None
             elif provider == 'gemini':
                 if not self.genai_client:
@@ -637,26 +689,22 @@ def index():
 def setup_bot():
     """Setup the automation bot"""
     data = request.json
-    
     try:
         # Setup driver
         bot.setup_driver(headless=data.get('headless', True))
-        
         # Setup AI clients
         bot.setup_ai_clients(
             openai_key=data.get('openai_key'),
             gemini_key=data.get('gemini_key'),
+            gemini_model=data.get('gemini_model'),
             huggingface_key=data.get('huggingfaceKey'),
             huggingface_model=data.get('huggingfaceModel'),
             google_search_api_key=data.get('googleSearchApiKey'),
             google_search_cx=data.get('googleSearchCx')
         )
-        
         # Update config
         bot.config.update(data.get('config', {}))
-        
         return jsonify({'success': True, 'message': 'Bot setup completed'})
-    
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 

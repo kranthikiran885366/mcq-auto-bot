@@ -300,6 +300,28 @@ document.addEventListener("DOMContentLoaded", () => {
     chrome.storage.sync.set(settings, () => {
       showApiStatus("API settings saved successfully!", "success")
     })
+
+    // Sync with backend
+    fetch('http://localhost:5000/api/setup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        gemini_key: key,
+        gemini_model: model
+        // ...add other keys/models as needed
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        showApiStatus('Backend setup successful!', 'success')
+      } else {
+        showApiStatus('Backend setup failed: ' + (data.error || 'Unknown error'), 'error')
+      }
+    })
+    .catch(err => {
+      showApiStatus('Backend setup error: ' + err.message, 'error')
+    })
   })
 
   // Save behavior settings
@@ -427,7 +449,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (confirm("Are you sure you want to reset all settings to defaults?")) {
       const defaultSettings = {
         apiProvider: "openai",
-        openaiModel: "gpt-4o",
+        openaiModel: "gpt-4-0125-preview",  // Updated to a valid model name
         geminiModel: "gemini-pro",
         deepseekModel: "deepseek-chat",
         promptTemplate: promptTemplate.defaultValue,
@@ -533,7 +555,7 @@ document.addEventListener("DOMContentLoaded", () => {
       (result) => {
       apiProvider.value = result.apiProvider || "openai"
       openaiKey.value = result.openaiKey || ""
-      openaiModel.value = result.openaiModel || "gpt-4o"
+      openaiModel.value = result.openaiModel || "gpt-4-0125-preview"  // Updated to a valid model name
       geminiKey.value = result.geminiKey || ""
         geminiModel.value = result.geminiModel || "gemini-pro"
       deepseekKey.value = result.deepseekKey || ""

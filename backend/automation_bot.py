@@ -17,6 +17,9 @@ import re
 from typing import List, Dict, Optional
 import logging
 import random
+import difflib
+import unicodedata
+import string
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -582,9 +585,8 @@ class AdvancedMCQBot:
         return results
     
     def get_ai_answer(self, question, options, provider='openai'):
-        """Get AI answer with improved prompting"""
+        """Get AI answer with improved prompting and enhanced matching logic"""
         options_text = '\n'.join([f"{chr(65+i)}. {opt['text']}" for i, opt in enumerate(options)])
-        
         prompt = f"""
         You are an expert at answering multiple choice questions. Analyze the following question and options carefully.
 
@@ -602,7 +604,14 @@ class AdvancedMCQBot:
 
         Answer:
         """
-        
+        def clean_text(s):
+            s = s.strip().lower()
+            s = unicodedata.normalize('NFKD', s)
+            s = s.translate(str.maketrans('', '', string.punctuation))
+            s = s.replace('  ', ' ')
+            return s
+        def fuzzy_match(a, b):
+            return difflib.SequenceMatcher(None, a, b).ratio()
         try:
             if provider == 'openai' and self.openai_client:
                 response = self.openai_client.chat.completions.create(
@@ -612,26 +621,87 @@ class AdvancedMCQBot:
                     max_tokens=5
                 )
                 answer = response.choices[0].message.content.strip().upper()
-                
             elif provider == 'gemini' and self.genai_client:
                 response = self.genai_client.generate_content(prompt)
                 answer = response.text.strip().upper()
-            
             else:
                 return None
-            
-            # Extract letter from answer
+            import re
+            # 1. Letter (A-D)
             match = re.search(r'\b([A-D])\b', answer)
             if match:
-                letter = match.group(1)
-                return ord(letter) - ord('A')  # Convert to 0-based index
-            
+                idx = ord(match.group(1)) - ord('A')
+                if 0 <= idx < len(options):
+                    logger.info(f"Matched by letter: {match.group(1)}")
+                    return idx
+            # 2. Number (1-9)
+            match = re.search(r'\b([1-9])\b', answer)
+            if match:
+                idx = int(match.group(1)) - 1
+                if 0 <= idx < len(options):
+                    logger.info(f"Matched by number: {match.group(1)}")
+                    return idx
+            # 3. Option text exact
+            for i, opt in enumerate(options):
+                opt_clean = clean_text(opt['text'])
+                if opt_clean == clean_text(answer):
+                    logger.info(f"Matched by exact text: {opt['text']}")
+                    return i
+            # 4. Option text substring
+            for i, opt in enumerate(options):
+                opt_clean = clean_text(opt['text'])
+                if opt_clean in clean_text(answer) or clean_text(answer) in opt_clean:
+                    logger.info(f"Matched by substring: {opt['text']}")
+                    return i
+            # 5. Fuzzy match
+            for i, opt in enumerate(options):
+                opt_clean = clean_text(opt['text'])
+                score = fuzzy_match(opt_clean, clean_text(answer))
+                if score > 0.8:
+                    logger.info(f"Matched by fuzzy ({score:.2f}): {opt['text']}")
+                    return i
+            # 6. Patterns like 'option a', 'option 1', 'the answer is ...'
+            match = re.search(r'option\s*([A-D1-9])', answer)
+            if match:
+                val = match.group(1)
+                if val.isalpha():
+                    idx = ord(val) - ord('A')
+                else:
+                    idx = int(val) - 1
+                if 0 <= idx < len(options):
+                    logger.info(f"Matched by pattern 'option': {val}")
+                    return idx
+            match = re.search(r'the answer is\s*([A-D1-9])', answer)
+            if match:
+                val = match.group(1)
+                if val.isalpha():
+                    idx = ord(val) - ord('A')
+                else:
+                    idx = int(val) - 1
+                if 0 <= idx < len(options):
+                    logger.info(f"Matched by pattern 'the answer is': {val}")
+                    return idx
+            # 7. Patterns like 'A (Paris)', 'B (London)' etc.
+            match = re.search(r'([A-D])\s*\([^)]+\)', answer)
+            if match:
+                idx = ord(match.group(1)) - ord('A')
+                if 0 <= idx < len(options):
+                    logger.info(f"Matched by pattern 'A (Option)': {match.group(1)}")
+                    return idx
+            # 8. Try matching after removing all spaces
+            answer_no_space = clean_text(answer).replace(' ', '')
+            for i, opt in enumerate(options):
+                opt_no_space = clean_text(opt['text']).replace(' ', '')
+                if opt_no_space == answer_no_space:
+                    logger.info(f"Matched by no-space exact: {opt['text']}")
+                    return i
+            logger.warning(f"No match found for answer: {answer}")
+            return None
         except Exception as e:
             logger.error(f"Error getting AI answer: {e}")
-        
         return None
     
-    def setup_ai_clients(self, openai_key=None, gemini_key=None):
+    def setup_ai_clients(self, openai_key=None, gemini_key=None, gemini_model=None):
         """Setup AI clients with error handling"""
         try:
             if openai_key:
@@ -643,8 +713,9 @@ class AdvancedMCQBot:
         try:
             if gemini_key:
                 genai.configure(api_key=gemini_key)
-                self.genai_client = genai.GenerativeModel('gemini-pro')
-                logger.info("Gemini client initialized successfully")
+                model_name = gemini_model or 'gemini-pro'
+                self.genai_client = genai.GenerativeModel(model_name)
+                logger.info(f"Gemini client initialized successfully with model: {model_name}")
         except Exception as e:
             logger.error(f"Error setting up Gemini client: {e}")
     

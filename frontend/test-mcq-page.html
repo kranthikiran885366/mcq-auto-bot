@@ -10,7 +10,88 @@
   </style>
 </head>
 <body>
-  <h1>MCQ Bot Test Page</h1>
+  <button id="themeToggle" class="theme-toggle">🌙</button>
+  <div class="header">
+    <img src="../icons/icon48.png" alt="Logo" class="logo">
+    <h1>Advanced AI MCQ Bot</h1>
+  </div>
+  <div class="container">
+    <div class="status">
+      <div id="statusDot" class="status-dot inactive"></div>
+      <div id="statusText" class="status-text">Bot is inactive</div>
+    </div>
+    <div id="errorMessage" style="display:none; color:#F44336; background:#fff3f3; border:1px solid #F44336; border-radius:4px; padding:8px; margin-bottom:10px; font-size:13px;"></div>
+    <div class="toggle-container">
+      <span class="toggle-label">Enable Bot</span>
+      <label class="toggle">
+        <input type="checkbox" id="botToggle">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="mode-selector">
+      <select id="modeSelect">
+        <option value="learning">Learning Mode</option>
+        <option value="safe">Safe Mode</option>
+        <option value="stealth">Stealth Mode</option>
+      </select>
+    </div>
+    <div class="toggle-container">
+      <span class="toggle-label">Voice Narration</span>
+      <label class="toggle">
+        <input type="checkbox" id="voiceToggle">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="toggle-container">
+      <span class="toggle-label">Auto-Answer</span>
+      <label class="toggle">
+        <input type="checkbox" id="autoAnswerToggle" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div style="margin-top: 10px;">
+      <label style="display: flex; align-items: center; gap: 8px;">
+        <input type="checkbox" id="humanMouseMovementToggle">
+        Human-like Mouse Movement
+      </label>
+      <small style="color: #888;">(Simulates random mouse movement, clicks, and scrolling for advanced human-like behavior.)</small>
+    </div>
+    <button id="scanButton" class="button">Scan for MCQs</button>
+    <button id="captureButton" class="button secondary">Capture Screen</button>
+    <div id="mcqInfo" class="mcq-info" style="display: none;">
+      <div class="mcq-question">Question: </div>
+      <div class="mcq-answer">Answer: </div>
+    </div>
+    <div id="apiStatus" class="api-status disconnected">
+      API Status: Not Connected
+    </div>
+    <div class="stats">
+      <div class="stats-item">
+        <div class="stats-value" id="mcqsFound">0</div>
+        <div>MCQs Found</div>
+      </div>
+      <div class="stats-item">
+        <div class="stats-value" id="mcqsAnswered">0</div>
+        <div>Answered</div>
+      </div>
+      <div class="stats-item">
+        <div class="stats-value" id="accuracy">0%</div>
+        <div>Accuracy</div>
+      </div>
+    </div>
+  </div>
+  <a href="../options.html" class="settings-link">Settings & API Configuration</a>
+  <button id="fullscreen-btn" style="margin-bottom:1em;">Enter Fullscreen Mode (for proctoring test)</button>
+  <div style="color:#888; font-size:0.95em; margin-bottom:2em;">Use this button to test the bot's fullscreen detection and safe mode behavior.</div>
+  <script>
+    document.getElementById('fullscreen-btn').onclick = function() {
+      const el = document.body;
+      if (el.requestFullscreen) el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      else if (el.mozRequestFullScreen) el.mozRequestFullScreen();
+      else if (el.msRequestFullscreen) el.msRequestFullscreen();
+    };
+  </script>
 
   <!-- Standard radio MCQ -->
   <div class="mcq-block">
