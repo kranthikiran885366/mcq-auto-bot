@@ -4,7 +4,61 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Advanced AI MCQ Bot - MVK Solutions</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'mvk-primary': '#667eea',
+            'mvk-secondary': '#764ba2',
+            'mvk-accent': '#f093fb',
+            'mvk-success': '#4facfe',
+            'mvk-warning': '#fa709a',
+            'mvk-dark': '#2c3e50'
+          },
+          animation: {
+            'float': 'float 6s ease-in-out infinite',
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'bounce-slow': 'bounce 2s infinite',
+            'spin-slow': 'spin 3s linear infinite',
+            'gradient': 'gradient 15s ease infinite',
+            'shimmer': 'shimmer 2s linear infinite',
+            'glow': 'glow 2s ease-in-out infinite alternate'
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-20px)' }
+            },
+            gradient: {
+              '0%, 100%': { backgroundPosition: '0% 50%' },
+              '50%': { backgroundPosition: '100% 50%' }
+            },
+            shimmer: {
+              '0%': { transform: 'translateX(-100%)' },
+              '100%': { transform: 'translateX(100%)' }
+            },
+            glow: {
+              '0%': { boxShadow: '0 0 20px rgba(102, 126, 234, 0.5)' },
+              '100%': { boxShadow: '0 0 30px rgba(102, 126, 234, 0.8)' }
+            }
+          },
+          backdropBlur: {
+            'xs': '2px',
+            '4xl': '72px'
+          },
+          fontFamily: {
+            'inter': ['Inter', 'system-ui', 'sans-serif'],
+            'poppins': ['Poppins', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+    
     :root {
       --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
@@ -15,8 +69,9 @@
       --glass-border: rgba(255, 255, 255, 0.18);
       --shadow-light: 0 8px 32px rgba(31, 38, 135, 0.37);
       --shadow-dark: 0 8px 32px rgba(0, 0, 0, 0.3);
-      --border-radius: 16px;
-      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      --border-radius: 20px;
+      --transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      --text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     }
 
     * {
@@ -26,10 +81,12 @@
     }
 
     body {
-      width: 380px;
-      min-height: 600px;
+      width: 420px;
+      min-height: 650px;
       font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background: var(--primary-gradient);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      background-size: 400% 400%;
+      animation: gradient 15s ease infinite;
       position: relative;
       overflow-x: hidden;
     }
@@ -42,189 +99,75 @@
       right: 0;
       bottom: 0;
       background: 
-        radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
-        radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
+        radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.4) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.4) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.3) 0%, transparent 50%);
       pointer-events: none;
+      animation: float 6s ease-in-out infinite;
     }
 
-    .main-container {
-      position: relative;
-      z-index: 1;
-      padding: 20px;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* Company Header */
-    .company-header {
-      background: var(--glass-bg);
+    .glass-morphism {
+      background: rgba(255, 255, 255, 0.15);
       backdrop-filter: blur(20px);
-      border: 1px solid var(--glass-border);
-      border-radius: var(--border-radius);
-      padding: 16px;
-      margin-bottom: 20px;
-      text-align: center;
-      box-shadow: var(--shadow-light);
-      transition: var(--transition);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
     }
 
-    .company-header:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 12px 40px rgba(31, 38, 135, 0.5);
+    .glass-morphism-dark {
+      background: rgba(0, 0, 0, 0.15);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     }
 
-    .company-logo {
-      width: 48px;
-      height: 48px;
-      margin: 0 auto 12px;
-      background: var(--primary-gradient);
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-      font-weight: bold;
-      color: white;
-      box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+    .gradient-text {
+      background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      background-size: 200% 200%;
+      animation: gradient 3s ease infinite;
+    }
+
+    .hover-lift {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .hover-lift:hover {
+      transform: translateY(-8px) scale(1.02);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .shimmer-effect {
       position: relative;
       overflow: hidden;
     }
 
-    .company-logo::before {
+    .shimmer-effect::before {
       content: '';
       position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
-      transform: rotate(45deg);
-      animation: shine 3s infinite;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      animation: shimmer 2s infinite;
     }
 
-    @keyframes shine {
-      0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-      50% { transform: translateX(100%) translateY(100%) rotate(45deg); }
-      100% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+    .neon-glow {
+      box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+      animation: glow 2s ease-in-out infinite alternate;
     }
 
-    .company-name {
-      font-size: 18px;
-      font-weight: 700;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 4px;
-      letter-spacing: -0.5px;
+    .floating-animation {
+      animation: float 6s ease-in-out infinite;
     }
 
-    .company-tagline {
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.8);
-      font-weight: 500;
-    }
-
-    /* Theme Toggle */
-    .theme-toggle {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      background: var(--glass-bg);
-      backdrop-filter: blur(20px);
-      border: 1px solid var(--glass-border);
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      font-size: 18px;
-      transition: var(--transition);
-      z-index: 10;
-    }
-
-    .theme-toggle:hover {
-      transform: scale(1.1) rotate(15deg);
-      box-shadow: var(--shadow-light);
-    }
-
-    /* Header */
-    .header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 24px;
-      background: var(--glass-bg);
-      backdrop-filter: blur(20px);
-      border: 1px solid var(--glass-border);
-      border-radius: var(--border-radius);
-      padding: 20px;
-      box-shadow: var(--shadow-light);
-    }
-
-    .logo {
-      width: 48px;
-      height: 48px;
-      margin-right: 16px;
-      border-radius: 12px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-      transition: var(--transition);
-    }
-
-    .logo:hover {
-      transform: scale(1.05) rotate(5deg);
-    }
-
-    h1 {
-      font-size: 20px;
-      font-weight: 700;
-      color: white;
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-      letter-spacing: -0.5px;
-    }
-
-    /* Glass Container */
-    .container {
-      background: var(--glass-bg);
-      backdrop-filter: blur(20px);
-      border: 1px solid var(--glass-border);
-      border-radius: var(--border-radius);
-      padding: 24px;
-      margin-bottom: 20px;
-      box-shadow: var(--shadow-light);
-      transition: var(--transition);
-      flex: 1;
-      overflow-y: auto;
-    }
-
-    .container:hover {
-      border-color: rgba(255, 255, 255, 0.3);
-    }
-
-    /* Status Indicator */
-    .status {
-      display: flex;
-      align-items: center;
-      margin-bottom: 20px;
-      padding: 16px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .status-dot {
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      margin-right: 12px;
+    .pulse-ring {
       position: relative;
-      transition: var(--transition);
     }
 
-    .status-dot::before {
+    .pulse-ring::before {
       content: '';
       position: absolute;
       top: -4px;
@@ -232,599 +175,428 @@
       right: -4px;
       bottom: -4px;
       border-radius: 50%;
+      background: inherit;
       opacity: 0.3;
       animation: pulse 2s infinite;
     }
 
-    .status-dot.active {
-      background: #10b981;
-      box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
     }
 
-    .status-dot.active::before {
-      background: #10b981;
-    }
-
-    .status-dot.inactive {
-      background: #ef4444;
-      box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
-    }
-
-    .status-dot.inactive::before {
-      background: #ef4444;
-    }
-
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); opacity: 0.3; }
-      50% { transform: scale(1.2); opacity: 0.1; }
-    }
-
-    .status-text {
-      font-size: 14px;
-      font-weight: 600;
-      color: white;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-    }
-
-    /* Toggle Switches */
-    .toggle-container {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      padding: 16px;
+    ::-webkit-scrollbar-track {
       background: rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      transition: var(--transition);
+      border-radius: 4px;
     }
 
-    .toggle-container:hover {
-      background: rgba(255, 255, 255, 0.15);
-      transform: translateX(4px);
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border-radius: 4px;
     }
 
-    .toggle-label {
-      font-size: 14px;
-      font-weight: 600;
-      color: white;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    ::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(135deg, #764ba2, #f093fb);
     }
 
-    .toggle {
-      position: relative;
-      display: inline-block;
-      width: 56px;
-      height: 32px;
+    /* Dark Mode */
+    .dark-mode {
+      background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #4a6741 100%);
     }
 
-    .toggle input {
-      opacity: 0;
-      width: 0;
-      height: 0;
+    .dark-mode .glass-morphism {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(255, 255, 255, 0.3);
-      transition: var(--transition);
-      border-radius: 32px;
-      border: 1px solid rgba(255, 255, 255, 0.4);
+    .dark-mode .gradient-text {
+      background: linear-gradient(135deg, #60a5fa, #a78bfa, #f472b6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
-    .toggle input:checked + .slider {
-      background: var(--success-gradient);
-      box-shadow: 0 0 20px rgba(79, 172, 254, 0.4);
-    }
-
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 24px;
-      width: 24px;
-      left: 4px;
-      bottom: 3px;
-      background: white;
-      transition: var(--transition);
-      border-radius: 50%;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    }
-
-    .toggle input:checked + .slider:before {
-      transform: translateX(24px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    }
-
-    /* Mode Selector */
-    .mode-selector {
-      margin-bottom: 20px;
-    }
-
-    .mode-selector select {
-      width: 100%;
-      padding: 16px;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
-      color: white;
-      font-size: 14px;
-      font-weight: 500;
-      transition: var(--transition);
-    }
-
-    .mode-selector select:focus {
-      outline: none;
-      border-color: rgba(255, 255, 255, 0.6);
-      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
-    }
-
-    .mode-selector select option {
-      background: #2c3e50;
-      color: white;
-    }
-
-    /* Buttons */
-    .button {
-      width: 100%;
-      padding: 16px;
-      border: none;
-      border-radius: 12px;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-bottom: 12px;
-      transition: var(--transition);
+    /* Advanced Button Styles */
+    .btn-advanced {
       position: relative;
       overflow: hidden;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      border-radius: 16px;
+      color: white;
+      font-weight: 600;
+      padding: 16px 24px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 1px;
+      font-size: 14px;
     }
 
-    .button::before {
+    .btn-advanced::before {
       content: '';
       position: absolute;
       top: 0;
       left: -100%;
       width: 100%;
       height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
       transition: left 0.5s;
     }
 
-    .button:hover::before {
+    .btn-advanced:hover::before {
       left: 100%;
     }
 
-    .button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    .btn-advanced:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
     }
 
-    .button:active {
-      transform: translateY(0);
+    .btn-advanced:active {
+      transform: translateY(-1px);
     }
 
-    .button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    .button.primary {
-      background: var(--primary-gradient);
-      color: white;
-      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-    }
-
-    .button.secondary {
-      background: var(--glass-bg);
-      backdrop-filter: blur(20px);
-      color: white;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      box-shadow: var(--shadow-light);
-    }
-
-    .button.success {
-      background: var(--success-gradient);
-      color: white;
-      box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
-    }
-
-    /* MCQ Info */
-    .mcq-info {
-      margin-top: 20px;
-      padding: 16px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      max-height: 120px;
-      overflow-y: auto;
-      backdrop-filter: blur(10px);
-    }
-
-    .mcq-question, .mcq-answer {
-      font-size: 12px;
-      color: white;
-      margin-bottom: 8px;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-    }
-
-    .mcq-question {
-      font-weight: 600;
-    }
-
-    .mcq-answer {
-      color: #10b981;
-      font-weight: 500;
-    }
-
-    /* API Status */
-    .api-status {
-      font-size: 12px;
-      text-align: center;
-      margin: 16px 0;
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .api-status.connected {
-      background: rgba(16, 185, 129, 0.2);
-      color: #10b981;
-      border: 1px solid rgba(16, 185, 129, 0.3);
-    }
-
-    .api-status.disconnected {
-      background: rgba(239, 68, 68, 0.2);
-      color: #ef4444;
-      border: 1px solid rgba(239, 68, 68, 0.3);
-    }
-
-    /* Stats */
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      margin-top: 20px;
-    }
-
-    .stats-item {
-      text-align: center;
-      padding: 16px 8px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      transition: var(--transition);
-    }
-
-    .stats-item:hover {
-      transform: translateY(-4px);
-      background: rgba(255, 255, 255, 0.15);
-    }
-
-    .stats-value {
-      font-size: 24px;
-      font-weight: 700;
-      color: white;
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-      margin-bottom: 4px;
-      background: var(--primary-gradient);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .stats-item div:last-child {
-      font-size: 10px;
-      color: rgba(255, 255, 255, 0.8);
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    /* Settings Link */
-    .settings-link {
-      display: block;
-      text-align: center;
-      margin-top: 16px;
-      color: rgba(255, 255, 255, 0.8);
-      text-decoration: none;
-      font-size: 12px;
-      font-weight: 500;
-      padding: 12px;
-      border-radius: 8px;
-      transition: var(--transition);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .settings-link:hover {
-      color: white;
-      background: rgba(255, 255, 255, 0.1);
-      transform: translateY(-2px);
-    }
-
-    /* Error Message */
-    #errorMessage {
-      background: rgba(239, 68, 68, 0.2);
-      color: #ef4444;
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 16px;
-      font-size: 13px;
-      font-weight: 500;
-      backdrop-filter: blur(10px);
-    }
-
-    /* OCR Controls */
-    .ocr-controls {
-      margin-top: 20px;
-      padding: 16px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .ocr-controls select {
-      width: 100%;
-      padding: 12px;
-      margin: 8px 0;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.1);
-      color: white;
-      font-size: 12px;
-    }
-
-    .ocr-controls select option {
-      background: #2c3e50;
-      color: white;
-    }
-
-    #preview {
-      max-width: 100%;
-      max-height: 150px;
-      border-radius: 8px;
-      margin: 12px 0;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    }
-
-    #ocr-result {
-      background: rgba(0, 0, 0, 0.3);
-      color: white;
-      padding: 12px;
-      border-radius: 8px;
-      font-size: 11px;
-      max-height: 100px;
-      overflow-y: auto;
-      white-space: pre-wrap;
-      font-family: 'Courier New', monospace;
-    }
-
-    #status {
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.8);
-      text-align: center;
-      margin: 8px 0;
-      font-weight: 500;
-    }
-
-    /* Dark Mode */
-    .dark-mode {
-      --glass-bg: rgba(0, 0, 0, 0.4);
-      --glass-border: rgba(255, 255, 255, 0.1);
-    }
-
-    .dark-mode body {
-      background: var(--dark-gradient);
-    }
-
-    .dark-mode .company-name {
-      background: linear-gradient(135deg, #60a5fa, #a78bfa);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    /* Banner */
-    .banner {
-      background: var(--primary-gradient);
-      color: white;
-      font-weight: 600;
-      font-size: 11px;
-      padding: 8px 32px 8px 40px;
+    /* Toggle Switch Advanced */
+    .toggle-advanced {
       position: relative;
-      text-align: center;
-      border-radius: 0 0 12px 12px;
-      margin-bottom: 16px;
-      box-shadow: var(--shadow-light);
+      width: 64px;
+      height: 36px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 36px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .banner .close-btn {
+    .toggle-advanced.active {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      box-shadow: 0 0 20px rgba(79, 172, 254, 0.5);
+    }
+
+    .toggle-advanced::before {
+      content: '';
       position: absolute;
-      left: 8px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: rgba(255, 255, 255, 0.2);
-      border: none;
-      color: white;
-      font-size: 14px;
+      top: 2px;
+      left: 2px;
+      width: 28px;
+      height: 28px;
+      background: white;
       border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .toggle-advanced.active::before {
+      transform: translateX(28px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Stats Card Advanced */
+    .stats-card-advanced {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      padding: 20px;
+      text-align: center;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stats-card-advanced::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+      transform: rotate(45deg);
+      animation: shimmer 3s infinite;
+    }
+
+    .stats-card-advanced:hover {
+      transform: translateY(-8px) scale(1.05);
+      box-shadow: 0 20px 40px rgba(31, 38, 135, 0.3);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .stats-value-advanced {
+      font-size: 32px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+      text-shadow: none;
+    }
+
+    /* Company Logo Advanced */
+    .company-logo-advanced {
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      border-radius: 16px;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: var(--transition);
-    }
-
-    .banner .close-btn:hover {
-      background: rgba(255, 255, 255, 0.3);
-      transform: translateY(-50%) scale(1.1);
-    }
-
-    .banner a {
+      font-size: 28px;
+      font-weight: 800;
       color: white;
-      text-decoration: underline;
-      margin-left: 4px;
-      font-weight: 700;
+      box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
+      position: relative;
+      overflow: hidden;
+      animation: float 6s ease-in-out infinite;
     }
 
-    /* Scrollbar */
-    ::-webkit-scrollbar {
-      width: 6px;
+    .company-logo-advanced::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent, rgba(255,255,255,0.4), transparent);
+      transform: rotate(45deg);
+      animation: shimmer 4s infinite;
     }
 
-    ::-webkit-scrollbar-track {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 3px;
+    /* Status Indicator Advanced */
+    .status-indicator-advanced {
+      position: relative;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      margin-right: 12px;
     }
 
-    ::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.3);
-      border-radius: 3px;
+    .status-indicator-advanced.active {
+      background: linear-gradient(135deg, #10b981, #34d399);
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
+      animation: pulse 2s infinite;
     }
 
-    ::-webkit-scrollbar-thumb:hover {
-      background: rgba(255, 255, 255, 0.5);
+    .status-indicator-advanced.inactive {
+      background: linear-gradient(135deg, #ef4444, #f87171);
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+      animation: pulse 2s infinite;
     }
 
-    /* Responsive */
-    @media (max-width: 400px) {
-      .main-container { padding: 16px; }
-      .container { padding: 16px; }
-      h1 { font-size: 18px; }
-      .button { font-size: 13px; padding: 14px; }
+    .status-indicator-advanced::before {
+      content: '';
+      position: absolute;
+      top: -4px;
+      left: -4px;
+      right: -4px;
+      bottom: -4px;
+      border-radius: 50%;
+      background: inherit;
+      opacity: 0.3;
+      animation: pulse 2s infinite;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 480px) {
+      body { width: 100vw; min-height: 100vh; }
+      .company-logo-advanced { width: 48px; height: 48px; font-size: 24px; }
+      .stats-value-advanced { font-size: 24px; }
     }
   </style>
 </head>
-<body class="min-w-[380px] bg-background text-foreground transition-colors duration-300">
-  <div class="banner" id="installBanner">
-    <button class="close-btn" onclick="this.parentElement.style.display='none'" aria-label="Close">&times;</button>
-    Advanced AI MCQ Bot by MVK Solutions - Professional Edition
-    <a href="https://chrome.google.com/webstore/category/extensions" target="_blank">Get Pro Version</a>
+<body class="font-inter bg-gradient-to-br from-mvk-primary via-mvk-secondary to-mvk-accent transition-colors duration-300">
+  <!-- Marketing Banner -->
+  <div class="bg-gradient-to-r from-mvk-accent to-mvk-warning text-white font-semibold text-xs py-2 px-4 relative overflow-hidden" id="installBanner">
+    <button class="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full w-5 h-5 flex items-center justify-center text-xs transition-all duration-300" onclick="this.parentElement.style.display='none'" aria-label="Close">&times;</button>
+    <div class="text-center shimmer-effect">
+      🚀 Advanced AI MCQ Bot by MVK Solutions - Professional Edition
+      <a href="https://mvksolutions.com/enterprise" target="_blank" class="underline ml-1 font-bold hover:text-yellow-200 transition-colors">Get Enterprise License</a>
+    </div>
   </div>
   
-  <div class="main-container">
-    <button id="themeToggle" class="theme-toggle">🌙</button>
+  <div class="relative z-10 p-5 h-full flex flex-col">
+    <!-- Theme Toggle -->
+    <button id="themeToggle" class="absolute top-4 right-4 w-10 h-10 rounded-full glass-morphism hover-lift flex items-center justify-center text-lg z-20 neon-glow">
+      🌙
+    </button>
     
     <!-- Company Header -->
-    <div class="company-header">
-      <div class="company-logo">MVK</div>
-      <div class="company-name">MVK Solutions</div>
-      <div class="company-tagline">AI-Powered Automation Excellence</div>
+    <div class="glass-morphism rounded-2xl p-4 mb-5 text-center hover-lift shimmer-effect">
+      <div class="company-logo-advanced mx-auto mb-3">MVK</div>
+      <div class="text-lg font-bold gradient-text mb-1">MVK Solutions</div>
+      <div class="text-xs text-white opacity-90 font-medium">AI-Powered Automation Excellence</div>
+      <div class="text-xs text-white opacity-75 mt-2 leading-relaxed">
+        Leading provider of intelligent automation solutions for educational technology
+      </div>
     </div>
     
-    <div class="header">
-      <img src="icons/icon48.png" alt="Logo" class="logo">
-      <h1>Advanced AI MCQ Bot</h1>
+    <!-- Main Header -->
+    <div class="glass-morphism rounded-2xl p-5 mb-5 flex items-center hover-lift">
+      <img src="icons/icon48.png" alt="Logo" class="w-12 h-12 mr-4 rounded-xl shadow-lg floating-animation">
+      <h1 class="text-lg font-bold text-white text-shadow">Advanced AI MCQ Bot</h1>
     </div>
     
-    <div class="container">
-      <div class="status">
-        <div id="statusDot" class="status-dot inactive"></div>
-        <div id="statusText" class="status-text">Bot is inactive</div>
+    <!-- Main Container -->
+    <div class="glass-morphism rounded-2xl p-6 mb-5 flex-1 overflow-y-auto hover-lift">
+      <!-- Status Indicator -->
+      <div class="flex items-center mb-5 p-4 glass-morphism-dark rounded-xl">
+        <div id="statusDot" class="status-indicator-advanced inactive pulse-ring"></div>
+        <div id="statusText" class="text-sm font-semibold text-white">Bot is inactive</div>
       </div>
       
-      <div id="errorMessage" style="display:none;"></div>
+      <!-- Error Message -->
+      <div id="errorMessage" class="hidden bg-red-500 bg-opacity-20 border border-red-400 text-red-100 rounded-xl p-3 mb-4 text-sm font-medium backdrop-blur-sm"></div>
       
-      <div class="toggle-container">
-        <span class="toggle-label">Enable Bot</span>
-        <label class="toggle">
-          <input type="checkbox" id="botToggle">
-          <span class="slider"></span>
-        </label>
+      <!-- Controls Grid -->
+      <div class="space-y-4">
+        <!-- Enable Bot Toggle -->
+        <div class="flex justify-between items-center p-4 glass-morphism-dark rounded-xl hover-lift">
+          <span class="text-sm font-semibold text-white">Enable Bot</span>
+          <div id="botToggle" class="toggle-advanced cursor-pointer"></div>
+        </div>
+        
+        <!-- Mode Selector -->
+        <div class="glass-morphism-dark rounded-xl p-4 hover-lift">
+          <select id="modeSelect" class="w-full p-3 bg-white bg-opacity-10 border border-white border-opacity-30 rounded-xl text-white text-sm font-medium backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-mvk-success focus:border-transparent transition-all duration-300">
+            <option value="learning" class="bg-mvk-dark text-white">🎓 Learning Mode</option>
+            <option value="safe" class="bg-mvk-dark text-white">🛡️ Safe Mode</option>
+            <option value="stealth" class="bg-mvk-dark text-white">🥷 Stealth Mode</option>
+          </select>
+        </div>
+        
+        <!-- Voice Narration Toggle -->
+        <div class="flex justify-between items-center p-4 glass-morphism-dark rounded-xl hover-lift">
+          <span class="text-sm font-semibold text-white">Voice Narration</span>
+          <div id="voiceToggle" class="toggle-advanced cursor-pointer"></div>
+        </div>
+        
+        <!-- Auto-Answer Toggle -->
+        <div class="flex justify-between items-center p-4 glass-morphism-dark rounded-xl hover-lift">
+          <span class="text-sm font-semibold text-white">Auto-Answer</span>
+          <div id="autoAnswerToggle" class="toggle-advanced active cursor-pointer"></div>
+        </div>
+        
+        <!-- Human-like Movement Toggle -->
+        <div class="flex justify-between items-center p-4 glass-morphism-dark rounded-xl hover-lift">
+          <span class="text-sm font-semibold text-white">Human-like Movement</span>
+          <div id="humanMouseMovementToggle" class="toggle-advanced cursor-pointer"></div>
+        </div>
       </div>
       
-      <div class="mode-selector">
-        <select id="modeSelect">
-          <option value="learning">🎓 Learning Mode</option>
-          <option value="safe">🛡️ Safe Mode</option>
-          <option value="stealth">🥷 Stealth Mode</option>
-        </select>
+      <!-- Action Buttons -->
+      <div class="mt-6 space-y-3">
+        <button id="scanButton" class="btn-advanced w-full shimmer-effect">
+          🔍 Scan for MCQs
+        </button>
+        <button id="captureButton" class="btn-advanced w-full shimmer-effect" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+          📸 Capture Screen
+        </button>
       </div>
       
-      <div class="toggle-container">
-        <span class="toggle-label">Voice Narration</span>
-        <label class="toggle">
-          <input type="checkbox" id="voiceToggle">
-          <span class="slider"></span>
-        </label>
+      <!-- MCQ Info -->
+      <div id="mcqInfo" class="hidden mt-5 p-4 glass-morphism-dark rounded-xl hover-lift">
+        <div class="mcq-question text-xs text-white font-semibold mb-2"></div>
+        <div class="mcq-answer text-xs text-green-300 font-medium"></div>
       </div>
       
-      <div class="toggle-container">
-        <span class="toggle-label">Auto-Answer</span>
-        <label class="toggle">
-          <input type="checkbox" id="autoAnswerToggle" checked>
-          <span class="slider"></span>
-        </label>
-      </div>
-      
-      <div class="toggle-container">
-        <span class="toggle-label">Human-like Movement</span>
-        <label class="toggle">
-          <input type="checkbox" id="humanMouseMovementToggle">
-          <span class="slider"></span>
-        </label>
-      </div>
-      
-      <button id="scanButton" class="button primary">🔍 Scan for MCQs</button>
-      <button id="captureButton" class="button secondary">📸 Capture Screen</button>
-      
-      <div id="mcqInfo" class="mcq-info" style="display: none;">
-        <div class="mcq-question">Question: </div>
-        <div class="mcq-answer">Answer: </div>
-      </div>
-      
-      <div id="apiStatus" class="api-status disconnected">
+      <!-- API Status -->
+      <div id="apiStatus" class="text-xs text-center mt-4 py-2 px-4 rounded-full font-medium uppercase tracking-wide bg-red-500 bg-opacity-20 text-red-300 border border-red-400">
         API Status: Not Connected
       </div>
       
-      <div class="stats">
-        <div class="stats-item">
-          <div class="stats-value" id="mcqsFound">0</div>
-          <div>MCQs Found</div>
+      <!-- Statistics Grid -->
+      <div class="grid grid-cols-3 gap-3 mt-5">
+        <div class="stats-card-advanced">
+          <div class="stats-value-advanced" id="mcqsFound">0</div>
+          <div class="text-xs text-white opacity-80 font-medium uppercase tracking-wide">MCQs Found</div>
         </div>
-        <div class="stats-item">
-          <div class="stats-value" id="mcqsAnswered">0</div>
-          <div>Answered</div>
+        <div class="stats-card-advanced">
+          <div class="stats-value-advanced" id="mcqsAnswered">0</div>
+          <div class="text-xs text-white opacity-80 font-medium uppercase tracking-wide">Answered</div>
         </div>
-        <div class="stats-item">
-          <div class="stats-value" id="accuracy">0%</div>
-          <div>Accuracy</div>
+        <div class="stats-card-advanced">
+          <div class="stats-value-advanced" id="accuracy">0%</div>
+          <div class="text-xs text-white opacity-80 font-medium uppercase tracking-wide">Accuracy</div>
         </div>
       </div>
 
       <!-- OCR Controls -->
-      <div class="ocr-controls">
-        <button id="start-auto" class="button success">🤖 Auto Detect & OCR</button>
-        <select id="lang-select">
-          <option value="eng">🇺🇸 English</option>
-          <option value="hin">🇮🇳 Hindi</option>
-          <option value="spa">🇪🇸 Spanish</option>
-          <option value="fra">🇫🇷 French</option>
+      <div class="mt-5 p-4 glass-morphism-dark rounded-xl hover-lift">
+        <button id="start-auto" class="btn-advanced w-full mb-3 shimmer-effect" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+          🤖 Auto Detect & OCR
+        </button>
+        <select id="lang-select" class="w-full p-3 bg-white bg-opacity-10 border border-white border-opacity-30 rounded-xl text-white text-sm font-medium backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-mvk-success focus:border-transparent transition-all duration-300 mb-3">
+          <option value="eng" class="bg-mvk-dark text-white">🇺🇸 English</option>
+          <option value="hin" class="bg-mvk-dark text-white">🇮🇳 Hindi</option>
+          <option value="spa" class="bg-mvk-dark text-white">🇪🇸 Spanish</option>
+          <option value="fra" class="bg-mvk-dark text-white">🇫🇷 French</option>
         </select>
-        <button id="re-ocr" class="button secondary">🔄 Re-OCR</button>
-        <div id="status"></div>
-        <img id="preview" style="display:none;"/>
-        <pre id="ocr-result"></pre>
+        <button id="re-ocr" class="btn-advanced w-full mb-3 shimmer-effect" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+          🔄 Re-OCR
+        </button>
+        <div id="status" class="text-xs text-white opacity-80 text-center mb-3"></div>
+        <img id="preview" class="hidden w-full max-h-32 object-cover rounded-lg shadow-lg mb-3"/>
+        <pre id="ocr-result" class="bg-black bg-opacity-30 text-white p-3 rounded-lg text-xs max-h-24 overflow-y-auto font-mono backdrop-blur-sm"></pre>
       </div>
     </div>
     
-    <a href="options.html" class="settings-link">⚙️ Settings & API Configuration</a>
+    <!-- Settings Link -->
+    <a href="options.html" class="block text-center mt-4 text-white opacity-80 hover:opacity-100 text-xs font-medium py-3 px-4 glass-morphism rounded-xl hover-lift transition-all duration-300 uppercase tracking-wide">
+      ⚙️ Settings & API Configuration
+    </a>
   </div>
   
   <script src="tesseract.min.js"></script>
   <script src="popup.js"></script>
+  
+  <script>
+    // Enhanced toggle functionality
+    document.querySelectorAll('.toggle-advanced').forEach(toggle => {
+      toggle.addEventListener('click', function() {
+        this.classList.toggle('active');
+      });
+    });
+
+    // Theme toggle functionality
+    const themeToggle = document.getElementById('themeToggle');
+    let isDarkMode = false;
+
+    themeToggle.addEventListener('click', () => {
+      isDarkMode = !isDarkMode;
+      document.body.classList.toggle('dark-mode', isDarkMode);
+      themeToggle.textContent = isDarkMode ? '☀️' : '🌙';
+    });
+
+    // Enhanced button interactions
+    document.querySelectorAll('.btn-advanced').forEach(btn => {
+      btn.addEventListener('mouseenter', function() {
+        this.style.transform = 'translateY(-3px) scale(1.02)';
+      });
+      
+      btn.addEventListener('mouseleave', function() {
+        this.style.transform = 'translateY(0) scale(1)';
+      });
+    });
+
+    // Parallax effect for background
+    document.addEventListener('mousemove', (e) => {
+      const mouseX = e.clientX / window.innerWidth;
+      const mouseY = e.clientY / window.innerHeight;
+      
+      document.body.style.backgroundPosition = `${mouseX * 100}% ${mouseY * 100}%`;
+    });
+
+    // Auto-hide banner after 10 seconds
+    setTimeout(() => {
+      const banner = document.getElementById('installBanner');
+      if (banner) {
+        banner.style.transform = 'translateY(-100%)';
+        banner.style.opacity = '0';
+        setTimeout(() => banner.style.display = 'none', 500);
+      }
+    }, 10000);
+  </script>
 </body>
 </html>

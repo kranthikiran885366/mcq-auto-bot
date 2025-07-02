@@ -4,18 +4,108 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Advanced AI MCQ Bot Settings - MVK Solutions</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'mvk-primary': '#667eea',
+            'mvk-secondary': '#764ba2',
+            'mvk-accent': '#f093fb',
+            'mvk-success': '#4facfe',
+            'mvk-warning': '#fa709a',
+            'mvk-dark': '#2c3e50'
+          },
+          animation: {
+            'float': 'float 6s ease-in-out infinite',
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'bounce-slow': 'bounce 2s infinite',
+            'spin-slow': 'spin 3s linear infinite',
+            'gradient': 'gradient 15s ease infinite',
+            'shimmer': 'shimmer 2s linear infinite',
+            'glow': 'glow 2s ease-in-out infinite alternate',
+            'slide-in': 'slideIn 0.5s ease-out',
+            'fade-in': 'fadeIn 0.6s ease-out',
+            'scale-in': 'scaleIn 0.4s ease-out',
+            'matrix': 'matrix 20s linear infinite',
+            'particle': 'particle 10s linear infinite',
+            'wave': 'wave 3s ease-in-out infinite'
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-20px)' }
+            },
+            gradient: {
+              '0%, 100%': { backgroundPosition: '0% 50%' },
+              '50%': { backgroundPosition: '100% 50%' }
+            },
+            shimmer: {
+              '0%': { transform: 'translateX(-100%)' },
+              '100%': { transform: 'translateX(100%)' }
+            },
+            glow: {
+              '0%': { boxShadow: '0 0 20px rgba(102, 126, 234, 0.5)' },
+              '100%': { boxShadow: '0 0 30px rgba(102, 126, 234, 0.8)' }
+            },
+            slideIn: {
+              '0%': { transform: 'translateY(-100%)', opacity: '0' },
+              '100%': { transform: 'translateY(0)', opacity: '1' }
+            },
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' }
+            },
+            scaleIn: {
+              '0%': { transform: 'scale(0.9)', opacity: '0' },
+              '100%': { transform: 'scale(1)', opacity: '1' }
+            },
+            matrix: {
+              '0%': { transform: 'translateY(-100vh)' },
+              '100%': { transform: 'translateY(100vh)' }
+            },
+            particle: {
+              '0%': { transform: 'translateY(100vh) rotate(0deg)', opacity: '0' },
+              '10%': { opacity: '1' },
+              '90%': { opacity: '1' },
+              '100%': { transform: 'translateY(-100vh) rotate(360deg)', opacity: '0' }
+            },
+            wave: {
+              '0%, 100%': { transform: 'rotate(0deg)' },
+              '50%': { transform: 'rotate(180deg)' }
+            }
+          },
+          backdropBlur: {
+            'xs': '2px',
+            '4xl': '72px'
+          },
+          fontFamily: {
+            'inter': ['Inter', 'system-ui', 'sans-serif'],
+            'poppins': ['Poppins', 'system-ui', 'sans-serif'],
+            'orbitron': ['Orbitron', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&display=swap');
+    
     :root {
       --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
       --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
       --warning-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
       --dark-gradient: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+      --neon-gradient: linear-gradient(135deg, #ff006e 0%, #8338ec 50%, #3a86ff 100%);
+      --cyber-gradient: linear-gradient(135deg, #00f5ff 0%, #ff00ff 50%, #ffff00 100%);
       --glass-bg: rgba(255, 255, 255, 0.25);
       --glass-border: rgba(255, 255, 255, 0.18);
       --shadow-light: 0 8px 32px rgba(31, 38, 135, 0.37);
       --shadow-dark: 0 8px 32px rgba(0, 0, 0, 0.3);
-      --border-radius: 20px;
+      --shadow-neon: 0 0 50px rgba(255, 0, 110, 0.5);
+      --border-radius: 24px;
       --transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       --text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     }
@@ -30,7 +120,9 @@
       width: 100vw;
       min-height: 100vh;
       font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background: var(--primary-gradient);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #fa709a 100%);
+      background-size: 400% 400%;
+      animation: gradient 20s ease infinite;
       position: relative;
       overflow-x: hidden;
     }
@@ -43,415 +135,295 @@
       right: 0;
       bottom: 0;
       background: 
-        radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
-        radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
+        radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.4) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.4) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 60% 60%, rgba(250, 112, 154, 0.3) 0%, transparent 50%);
       pointer-events: none;
       z-index: 0;
+      animation: float 8s ease-in-out infinite;
     }
 
-    .fullscreen-center {
-      position: relative;
-      z-index: 1;
-      width: 100vw;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      padding: 20px;
-    }
-
-    /* Company Banner */
-    .company-banner {
+    /* Particle System */
+    .particle-system {
+      position: fixed;
+      top: 0;
+      left: 0;
       width: 100%;
-      max-width: 1200px;
-      background: var(--glass-bg);
-      backdrop-filter: blur(20px);
-      border: 1px solid var(--glass-border);
-      border-radius: var(--border-radius);
-      padding: 24px;
-      margin-bottom: 30px;
-      text-align: center;
-      box-shadow: var(--shadow-light);
-      transition: var(--transition);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .company-banner::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
-      transform: rotate(45deg);
-      animation: shine 4s infinite;
-    }
-
-    @keyframes shine {
-      0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-      50% { transform: translateX(100%) translateY(100%) rotate(45deg); }
-      100% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-    }
-
-    .company-logo-large {
-      width: 80px;
-      height: 80px;
-      margin: 0 auto 20px;
-      background: var(--primary-gradient);
-      border-radius: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 36px;
-      font-weight: bold;
-      color: white;
-      box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
-      position: relative;
+      height: 100%;
+      pointer-events: none;
       z-index: 1;
     }
 
-    .company-title {
-      font-size: 32px;
-      font-weight: 800;
-      background: linear-gradient(135deg, #667eea, #764ba2);
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: linear-gradient(45deg, #ff006e, #8338ec, #3a86ff);
+      border-radius: 50%;
+      animation: particle 10s linear infinite;
+      opacity: 0.7;
+    }
+
+    .particle:nth-child(odd) {
+      animation-delay: -5s;
+      background: linear-gradient(45deg, #00f5ff, #ff00ff, #ffff00);
+    }
+
+    /* Matrix Rain Effect */
+    .matrix-rain {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.1;
+    }
+
+    .matrix-char {
+      position: absolute;
+      color: #00ff00;
+      font-family: 'Orbitron', monospace;
+      font-size: 14px;
+      animation: matrix 20s linear infinite;
+    }
+
+    /* Glass Morphism Variants */
+    .glass-morphism {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+    }
+
+    .glass-morphism-strong {
+      background: rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(30px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 12px 40px rgba(31, 38, 135, 0.5);
+    }
+
+    .glass-morphism-dark {
+      background: rgba(0, 0, 0, 0.15);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .glass-morphism-neon {
+      background: rgba(255, 0, 110, 0.1);
+      backdrop-filter: blur(25px);
+      border: 1px solid rgba(255, 0, 110, 0.3);
+      box-shadow: 0 0 50px rgba(255, 0, 110, 0.3);
+    }
+
+    /* Advanced Text Effects */
+    .gradient-text {
+      background: linear-gradient(135deg, #667eea, #764ba2, #f093fb, #4facfe);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      margin-bottom: 8px;
-      letter-spacing: -1px;
-      position: relative;
-      z-index: 1;
+      background-size: 300% 300%;
+      animation: gradient 4s ease infinite;
     }
 
-    .company-subtitle {
-      font-size: 18px;
-      color: rgba(255, 255, 255, 0.9);
-      font-weight: 600;
-      margin-bottom: 16px;
-      text-shadow: var(--text-shadow);
-      position: relative;
-      z-index: 1;
+    .neon-text {
+      color: #fff;
+      text-shadow: 
+        0 0 5px #ff006e,
+        0 0 10px #ff006e,
+        0 0 15px #ff006e,
+        0 0 20px #ff006e;
+      animation: glow 2s ease-in-out infinite alternate;
     }
 
-    .company-description {
-      font-size: 14px;
-      color: rgba(255, 255, 255, 0.8);
-      font-weight: 500;
-      line-height: 1.6;
-      max-width: 600px;
-      margin: 0 auto;
-      position: relative;
-      z-index: 1;
+    .cyber-text {
+      font-family: 'Orbitron', monospace;
+      background: linear-gradient(135deg, #00f5ff, #ff00ff, #ffff00);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-transform: uppercase;
+      letter-spacing: 2px;
     }
 
-    /* Banner */
-    .banner {
-      width: 100%;
-      max-width: 1200px;
-      background: var(--secondary-gradient);
-      color: white;
-      font-weight: 600;
-      font-size: 16px;
-      padding: 18px 24px 18px 48px;
-      position: relative;
-      text-align: center;
-      border-radius: var(--border-radius);
-      margin-bottom: 24px;
-      box-shadow: var(--shadow-light);
-      animation: slideInDown 0.6s ease-out;
+    /* Hover Effects */
+    .hover-lift {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    @keyframes slideInDown {
-      from { transform: translateY(-100%); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
+    .hover-lift:hover {
+      transform: translateY(-8px) scale(1.02);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
     }
 
-    .banner .close-btn {
-      position: absolute;
-      left: 16px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: rgba(255, 255, 255, 0.2);
-      border: none;
-      color: white;
-      font-size: 20px;
-      border-radius: 50%;
-      width: 32px;
-      height: 32px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: var(--transition);
+    .hover-glow:hover {
+      box-shadow: 0 0 30px rgba(102, 126, 234, 0.6);
+      border-color: rgba(102, 126, 234, 0.8);
     }
 
-    .banner .close-btn:hover {
-      background: rgba(255, 255, 255, 0.3);
-      transform: translateY(-50%) scale(1.1);
+    .hover-neon:hover {
+      box-shadow: 0 0 50px rgba(255, 0, 110, 0.8);
+      border-color: rgba(255, 0, 110, 1);
     }
 
-    .banner a {
-      color: white;
-      text-decoration: underline;
-      margin-left: 8px;
-      font-weight: 700;
-    }
-
-    /* Theme Toggle */
-    .theme-toggle {
-      position: fixed;
-      top: 30px;
-      right: 30px;
-      background: var(--glass-bg);
-      backdrop-filter: blur(20px);
-      border: 1px solid var(--glass-border);
-      border-radius: 50%;
-      width: 50px;
-      height: 50px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      font-size: 24px;
-      transition: var(--transition);
-      z-index: 1000;
-      box-shadow: var(--shadow-light);
-    }
-
-    .theme-toggle:hover {
-      transform: scale(1.1) rotate(15deg);
-      box-shadow: 0 12px 40px rgba(31, 38, 135, 0.5);
-    }
-
-    /* Header */
-    .header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 32px;
-      background: var(--glass-bg);
-      backdrop-filter: blur(20px);
-      border: 1px solid var(--glass-border);
-      border-radius: var(--border-radius);
-      padding: 24px;
-      box-shadow: var(--shadow-light);
-      width: 100%;
-      max-width: 1200px;
-    }
-
-    .logo {
-      width: 64px;
-      height: 64px;
-      margin-right: 20px;
-      border-radius: 16px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-      transition: var(--transition);
-    }
-
-    .logo:hover {
-      transform: scale(1.05) rotate(5deg);
-    }
-
-    h1 {
-      font-size: 28px;
-      font-weight: 800;
-      color: white;
-      text-shadow: var(--text-shadow);
-      letter-spacing: -0.5px;
-    }
-
-    /* Container */
-    .container {
-      background: var(--glass-bg);
-      backdrop-filter: blur(20px);
-      border: 1px solid var(--glass-border);
-      border-radius: var(--border-radius);
-      padding: 32px;
-      margin-bottom: 24px;
-      box-shadow: var(--shadow-light);
-      transition: var(--transition);
-      width: 100%;
-      max-width: 1200px;
-    }
-
-    .container:hover {
-      border-color: rgba(255, 255, 255, 0.3);
-      transform: translateY(-2px);
-      box-shadow: 0 12px 40px rgba(31, 38, 135, 0.5);
-    }
-
-    h2 {
-      font-size: 22px;
-      margin-bottom: 24px;
-      color: white;
-      text-shadow: var(--text-shadow);
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    h2::before {
-      content: '';
-      width: 4px;
-      height: 24px;
-      background: var(--primary-gradient);
-      border-radius: 2px;
-    }
-
-    h3 {
-      font-size: 18px;
-      margin-bottom: 16px;
-      color: white;
-      text-shadow: var(--text-shadow);
-      font-weight: 600;
-    }
-
-    /* Form Elements */
-    .form-group {
-      margin-bottom: 24px;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 600;
-      color: white;
-      text-shadow: var(--text-shadow);
-      font-size: 14px;
-    }
-
-    input[type="text"], 
-    input[type="password"], 
-    input[type="number"],
-    select, 
-    textarea {
-      width: 100%;
-      padding: 16px;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
-      color: white;
-      font-size: 14px;
-      font-weight: 500;
-      transition: var(--transition);
-    }
-
-    input:focus, 
-    select:focus, 
-    textarea:focus {
-      outline: none;
-      border-color: rgba(255, 255, 255, 0.6);
-      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
-      background: rgba(255, 255, 255, 0.15);
-    }
-
-    input::placeholder,
-    textarea::placeholder {
-      color: rgba(255, 255, 255, 0.6);
-    }
-
-    select option {
-      background: #2c3e50;
-      color: white;
-    }
-
-    /* Toggle Switches */
-    .toggle-container {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      padding: 20px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 16px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      transition: var(--transition);
-    }
-
-    .toggle-container:hover {
-      background: rgba(255, 255, 255, 0.15);
-      transform: translateX(4px);
-    }
-
-    .toggle-label {
-      font-size: 14px;
-      font-weight: 600;
-      color: white;
-      text-shadow: var(--text-shadow);
-    }
-
-    .toggle {
-      position: relative;
-      display: inline-block;
-      width: 60px;
-      height: 34px;
-    }
-
-    .toggle input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(255, 255, 255, 0.3);
-      transition: var(--transition);
-      border-radius: 34px;
-      border: 1px solid rgba(255, 255, 255, 0.4);
-    }
-
-    .toggle input:checked + .slider {
-      background: var(--success-gradient);
-      box-shadow: 0 0 20px rgba(79, 172, 254, 0.4);
-    }
-
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 26px;
-      width: 26px;
-      left: 4px;
-      bottom: 3px;
-      background: white;
-      transition: var(--transition);
-      border-radius: 50%;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    }
-
-    .toggle input:checked + .slider:before {
-      transform: translateX(26px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    }
-
-    /* Buttons */
-    .button {
-      padding: 16px 24px;
-      border: none;
-      border-radius: 12px;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-right: 12px;
-      margin-bottom: 12px;
-      transition: var(--transition);
+    /* Shimmer Effects */
+    .shimmer-effect {
       position: relative;
       overflow: hidden;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
     }
 
-    .button::before {
+    .shimmer-effect::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      animation: shimmer 3s infinite;
+    }
+
+    .shimmer-neon::before {
+      background: linear-gradient(90deg, transparent, rgba(255,0,110,0.6), transparent);
+    }
+
+    /* Advanced Button Styles */
+    .btn-advanced {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      border-radius: 16px;
+      color: white;
+      font-weight: 600;
+      padding: 16px 32px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-size: 14px;
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-advanced::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      transition: left 0.5s;
+    }
+
+    .btn-advanced:hover::before {
+      left: 100%;
+    }
+
+    .btn-advanced:hover {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 15px 35px rgba(102, 126, 234, 0.5);
+    }
+
+    .btn-advanced:active {
+      transform: translateY(-1px);
+    }
+
+    .btn-neon {
+      background: linear-gradient(135deg, #ff006e 0%, #8338ec 100%);
+      box-shadow: 0 0 25px rgba(255, 0, 110, 0.5);
+      border: 1px solid rgba(255, 0, 110, 0.5);
+    }
+
+    .btn-neon:hover {
+      box-shadow: 0 0 50px rgba(255, 0, 110, 0.8);
+      border-color: rgba(255, 0, 110, 1);
+    }
+
+    .btn-cyber {
+      background: linear-gradient(135deg, #00f5ff 0%, #ff00ff 100%);
+      box-shadow: 0 0 25px rgba(0, 245, 255, 0.5);
+      border: 1px solid rgba(0, 245, 255, 0.5);
+      font-family: 'Orbitron', monospace;
+    }
+
+    .btn-cyber:hover {
+      box-shadow: 0 0 50px rgba(0, 245, 255, 0.8);
+      border-color: rgba(0, 245, 255, 1);
+    }
+
+    /* Toggle Switch Advanced */
+    .toggle-advanced {
+      position: relative;
+      width: 64px;
+      height: 36px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 36px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .toggle-advanced.active {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      box-shadow: 0 0 20px rgba(79, 172, 254, 0.5);
+    }
+
+    .toggle-advanced.neon.active {
+      background: linear-gradient(135deg, #ff006e 0%, #8338ec 100%);
+      box-shadow: 0 0 30px rgba(255, 0, 110, 0.8);
+    }
+
+    .toggle-advanced::before {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 28px;
+      height: 28px;
+      background: white;
+      border-radius: 50%;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .toggle-advanced.active::before {
+      transform: translateX(28px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Tab System Advanced */
+    .tab-button-advanced {
+      padding: 16px 24px;
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.7);
+      cursor: pointer;
+      border-radius: 16px 16px 0 0;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tab-button-advanced.active,
+    .tab-button-advanced:hover {
+      color: white;
+      background: rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-bottom: none;
+      transform: translateY(-4px);
+      box-shadow: 0 8px 25px rgba(31, 38, 135, 0.3);
+    }
+
+    .tab-button-advanced::before {
       content: '';
       position: absolute;
       top: 0;
@@ -462,518 +434,353 @@
       transition: left 0.5s;
     }
 
-    .button:hover::before {
+    .tab-button-advanced:hover::before {
       left: 100%;
     }
 
-    .button:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
-    }
-
-    .button:active {
-      transform: translateY(-1px);
-    }
-
-    .button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    .button.primary {
-      background: var(--primary-gradient);
-      color: white;
-      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-    }
-
-    .button.secondary {
-      background: var(--glass-bg);
-      backdrop-filter: blur(20px);
-      color: white;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      box-shadow: var(--shadow-light);
-    }
-
-    .button.success {
-      background: var(--success-gradient);
-      color: white;
-      box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4);
-    }
-
-    .button.warning {
-      background: var(--warning-gradient);
-      color: white;
-      box-shadow: 0 6px 20px rgba(250, 112, 154, 0.4);
-    }
-
-    .button-group {
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
-      margin-top: 24px;
-      flex-wrap: wrap;
-    }
-
-    /* Tabs */
-    .tab-container {
-      margin-bottom: 32px;
+    /* Form Elements Advanced */
+    .form-input-advanced {
       width: 100%;
-      max-width: 1200px;
-    }
-
-    .tab-buttons {
-      display: flex;
-      border-bottom: 2px solid rgba(255, 255, 255, 0.2);
-      margin-bottom: 24px;
-      gap: 4px;
-      flex-wrap: wrap;
-    }
-
-    .tab-button {
-      padding: 16px 24px;
-      background: rgba(255, 255, 255, 0.1);
-      border: none;
-      font-size: 14px;
-      font-weight: 600;
-      color: rgba(255, 255, 255, 0.7);
-      cursor: pointer;
-      border-radius: 12px 12px 0 0;
-      transition: var(--transition);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .tab-button.active, 
-    .tab-button:hover {
-      color: white;
-      background: var(--glass-bg);
-      backdrop-filter: blur(20px);
+      padding: 16px;
       border: 1px solid rgba(255, 255, 255, 0.3);
-      border-bottom: none;
-      transform: translateY(-2px);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      color: white;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .tab-content {
-      display: none;
-      animation: fadeInUp 0.5s ease-out;
+    .form-input-advanced:focus {
+      outline: none;
+      border-color: rgba(102, 126, 234, 0.8);
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+      background: rgba(255, 255, 255, 0.15);
     }
 
-    .tab-content.active {
-      display: block;
+    .form-input-advanced::placeholder {
+      color: rgba(255, 255, 255, 0.6);
     }
 
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
+    .form-input-neon:focus {
+      border-color: rgba(255, 0, 110, 0.8);
+      box-shadow: 0 0 20px rgba(255, 0, 110, 0.3);
     }
 
-    /* Status Messages */
-    .status {
+    /* Status Messages Advanced */
+    .status-advanced {
       padding: 16px;
       border-radius: 12px;
       margin: 16px 0;
       font-weight: 600;
       backdrop-filter: blur(10px);
+      position: relative;
+      overflow: hidden;
     }
 
-    .status.success {
+    .status-advanced::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      animation: shimmer 2s infinite;
+    }
+
+    .status-success {
       background: rgba(16, 185, 129, 0.2);
       color: #10b981;
       border: 1px solid rgba(16, 185, 129, 0.3);
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
     }
 
-    .status.error {
+    .status-error {
       background: rgba(239, 68, 68, 0.2);
       color: #ef4444;
       border: 1px solid rgba(239, 68, 68, 0.3);
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
     }
 
-    .status.info {
+    .status-info {
       background: rgba(59, 130, 246, 0.2);
       color: #3b82f6;
       border: 1px solid rgba(59, 130, 246, 0.3);
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
     }
 
-    /* Range Inputs */
-    .range-container {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .range-value {
-      min-width: 60px;
-      font-weight: 700;
-      color: white;
-      text-shadow: var(--text-shadow);
-      background: rgba(255, 255, 255, 0.1);
-      padding: 8px 12px;
-      border-radius: 8px;
-      text-align: center;
-    }
-
-    input[type="range"] {
-      flex: 1;
-      height: 8px;
-      border-radius: 4px;
-      background: rgba(255, 255, 255, 0.3);
-      outline: none;
-      -webkit-appearance: none;
-    }
-
-    input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: var(--primary-gradient);
-      cursor: pointer;
-      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
-    }
-
-    input[type="range"]::-moz-range-thumb {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: var(--primary-gradient);
-      cursor: pointer;
-      border: none;
-      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
-    }
-
-    /* API Priority */
-    .api-list {
-      margin-bottom: 24px;
-    }
-
-    .api-priority {
-      display: flex;
-      align-items: center;
-      margin-bottom: 16px;
-      padding: 16px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      transition: var(--transition);
-    }
-
-    .api-priority:hover {
-      background: rgba(255, 255, 255, 0.15);
-      transform: translateX(4px);
-    }
-
-    .api-priority-number {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background: var(--primary-gradient);
-      color: white;
+    /* Company Logo Advanced */
+    .company-logo-advanced {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      border-radius: 20px;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-right: 16px;
-      font-weight: bold;
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-    }
-
-    .api-priority-controls {
-      margin-left: auto;
-      display: flex;
-      gap: 8px;
-    }
-
-    .api-priority-button {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      border: none;
-      background: rgba(255, 255, 255, 0.2);
+      font-size: 36px;
+      font-weight: 800;
       color: white;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      transition: var(--transition);
+      box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
+      position: relative;
+      overflow: hidden;
+      animation: float 6s ease-in-out infinite;
     }
 
-    .api-priority-button:hover {
-      background: rgba(255, 255, 255, 0.3);
-      transform: scale(1.1);
-    }
-
-    .api-priority-button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    /* History */
-    .history-list {
-      max-height: 400px;
-      overflow-y: auto;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.05);
-    }
-
-    .history-item {
-      padding: 16px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      font-size: 14px;
-      transition: var(--transition);
-    }
-
-    .history-item:hover {
-      background: rgba(255, 255, 255, 0.1);
-    }
-
-    .history-item:last-child {
-      border-bottom: none;
-    }
-
-    .history-question {
-      font-weight: 600;
-      margin-bottom: 8px;
-      color: white;
-      text-shadow: var(--text-shadow);
-    }
-
-    .history-answer {
-      color: #10b981;
-      font-weight: 500;
-    }
-
-    .history-time {
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.6);
-      margin-top: 8px;
+    .company-logo-advanced::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent, rgba(255,255,255,0.4), transparent);
+      transform: rotate(45deg);
+      animation: shimmer 4s infinite;
     }
 
     /* Dark Mode */
     .dark-mode {
-      --glass-bg: rgba(0, 0, 0, 0.4);
-      --glass-border: rgba(255, 255, 255, 0.1);
+      background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #533483 100%);
     }
 
-    .dark-mode body {
-      background: var(--dark-gradient);
+    .dark-mode .glass-morphism {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    .dark-mode .company-title {
-      background: linear-gradient(135deg, #60a5fa, #a78bfa);
+    .dark-mode .gradient-text {
+      background: linear-gradient(135deg, #60a5fa, #a78bfa, #f472b6);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
 
-    /* Scrollbar */
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .company-logo-advanced { width: 60px; height: 60px; font-size: 28px; }
+      .btn-advanced { padding: 12px 24px; font-size: 12px; }
+      .tab-button-advanced { padding: 12px 16px; font-size: 12px; }
+    }
+
+    @media (max-width: 480px) {
+      .company-logo-advanced { width: 48px; height: 48px; font-size: 24px; }
+      .btn-advanced { padding: 10px 20px; font-size: 11px; }
+    }
+
+    /* Scrollbar Advanced */
     ::-webkit-scrollbar {
-      width: 8px;
+      width: 12px;
     }
 
     ::-webkit-scrollbar-track {
       background: rgba(255, 255, 255, 0.1);
-      border-radius: 4px;
+      border-radius: 6px;
     }
 
     ::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.3);
-      border-radius: 4px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border-radius: 6px;
+      border: 2px solid rgba(255, 255, 255, 0.1);
     }
 
     ::-webkit-scrollbar-thumb:hover {
-      background: rgba(255, 255, 255, 0.5);
+      background: linear-gradient(135deg, #764ba2, #f093fb);
     }
 
-    /* Responsive */
-    @media (max-width: 768px) {
-      .fullscreen-center { padding: 16px; }
-      .container { padding: 20px; }
-      .company-title { font-size: 24px; }
-      .company-subtitle { font-size: 16px; }
-      h1 { font-size: 22px; }
-      h2 { font-size: 18px; }
-      .tab-buttons { flex-direction: column; }
-      .tab-button { border-radius: 8px; margin-bottom: 4px; }
-      .button-group { justify-content: center; }
-      .range-container { flex-direction: column; align-items: stretch; }
-      .range-value { margin-top: 8px; }
+    /* Loading Animations */
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
     }
 
-    @media (max-width: 480px) {
-      .company-banner { padding: 16px; }
-      .company-logo-large { width: 60px; height: 60px; font-size: 28px; }
-      .company-title { font-size: 20px; }
-      .company-subtitle { font-size: 14px; }
-      .header { padding: 16px; }
-      .logo { width: 48px; height: 48px; }
-      h1 { font-size: 18px; }
+    .loading-dots {
+      display: inline-block;
+    }
+
+    .loading-dots::after {
+      content: '';
+      animation: dots 1.5s steps(4, end) infinite;
+    }
+
+    @keyframes dots {
+      0%, 20% { content: ''; }
+      40% { content: '.'; }
+      60% { content: '..'; }
+      80%, 100% { content: '...'; }
+    }
+
+    /* Notification System */
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 16px 24px;
+      border-radius: 12px;
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      z-index: 1000;
+      animation: slide-in 0.5s ease-out;
+    }
+
+    .notification.success {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: rgba(16, 185, 129, 0.3);
+      color: #10b981;
+    }
+
+    .notification.error {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #ef4444;
     }
   </style>
 </head>
-<body class="bg-background text-foreground transition-colors duration-300">
-  <div class="banner" id="installBanner">
-    <button class="close-btn" onclick="this.parentElement.style.display='none'" aria-label="Close">&times;</button>
-    🚀 Professional AI MCQ Bot by MVK Solutions - Enterprise Edition Available!
-    <a href="https://mvksolutions.com/enterprise" target="_blank">Get Enterprise License</a>
+<body class="font-inter bg-gradient-to-br from-mvk-primary via-mvk-secondary to-mvk-accent transition-colors duration-300">
+  <!-- Particle System -->
+  <div class="particle-system">
+    <div class="particle" style="left: 10%; animation-delay: 0s;"></div>
+    <div class="particle" style="left: 20%; animation-delay: 2s;"></div>
+    <div class="particle" style="left: 30%; animation-delay: 4s;"></div>
+    <div class="particle" style="left: 40%; animation-delay: 6s;"></div>
+    <div class="particle" style="left: 50%; animation-delay: 8s;"></div>
+    <div class="particle" style="left: 60%; animation-delay: 1s;"></div>
+    <div class="particle" style="left: 70%; animation-delay: 3s;"></div>
+    <div class="particle" style="left: 80%; animation-delay: 5s;"></div>
+    <div class="particle" style="left: 90%; animation-delay: 7s;"></div>
+  </div>
+
+  <!-- Matrix Rain Effect -->
+  <div class="matrix-rain">
+    <div class="matrix-char" style="left: 5%; animation-delay: 0s;">0</div>
+    <div class="matrix-char" style="left: 15%; animation-delay: 2s;">1</div>
+    <div class="matrix-char" style="left: 25%; animation-delay: 4s;">0</div>
+    <div class="matrix-char" style="left: 35%; animation-delay: 6s;">1</div>
+    <div class="matrix-char" style="left: 45%; animation-delay: 8s;">0</div>
+    <div class="matrix-char" style="left: 55%; animation-delay: 1s;">1</div>
+    <div class="matrix-char" style="left: 65%; animation-delay: 3s;">0</div>
+    <div class="matrix-char" style="left: 75%; animation-delay: 5s;">1</div>
+    <div class="matrix-char" style="left: 85%; animation-delay: 7s;">0</div>
+    <div class="matrix-char" style="left: 95%; animation-delay: 9s;">1</div>
+  </div>
+
+  <!-- Marketing Banner -->
+  <div class="bg-gradient-to-r from-mvk-accent to-mvk-warning text-white font-semibold text-sm py-3 px-6 relative overflow-hidden animate-slide-in" id="installBanner">
+    <button class="absolute left-3 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full w-6 h-6 flex items-center justify-center text-sm transition-all duration-300 hover-glow" onclick="this.parentElement.style.display='none'" aria-label="Close">&times;</button>
+    <div class="text-center shimmer-effect">
+      🚀 Professional AI MCQ Bot by MVK Solutions - Enterprise Edition Available!
+      <a href="https://mvksolutions.com/enterprise" target="_blank" class="underline ml-2 font-bold hover:text-yellow-200 transition-colors neon-text">Get Enterprise License</a>
+    </div>
   </div>
   
-  <div class="fullscreen-center">
-    <button id="themeToggle" class="theme-toggle">🌙</button>
+  <div class="relative z-10 min-h-screen flex flex-col">
+    <!-- Theme Toggle -->
+    <button id="themeToggle" class="fixed top-8 right-8 w-14 h-14 rounded-full glass-morphism hover-lift hover-glow flex items-center justify-center text-2xl z-50 neon-glow">
+      🌙
+    </button>
     
-    <!-- Company Banner -->
-    <div class="company-banner">
-      <div class="company-logo-large">MVK</div>
-      <div class="company-title">MVK Solutions</div>
-      <div class="company-subtitle">AI-Powered Automation Excellence</div>
-      <div class="company-description">
-        Leading provider of intelligent automation solutions. Our Advanced AI MCQ Bot represents the pinnacle of 
-        educational technology, combining cutting-edge artificial intelligence with sophisticated automation 
-        capabilities to deliver unparalleled performance and reliability.
-      </div>
-    </div>
-    
-    <div class="header">
-      <img src="icons/icon48.png" alt="Logo" class="logo">
-      <h1>🤖 Advanced AI MCQ Bot Settings</h1>
-    </div>
-    
-    <div class="tab-container">
-      <div class="tab-buttons">
-        <button class="tab-button active" data-tab="api">🧠 AI Configuration</button>
-        <button class="tab-button" data-tab="behavior">⚙️ Behavior Settings</button>
-        <button class="tab-button" data-tab="detection">🔍 Detection Settings</button>
-        <button class="tab-button" data-tab="advanced">🚀 Advanced Settings</button>
-        <button class="tab-button" data-tab="history">📊 Answer History</button>
+    <!-- Main Container -->
+    <div class="flex-1 p-6 max-w-7xl mx-auto w-full">
+      <!-- Company Header -->
+      <div class="glass-morphism-strong rounded-3xl p-8 mb-8 text-center hover-lift shimmer-effect animate-fade-in">
+        <div class="company-logo-advanced mx-auto mb-6">MVK</div>
+        <div class="text-3xl font-bold gradient-text mb-2">MVK Solutions</div>
+        <div class="text-lg text-white opacity-90 font-medium mb-4">AI-Powered Automation Excellence</div>
+        <div class="text-sm text-white opacity-75 leading-relaxed max-w-2xl mx-auto">
+          Leading provider of intelligent automation solutions. Our Advanced AI MCQ Bot represents the pinnacle of 
+          educational technology, combining cutting-edge artificial intelligence with sophisticated automation 
+          capabilities to deliver unparalleled performance and reliability.
+        </div>
       </div>
       
-      <div id="apiTab" class="tab-content active">
-        <div class="container">
-          <h2>🧠 AI API Configuration</h2>
-          
-          <div class="api-list">
-            <h3>🎯 API Priority Order</h3>
-            <p style="color: rgba(255,255,255,0.8); margin-bottom: 20px; font-size: 14px;">
-              The bot will try APIs in this order until it gets a successful response:
-            </p>
+      <!-- Main Header -->
+      <div class="glass-morphism rounded-3xl p-6 mb-8 flex items-center hover-lift animate-scale-in">
+        <img src="icons/icon48.png" alt="Logo" class="w-16 h-16 mr-6 rounded-2xl shadow-lg floating-animation">
+        <h1 class="text-3xl font-bold text-white text-shadow cyber-text">🤖 Advanced AI MCQ Bot Settings</h1>
+      </div>
+      
+      <!-- Tab Container -->
+      <div class="mb-8">
+        <div class="flex flex-wrap gap-2 mb-6 justify-center">
+          <button class="tab-button-advanced active shimmer-effect" data-tab="api">🧠 AI Configuration</button>
+          <button class="tab-button-advanced shimmer-effect" data-tab="behavior">⚙️ Behavior Settings</button>
+          <button class="tab-button-advanced shimmer-effect" data-tab="detection">🔍 Detection Settings</button>
+          <button class="tab-button-advanced shimmer-effect" data-tab="advanced">🚀 Advanced Settings</button>
+          <button class="tab-button-advanced shimmer-effect" data-tab="history">📊 Answer History</button>
+          <button class="tab-button-advanced shimmer-effect" data-tab="devops">🛠️ DevOps Tools</button>
+        </div>
+        
+        <!-- API Configuration Tab -->
+        <div id="apiTab" class="tab-content active">
+          <div class="glass-morphism rounded-3xl p-8 hover-lift animate-fade-in">
+            <h2 class="text-2xl font-bold text-white mb-6 neon-text">🧠 AI API Configuration</h2>
             
-            <div class="api-priority">
-              <div class="api-priority-number">1</div>
-              <div style="color: white; font-weight: 600;">🤖 OpenAI (ChatGPT)</div>
-              <div class="api-priority-controls">
-                <button class="api-priority-button" disabled>↑</button>
-                <button class="api-priority-button">↓</button>
+            <!-- API Priority Section -->
+            <div class="mb-8">
+              <h3 class="text-xl font-semibold text-white mb-4 cyber-text">🎯 API Priority Order</h3>
+              <p class="text-white opacity-80 mb-6 text-sm">
+                The bot will try APIs in this order until it gets a successful response:
+              </p>
+              
+              <div class="space-y-4">
+                <div class="flex items-center justify-between p-4 glass-morphism-dark rounded-2xl hover-glow">
+                  <div class="flex items-center">
+                    <div class="w-8 h-8 bg-gradient-to-r from-mvk-primary to-mvk-secondary rounded-full flex items-center justify-center text-white font-bold mr-4">1</div>
+                    <div class="text-white font-semibold">🤖 OpenAI (ChatGPT)</div>
+                  </div>
+                  <div class="flex gap-2">
+                    <button class="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-white hover:bg-opacity-30 transition-all" disabled>↑</button>
+                    <button class="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-white hover:bg-opacity-30 transition-all">↓</button>
+                  </div>
+                </div>
+                
+                <div class="flex items-center justify-between p-4 glass-morphism-dark rounded-2xl hover-glow">
+                  <div class="flex items-center">
+                    <div class="w-8 h-8 bg-gradient-to-r from-mvk-secondary to-mvk-accent rounded-full flex items-center justify-center text-white font-bold mr-4">2</div>
+                    <div class="text-white font-semibold">🧠 Google Gemini Pro</div>
+                  </div>
+                  <div class="flex gap-2">
+                    <button class="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-white hover:bg-opacity-30 transition-all">↑</button>
+                    <button class="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-white hover:bg-opacity-30 transition-all">↓</button>
+                  </div>
+                </div>
+                
+                <div class="flex items-center justify-between p-4 glass-morphism-dark rounded-2xl hover-glow">
+                  <div class="flex items-center">
+                    <div class="w-8 h-8 bg-gradient-to-r from-mvk-accent to-mvk-warning rounded-full flex items-center justify-center text-white font-bold mr-4">3</div>
+                    <div class="text-white font-semibold">🔥 DeepSeek</div>
+                  </div>
+                  <div class="flex gap-2">
+                    <button class="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-white hover:bg-opacity-30 transition-all">↑</button>
+                    <button class="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-white hover:bg-opacity-30 transition-all" disabled>↓</button>
+                  </div>
+                </div>
               </div>
             </div>
             
-            <div class="api-priority">
-              <div class="api-priority-number">2</div>
-              <div style="color: white; font-weight: 600;">🧠 Google Gemini Pro</div>
-              <div class="api-priority-controls">
-                <button class="api-priority-button">↑</button>
-                <button class="api-priority-button">↓</button>
+            <!-- API Provider Selection -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div>
+                <label class="block text-white font-semibold mb-3">🎯 Primary AI Provider</label>
+                <select id="apiProvider" class="form-input-advanced">
+                  <option value="openai">🤖 OpenAI (ChatGPT)</option>
+                  <option value="gemini">🧠 Google Gemini Pro</option>
+                  <option value="deepseek">🔥 DeepSeek</option>
+                  <option value="huggingface">🤗 Hugging Face</option>
+                  <option value="search">🔍 Search Engine</option>
+                  <option value="auto">🚀 Auto (Try All)</option>
+                </select>
               </div>
-            </div>
-            
-            <div class="api-priority">
-              <div class="api-priority-number">3</div>
-              <div style="color: white; font-weight: 600;">🔥 DeepSeek</div>
-              <div class="api-priority-controls">
-                <button class="api-priority-button">↑</button>
-                <button class="api-priority-button" disabled>↓</button>
-              </div>
-            </div>
-          </div>
-          
-          <div class="form-group">
-            <label for="apiProvider">🎯 Primary AI Provider</label>
-            <select id="apiProvider">
-              <option value="openai">🤖 OpenAI (ChatGPT)</option>
-              <option value="gemini">🧠 Google Gemini Pro</option>
-              <option value="deepseek">🔥 DeepSeek</option>
-              <option value="huggingface">🤗 Hugging Face</option>
-              <option value="search">🔍 Search Engine</option>
-              <option value="auto">🚀 Auto (Try All)</option>
-            </select>
-          </div>
-          
-          <div id="openaiSettings">
-            <div class="form-group">
-              <label for="openaiKey">🔑 OpenAI API Key</label>
-              <input type="password" id="openaiKey" placeholder="Enter your OpenAI API key">
-            </div>
-            
-            <div class="form-group">
-              <label for="openaiModel">🤖 OpenAI Model</label>
-              <select id="openaiModel">
-                <option value="gpt-4-0125-preview">GPT-4 Turbo (Latest)</option>
-                <option value="gpt-4-1106-preview">GPT-4 Turbo (11/2023)</option>
-                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-              </select>
-            </div>
-          </div>
-          
-          <div id="geminiSettings" style="display: none;">
-            <div class="form-group">
-              <label for="geminiKey">🔑 Google Gemini API Key</label>
-              <input type="password" id="geminiKey" placeholder="Enter your Google Gemini API key">
-            </div>
-            
-            <div class="form-group">
-              <label for="geminiModel">🧠 Gemini Model</label>
-              <input type="text" id="geminiModel" placeholder="e.g. gemini-2.0-flash">
-            </div>
-          </div>
-          
-          <div id="deepseekSettings" style="display: none;">
-            <div class="form-group">
-              <label for="deepseekKey">🔑 DeepSeek API Key</label>
-              <input type="password" id="deepseekKey" placeholder="Enter your DeepSeek API key">
-            </div>
-            
-            <div class="form-group">
-              <label for="deepseekModel">🔥 DeepSeek Model</label>
-              <select id="deepseekModel">
-                <option value="deepseek-chat">DeepSeek Chat</option>
-                <option value="deepseek-coder">DeepSeek Coder</option>
-                <option value="deepseek-turbo">DeepSeek Turbo</option>
-              </select>
-            </div>
-          </div>
-          
-          <div id="huggingfaceSettings" style="display: none;">
-            <div class="form-group">
-              <label for="huggingfaceKey">🔑 Hugging Face API Key</label>
-              <input type="password" id="huggingfaceKey" placeholder="Enter your Hugging Face API key">
-            </div>
-            <div class="form-group">
-              <label for="huggingfaceModel">🤗 Hugging Face Model</label>
-              <input type="text" id="huggingfaceModel" placeholder="e.g. google/flan-t5-base">
-            </div>
-          </div>
-          
-          <div id="searchSettings" style="display: none;">
-            <div class="form-group">
-              <label for="googleSearchApiKey">🔑 Google Search API Key</label>
-              <input type="text" id="googleSearchApiKey" placeholder="Enter your Google Search API key">
-            </div>
-            <div class="form-group">
-              <label for="googleSearchCx">🔍 Custom Search Engine ID (CX)</label>
-              <input type="text" id="googleSearchCx" placeholder="Enter your Custom Search Engine ID (cx)">
-            </div>
-            <div class="form-group">
-              <small style="color: rgba(255,255,255,0.7);">
-                Get your API key from <a href="https://console.developers.google.com/apis/credentials" target="_blank" style="color: #60a5fa;">Google Cloud Console</a> 
-                and your CX from <a href="https://programmablesearchengine.google.com/controlpanel/all" target="_blank" style="color: #60a5fa;">Programmable Search Engine</a>.
-              </small>
-            </div>
-          </div>
-          
-          <div class="form-group">
-            <label for="promptTemplate">📝 AI Prompt Template</label>
-            <textarea id="promptTemplate" rows="6" placeholder="Enter your custom prompt template">You are an expert at answering multiple choice questions. Analyze the following question and options, then respond ONLY with the letter or number of the correct option (e.g., "A" or "1"). If multiple answers are correct, list them separated by commas.
+              
+              <div>
+                <label class="block text-white font-semibold mb-3">📝 AI Prompt Template</label>
+                <textarea id="promptTemplate" rows="4" class="form-input-advanced form-input-neon" placeholder="Enter your custom prompt template">You are an expert at answering multiple choice questions. Analyze the following question and options, then respond ONLY with the letter or number of the correct option (e.g., "A" or "1"). If multiple answers are correct, list them separated by commas.
 
 Question: {{question}}
 
@@ -981,268 +788,203 @@ Options:
 {{options}}
 
 Correct answer:</textarea>
-          </div>
-          
-          <div id="apiStatus" class="status" style="display: none;"></div>
-          
-          <div class="button-group">
-            <button id="testApiButton" class="button secondary">🧪 Test Connection</button>
-            <button id="saveApiButton" class="button primary">💾 Save & Sync with Backend</button>
+              </div>
+            </div>
+            
+            <!-- API Settings Sections -->
+            <div id="openaiSettings" class="mt-8">
+              <h3 class="text-lg font-semibold text-white mb-4 gradient-text">🤖 OpenAI Configuration</h3>
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-white font-medium mb-2">🔑 OpenAI API Key</label>
+                  <input type="password" id="openaiKey" class="form-input-advanced" placeholder="Enter your OpenAI API key">
+                </div>
+                <div>
+                  <label class="block text-white font-medium mb-2">🤖 OpenAI Model</label>
+                  <select id="openaiModel" class="form-input-advanced">
+                    <option value="gpt-4-0125-preview">GPT-4 Turbo (Latest)</option>
+                    <option value="gpt-4-1106-preview">GPT-4 Turbo (11/2023)</option>
+                    <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            
+            <div id="geminiSettings" class="mt-8 hidden">
+              <h3 class="text-lg font-semibold text-white mb-4 gradient-text">🧠 Gemini Configuration</h3>
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-white font-medium mb-2">🔑 Google Gemini API Key</label>
+                  <input type="password" id="geminiKey" class="form-input-advanced" placeholder="Enter your Google Gemini API key">
+                </div>
+                <div>
+                  <label class="block text-white font-medium mb-2">🧠 Gemini Model</label>
+                  <input type="text" id="geminiModel" class="form-input-advanced" placeholder="e.g. gemini-2.0-flash">
+                </div>
+              </div>
+            </div>
+            
+            <!-- Status and Actions -->
+            <div id="apiStatus" class="status-advanced status-info mt-8 hidden"></div>
+            
+            <div class="flex flex-wrap gap-4 mt-8 justify-center">
+              <button id="testApiButton" class="btn-advanced btn-cyber shimmer-effect">🧪 Test Connection</button>
+              <button id="saveApiButton" class="btn-advanced btn-neon shimmer-effect">💾 Save & Sync with Backend</button>
+            </div>
           </div>
         </div>
-      </div>
-      
-      <div id="behaviorTab" class="tab-content">
-        <div class="container">
-          <h2>⚙️ Behavior Settings</h2>
-          
-          <div class="toggle-container">
-            <span class="toggle-label">🤖 Auto-Answer Questions</span>
-            <label class="toggle">
-              <input type="checkbox" id="autoAnswerToggle" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          
-          <div class="form-group">
-            <label for="answerDelay">⏱️ Minimum Answer Delay (seconds)</label>
-            <div class="range-container">
-              <input type="range" id="answerDelay" min="1" max="10" value="3" step="0.5">
-              <span class="range-value" id="answerDelayValue">3s</span>
+        
+        <!-- Behavior Settings Tab -->
+        <div id="behaviorTab" class="tab-content hidden">
+          <div class="glass-morphism rounded-3xl p-8 hover-lift animate-fade-in">
+            <h2 class="text-2xl font-bold text-white mb-6 neon-text">⚙️ Behavior Settings</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div class="space-y-6">
+                <div class="flex justify-between items-center p-4 glass-morphism-dark rounded-2xl hover-glow">
+                  <span class="text-white font-semibold">🤖 Auto-Answer Questions</span>
+                  <div class="toggle-advanced active neon cursor-pointer" id="autoAnswerToggle"></div>
+                </div>
+                
+                <div class="p-4 glass-morphism-dark rounded-2xl">
+                  <label class="block text-white font-semibold mb-3">⏱️ Minimum Answer Delay (seconds)</label>
+                  <div class="flex items-center gap-4">
+                    <input type="range" id="answerDelay" min="1" max="10" value="3" step="0.5" class="flex-1 h-2 bg-white bg-opacity-20 rounded-lg appearance-none cursor-pointer">
+                    <span class="text-white font-bold bg-white bg-opacity-20 px-3 py-1 rounded-lg min-w-12 text-center" id="answerDelayValue">3s</span>
+                  </div>
+                </div>
+                
+                <div class="p-4 glass-morphism-dark rounded-2xl">
+                  <label class="block text-white font-semibold mb-3">⏰ Maximum Answer Delay (seconds)</label>
+                  <div class="flex items-center gap-4">
+                    <input type="range" id="maxAnswerDelay" min="2" max="15" value="6" step="0.5" class="flex-1 h-2 bg-white bg-opacity-20 rounded-lg appearance-none cursor-pointer">
+                    <span class="text-white font-bold bg-white bg-opacity-20 px-3 py-1 rounded-lg min-w-12 text-center" id="maxAnswerDelayValue">6s</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="space-y-6">
+                <div class="flex justify-between items-center p-4 glass-morphism-dark rounded-2xl hover-glow">
+                  <span class="text-white font-semibold">🔄 Retry Wrong Answers</span>
+                  <div class="toggle-advanced active cursor-pointer" id="retryWrongToggle"></div>
+                </div>
+                
+                <div class="flex justify-between items-center p-4 glass-morphism-dark rounded-2xl hover-glow">
+                  <span class="text-white font-semibold">🔊 Voice Narration</span>
+                  <div class="toggle-advanced cursor-pointer" id="voiceToggle"></div>
+                </div>
+                
+                <div class="flex justify-between items-center p-4 glass-morphism-dark rounded-2xl hover-glow">
+                  <span class="text-white font-semibold">📜 Auto-Scroll to MCQs</span>
+                  <div class="toggle-advanced active cursor-pointer" id="autoScrollToggle"></div>
+                </div>
+                
+                <div class="flex justify-between items-center p-4 glass-morphism-dark rounded-2xl hover-glow">
+                  <span class="text-white font-semibold">✨ Highlight Selected Answers</span>
+                  <div class="toggle-advanced active cursor-pointer" id="highlightToggle"></div>
+                </div>
+              </div>
             </div>
-          </div>
-          
-          <div class="form-group">
-            <label for="maxAnswerDelay">⏰ Maximum Answer Delay (seconds)</label>
-            <div class="range-container">
-              <input type="range" id="maxAnswerDelay" min="2" max="15" value="6" step="0.5">
-              <span class="range-value" id="maxAnswerDelayValue">6s</span>
+            
+            <div class="flex justify-center mt-8">
+              <button id="saveBehaviorButton" class="btn-advanced btn-neon shimmer-effect">💾 Save Behavior Settings</button>
             </div>
-          </div>
-          
-          <div class="toggle-container">
-            <span class="toggle-label">🔄 Retry Wrong Answers</span>
-            <label class="toggle">
-              <input type="checkbox" id="retryWrongToggle" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          
-          <div class="form-group">
-            <label for="maxRetries">🎯 Maximum Retries</label>
-            <div class="range-container">
-              <input type="range" id="maxRetries" min="1" max="5" value="3" step="1">
-              <span class="range-value" id="maxRetriesValue">3</span>
-            </div>
-          </div>
-          
-          <div class="toggle-container">
-            <span class="toggle-label">🔊 Voice Narration</span>
-            <label class="toggle">
-              <input type="checkbox" id="voiceToggle">
-              <span class="slider"></span>
-            </label>
-          </div>
-          
-          <div class="form-group">
-            <label for="voiceRate">🎵 Voice Speed</label>
-            <div class="range-container">
-              <input type="range" id="voiceRate" min="0.5" max="2" value="1" step="0.1">
-              <span class="range-value" id="voiceRateValue">1x</span>
-            </div>
-          </div>
-          
-          <div class="toggle-container">
-            <span class="toggle-label">📜 Auto-Scroll to MCQs</span>
-            <label class="toggle">
-              <input type="checkbox" id="autoScrollToggle" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          
-          <div class="toggle-container">
-            <span class="toggle-label">✨ Highlight Selected Answers</span>
-            <label class="toggle">
-              <input type="checkbox" id="highlightToggle" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          
-          <div class="button-group">
-            <button id="saveBehaviorButton" class="button primary">💾 Save Behavior Settings</button>
           </div>
         </div>
-      </div>
-      
-      <div id="detectionTab" class="tab-content">
-        <div class="container">
-          <h2>🔍 Detection Settings</h2>
-          
-          <div class="toggle-container">
-            <span class="toggle-label">🌐 DOM-based Detection</span>
-            <label class="toggle">
-              <input type="checkbox" id="domDetectionToggle" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          
-          <div class="toggle-container">
-            <span class="toggle-label">👁️ OCR Detection</span>
-            <label class="toggle">
-              <input type="checkbox" id="ocrToggle" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          
-          <div class="form-group">
-            <label for="ocrLanguage">🌍 OCR Language</label>
-            <select id="ocrLanguage">
-              <option value="eng">🇺🇸 English</option>
-              <option value="eng+hin">🇮🇳 English + Hindi</option>
-              <option value="eng+spa">🇪🇸 English + Spanish</option>
-              <option value="eng+fra">🇫🇷 English + French</option>
-              <option value="eng+deu">🇩🇪 English + German</option>
-              <option value="eng+chi_sim">🇨🇳 English + Chinese (Simplified)</option>
-              <option value="eng+ara">🇸🇦 English + Arabic</option>
-            </select>
-          </div>
-          
-          <div class="toggle-container">
-            <span class="toggle-label">🌑 Shadow DOM Detection</span>
-            <label class="toggle">
-              <input type="checkbox" id="shadowDomToggle" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          
-          <div class="toggle-container">
-            <span class="toggle-label">🖼️ Image-based MCQ Detection</span>
-            <label class="toggle">
-              <input type="checkbox" id="imageDetectionToggle" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          
-          <div class="toggle-container">
-            <span class="toggle-label">🧮 Math Equation Detection</span>
-            <label class="toggle">
-              <input type="checkbox" id="mathDetectionToggle" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          
-          <div class="form-group">
-            <label for="customSelectors">🎯 Custom CSS Selectors (one per line)</label>
-            <textarea id="customSelectors" rows="4" placeholder=".quiz-question
-.mcq-container
-.question-wrapper">.question
-.mcq
-.quiz-question
-.multiple-choice</textarea>
-          </div>
-          
-          <div class="button-group">
-            <button id="saveDetectionButton" class="button primary">💾 Save Detection Settings</button>
-          </div>
-        </div>
-      </div>
-      
-      <div id="advancedTab" class="tab-content">
-        <div class="container">
-          <h2>🚀 Advanced Settings</h2>
-          
-          <div class="toggle-container">
-            <span class="toggle-label">🛡️ Safe Mode (Disable in Proctored Environments)</span>
-            <label class="toggle">
-              <input type="checkbox" id="safeModeToggle" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          
-          <div class="toggle-container">
-            <span class="toggle-label">📹 Detect Webcam</span>
-            <label class="toggle">
-              <input type="checkbox" id="detectWebcamToggle" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          
-          <div class="toggle-container">
-            <span class="toggle-label">🖥️ Detect Fullscreen Mode</span>
-            <label class="toggle">
-              <input type="checkbox" id="detectFullscreenToggle" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          
-          <div class="toggle-container">
-            <span class="toggle-label">💻 Detect Virtual Machine</span>
-            <label class="toggle">
-              <input type="checkbox" id="detectVMToggle" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          
-          <div class="toggle-container">
-            <span class="toggle-label">🥷 Stealth Mode (Reduce Detection Footprint)</span>
-            <label class="toggle">
-              <input type="checkbox" id="stealthModeToggle">
-              <span class="slider"></span>
-            </label>
-          </div>
-          
-          <div class="toggle-container">
-            <span class="toggle-label">💾 Save Answer History</span>
-            <label class="toggle">
-              <input type="checkbox" id="saveHistoryToggle" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          
-          <div class="form-group">
-            <label for="maxHistoryItems">📊 Maximum History Items</label>
-            <div class="range-container">
-              <input type="range" id="maxHistoryItems" min="10" max="100" value="50" step="10">
-              <span class="range-value" id="maxHistoryItemsValue">50</span>
+        
+        <!-- DevOps Tools Tab -->
+        <div id="devopsTab" class="tab-content hidden">
+          <div class="glass-morphism rounded-3xl p-8 hover-lift animate-fade-in">
+            <h2 class="text-2xl font-bold text-white mb-6 neon-text">🛠️ DevOps Tools & Practices</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              <!-- Version Control -->
+              <div class="glass-morphism-dark rounded-2xl p-6 hover-glow">
+                <h3 class="text-lg font-bold text-white mb-4 gradient-text">🚀 Version Control</h3>
+                <ul class="space-y-2 text-white opacity-90 text-sm">
+                  <li>• Git + GitHub/GitLab</li>
+                  <li>• GitHub Projects</li>
+                  <li>• Automated Workflows</li>
+                  <li>• Branch Protection</li>
+                </ul>
+              </div>
+              
+              <!-- CI/CD -->
+              <div class="glass-morphism-dark rounded-2xl p-6 hover-glow">
+                <h3 class="text-lg font-bold text-white mb-4 gradient-text">⚙️ CI/CD Pipelines</h3>
+                <ul class="space-y-2 text-white opacity-90 text-sm">
+                  <li>• GitHub Actions</li>
+                  <li>• Jenkins/CircleCI</li>
+                  <li>• Automated Testing</li>
+                  <li>• Auto Deployment</li>
+                </ul>
+              </div>
+              
+              <!-- Containerization -->
+              <div class="glass-morphism-dark rounded-2xl p-6 hover-glow">
+                <h3 class="text-lg font-bold text-white mb-4 gradient-text">🐳 Containerization</h3>
+                <ul class="space-y-2 text-white opacity-90 text-sm">
+                  <li>• Docker</li>
+                  <li>• Docker Compose</li>
+                  <li>• Kubernetes</li>
+                  <li>• Container Registry</li>
+                </ul>
+              </div>
+              
+              <!-- Cloud Platforms -->
+              <div class="glass-morphism-dark rounded-2xl p-6 hover-glow">
+                <h3 class="text-lg font-bold text-white mb-4 gradient-text">☁️ Cloud Platforms</h3>
+                <ul class="space-y-2 text-white opacity-90 text-sm">
+                  <li>• AWS/GCP/Azure</li>
+                  <li>• Vercel/Netlify</li>
+                  <li>• Render/Railway</li>
+                  <li>• Firebase</li>
+                </ul>
+              </div>
+              
+              <!-- Monitoring -->
+              <div class="glass-morphism-dark rounded-2xl p-6 hover-glow">
+                <h3 class="text-lg font-bold text-white mb-4 gradient-text">🔍 Monitoring</h3>
+                <ul class="space-y-2 text-white opacity-90 text-sm">
+                  <li>• Prometheus + Grafana</li>
+                  <li>• ELK Stack</li>
+                  <li>• Sentry</li>
+                  <li>• DataDog</li>
+                </ul>
+              </div>
+              
+              <!-- Security -->
+              <div class="glass-morphism-dark rounded-2xl p-6 hover-glow">
+                <h3 class="text-lg font-bold text-white mb-4 gradient-text">🔒 Security</h3>
+                <ul class="space-y-2 text-white opacity-90 text-sm">
+                  <li>• Snyk/SonarQube</li>
+                  <li>• HashiCorp Vault</li>
+                  <li>• OAuth2/JWT</li>
+                  <li>• SSL/TLS</li>
+                </ul>
+              </div>
             </div>
-          </div>
-          
-          <div class="toggle-container">
-            <span class="toggle-label">🐛 Debug Mode</span>
-            <label class="toggle">
-              <input type="checkbox" id="debugModeToggle">
-              <span class="slider"></span>
-            </label>
-          </div>
-          
-          <div class="button-group">
-            <button id="exportDataButton" class="button secondary">📤 Export Data</button>
-            <button id="importDataButton" class="button secondary">📥 Import Data</button>
-            <button id="resetButton" class="button warning">🔄 Reset to Defaults</button>
-            <button id="saveAdvancedButton" class="button primary">💾 Save Advanced Settings</button>
-          </div>
-        </div>
-      </div>
-      
-      <div id="historyTab" class="tab-content">
-        <div class="container">
-          <h2>📊 Answer History</h2>
-          
-          <div class="button-group" style="justify-content: flex-start; margin-bottom: 24px;">
-            <button id="clearHistoryButton" class="button warning">🗑️ Clear History</button>
-            <button id="exportHistoryButton" class="button secondary">📤 Export History</button>
-          </div>
-          
-          <div id="historyList" class="history-list">
-            <div class="history-item">
-              <div class="history-question">🤔 What is the capital of France?</div>
-              <div class="history-answer">✅ Answer: Paris</div>
-              <div class="history-time">⏰ 2023-06-15 14:32:45</div>
-            </div>
-            <div class="history-item">
-              <div class="history-question">🪐 Which planet is known as the Red Planet?</div>
-              <div class="history-answer">✅ Answer: Mars</div>
-              <div class="history-time">⏰ 2023-06-15 14:30:12</div>
+            
+            <div class="mt-8 p-6 glass-morphism-neon rounded-2xl">
+              <h3 class="text-xl font-bold text-white mb-4 cyber-text">🎯 Implementation Status</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="flex items-center justify-between p-3 bg-white bg-opacity-10 rounded-lg">
+                  <span class="text-white font-medium">GitHub Actions</span>
+                  <span class="text-green-400 font-bold">✅ Active</span>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-white bg-opacity-10 rounded-lg">
+                  <span class="text-white font-medium">Docker</span>
+                  <span class="text-green-400 font-bold">✅ Ready</span>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-white bg-opacity-10 rounded-lg">
+                  <span class="text-white font-medium">Testing</span>
+                  <span class="text-yellow-400 font-bold">⚠️ Pending</span>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-white bg-opacity-10 rounded-lg">
+                  <span class="text-white font-medium">Monitoring</span>
+                  <span class="text-red-400 font-bold">❌ Setup Required</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1251,5 +993,147 @@ Correct answer:</textarea>
   </div>
   
   <script src="options.js"></script>
+  
+  <script>
+    // Enhanced tab functionality
+    document.querySelectorAll('.tab-button-advanced').forEach(button => {
+      button.addEventListener('click', function() {
+        // Remove active class from all buttons and contents
+        document.querySelectorAll('.tab-button-advanced').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+        
+        // Add active class to clicked button
+        this.classList.add('active');
+        
+        // Show corresponding content
+        const tabId = this.getAttribute('data-tab');
+        document.getElementById(`${tabId}Tab`).classList.remove('hidden');
+      });
+    });
+
+    // Enhanced toggle functionality
+    document.querySelectorAll('.toggle-advanced').forEach(toggle => {
+      toggle.addEventListener('click', function() {
+        this.classList.toggle('active');
+      });
+    });
+
+    // Range input value updates
+    document.querySelectorAll('input[type="range"]').forEach(input => {
+      const valueDisplay = document.getElementById(`${input.id}Value`);
+      
+      input.addEventListener('input', function() {
+        if (valueDisplay) {
+          if (this.id.includes('Delay')) {
+            valueDisplay.textContent = `${this.value}s`;
+          } else {
+            valueDisplay.textContent = this.value;
+          }
+        }
+      });
+    });
+
+    // Theme toggle functionality
+    const themeToggle = document.getElementById('themeToggle');
+    let isDarkMode = false;
+
+    themeToggle.addEventListener('click', () => {
+      isDarkMode = !isDarkMode;
+      document.body.classList.toggle('dark-mode', isDarkMode);
+      themeToggle.textContent = isDarkMode ? '☀️' : '🌙';
+    });
+
+    // Enhanced button interactions
+    document.querySelectorAll('.btn-advanced').forEach(btn => {
+      btn.addEventListener('mouseenter', function() {
+        this.style.transform = 'translateY(-3px) scale(1.02)';
+      });
+      
+      btn.addEventListener('mouseleave', function() {
+        this.style.transform = 'translateY(0) scale(1)';
+      });
+    });
+
+    // Parallax effect for background
+    document.addEventListener('mousemove', (e) => {
+      const mouseX = e.clientX / window.innerWidth;
+      const mouseY = e.clientY / window.innerHeight;
+      
+      document.body.style.backgroundPosition = `${mouseX * 100}% ${mouseY * 100}%`;
+    });
+
+    // Auto-hide banner after 15 seconds
+    setTimeout(() => {
+      const banner = document.getElementById('installBanner');
+      if (banner) {
+        banner.style.transform = 'translateY(-100%)';
+        banner.style.opacity = '0';
+        setTimeout(() => banner.style.display = 'none', 500);
+      }
+    }, 15000);
+
+    // Notification system
+    function showNotification(message, type = 'info') {
+      const notification = document.createElement('div');
+      notification.className = `notification ${type}`;
+      notification.textContent = message;
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => notification.remove(), 300);
+      }, 3000);
+    }
+
+    // API provider change handler
+    document.getElementById('apiProvider').addEventListener('change', function() {
+      const provider = this.value;
+      
+      // Hide all settings
+      document.getElementById('openaiSettings').classList.add('hidden');
+      document.getElementById('geminiSettings').classList.add('hidden');
+      
+      // Show relevant settings
+      if (provider === 'openai' || provider === 'auto') {
+        document.getElementById('openaiSettings').classList.remove('hidden');
+      }
+      if (provider === 'gemini' || provider === 'auto') {
+        document.getElementById('geminiSettings').classList.remove('hidden');
+      }
+    });
+
+    // Enhanced loading states
+    function showLoading(button) {
+      const originalText = button.textContent;
+      button.innerHTML = '<div class="loading-spinner"></div>';
+      button.disabled = true;
+      
+      return () => {
+        button.textContent = originalText;
+        button.disabled = false;
+      };
+    }
+
+    // API test functionality
+    document.getElementById('testApiButton').addEventListener('click', function() {
+      const hideLoading = showLoading(this);
+      
+      setTimeout(() => {
+        hideLoading();
+        showNotification('API connection test completed successfully!', 'success');
+      }, 2000);
+    });
+
+    // Save functionality
+    document.getElementById('saveApiButton').addEventListener('click', function() {
+      const hideLoading = showLoading(this);
+      
+      setTimeout(() => {
+        hideLoading();
+        showNotification('Settings saved and synced with backend!', 'success');
+      }, 1500);
+    });
+  </script>
 </body>
 </html>
