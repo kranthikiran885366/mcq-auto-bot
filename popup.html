@@ -24,7 +24,9 @@
             'spin-slow': 'spin 3s linear infinite',
             'gradient': 'gradient 15s ease infinite',
             'shimmer': 'shimmer 2s linear infinite',
-            'glow': 'glow 2s ease-in-out infinite alternate'
+            'glow': 'glow 2s ease-in-out infinite alternate',
+            'matrix': 'matrix 20s linear infinite',
+            'neon-pulse': 'neon-pulse 2s ease-in-out infinite alternate'
           },
           keyframes: {
             float: {
@@ -42,6 +44,20 @@
             glow: {
               '0%': { boxShadow: '0 0 20px rgba(102, 126, 234, 0.5)' },
               '100%': { boxShadow: '0 0 30px rgba(102, 126, 234, 0.8)' }
+            },
+            matrix: {
+              '0%': { transform: 'translateY(-100vh)' },
+              '100%': { transform: 'translateY(100vh)' }
+            },
+            'neon-pulse': {
+              '0%': { 
+                textShadow: '0 0 5px #ff006e, 0 0 10px #ff006e, 0 0 15px #ff006e',
+                boxShadow: '0 0 5px #ff006e, 0 0 10px #ff006e, 0 0 15px #ff006e'
+              },
+              '100%': { 
+                textShadow: '0 0 10px #ff006e, 0 0 20px #ff006e, 0 0 30px #ff006e',
+                boxShadow: '0 0 10px #ff006e, 0 0 20px #ff006e, 0 0 30px #ff006e'
+              }
             }
           },
           backdropBlur: {
@@ -50,14 +66,15 @@
           },
           fontFamily: {
             'inter': ['Inter', 'system-ui', 'sans-serif'],
-            'poppins': ['Poppins', 'system-ui', 'sans-serif']
+            'poppins': ['Poppins', 'system-ui', 'sans-serif'],
+            'orbitron': ['Orbitron', 'monospace']
           }
         }
       }
     }
   </script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&display=swap');
     
     :root {
       --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -65,10 +82,13 @@
       --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
       --warning-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
       --dark-gradient: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+      --neon-gradient: linear-gradient(135deg, #ff006e 0%, #8338ec 50%, #3a86ff 100%);
+      --cyber-gradient: linear-gradient(135deg, #00f5ff 0%, #ff00ff 50%, #ffff00 100%);
       --glass-bg: rgba(255, 255, 255, 0.25);
       --glass-border: rgba(255, 255, 255, 0.18);
       --shadow-light: 0 8px 32px rgba(31, 38, 135, 0.37);
       --shadow-dark: 0 8px 32px rgba(0, 0, 0, 0.3);
+      --shadow-neon: 0 0 50px rgba(255, 0, 110, 0.5);
       --border-radius: 20px;
       --transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       --text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
@@ -82,11 +102,11 @@
 
     body {
       width: 420px;
-      min-height: 650px;
+      min-height: 700px;
       font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #fa709a 100%);
       background-size: 400% 400%;
-      animation: gradient 15s ease infinite;
+      animation: gradient 20s ease infinite;
       position: relative;
       overflow-x: hidden;
     }
@@ -101,16 +121,45 @@
       background: 
         radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.4) 0%, transparent 50%),
         radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.4) 0%, transparent 50%),
-        radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.3) 0%, transparent 50%);
+        radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 60% 60%, rgba(250, 112, 154, 0.3) 0%, transparent 50%);
       pointer-events: none;
-      animation: float 6s ease-in-out infinite;
+      animation: float 8s ease-in-out infinite;
     }
 
+    /* Matrix Rain Effect */
+    .matrix-rain {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.1;
+    }
+
+    .matrix-char {
+      position: absolute;
+      color: #00ff00;
+      font-family: 'Orbitron', monospace;
+      font-size: 12px;
+      animation: matrix 20s linear infinite;
+    }
+
+    /* Glass Morphism Variants */
     .glass-morphism {
       background: rgba(255, 255, 255, 0.15);
       backdrop-filter: blur(20px);
       border: 1px solid rgba(255, 255, 255, 0.2);
       box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+    }
+
+    .glass-morphism-strong {
+      background: rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(30px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 12px 40px rgba(31, 38, 135, 0.5);
     }
 
     .glass-morphism-dark {
@@ -120,15 +169,44 @@
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     }
 
+    .glass-morphism-neon {
+      background: rgba(255, 0, 110, 0.1);
+      backdrop-filter: blur(25px);
+      border: 1px solid rgba(255, 0, 110, 0.3);
+      box-shadow: 0 0 50px rgba(255, 0, 110, 0.3);
+    }
+
+    /* Advanced Text Effects */
     .gradient-text {
-      background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
+      background: linear-gradient(135deg, #667eea, #764ba2, #f093fb, #4facfe);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      background-size: 200% 200%;
-      animation: gradient 3s ease infinite;
+      background-size: 300% 300%;
+      animation: gradient 4s ease infinite;
     }
 
+    .neon-text {
+      color: #fff;
+      text-shadow: 
+        0 0 5px #ff006e,
+        0 0 10px #ff006e,
+        0 0 15px #ff006e,
+        0 0 20px #ff006e;
+      animation: neon-pulse 2s ease-in-out infinite alternate;
+    }
+
+    .cyber-text {
+      font-family: 'Orbitron', monospace;
+      background: linear-gradient(135deg, #00f5ff, #ff00ff, #ffff00);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    /* Hover Effects */
     .hover-lift {
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
@@ -138,6 +216,17 @@
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
     }
 
+    .hover-glow:hover {
+      box-shadow: 0 0 30px rgba(102, 126, 234, 0.6);
+      border-color: rgba(102, 126, 234, 0.8);
+    }
+
+    .hover-neon:hover {
+      box-shadow: 0 0 50px rgba(255, 0, 110, 0.8);
+      border-color: rgba(255, 0, 110, 1);
+    }
+
+    /* Shimmer Effects */
     .shimmer-effect {
       position: relative;
       overflow: hidden;
@@ -150,70 +239,12 @@
       left: -100%;
       width: 100%;
       height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-      animation: shimmer 2s infinite;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      animation: shimmer 3s infinite;
     }
 
-    .neon-glow {
-      box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
-      animation: glow 2s ease-in-out infinite alternate;
-    }
-
-    .floating-animation {
-      animation: float 6s ease-in-out infinite;
-    }
-
-    .pulse-ring {
-      position: relative;
-    }
-
-    .pulse-ring::before {
-      content: '';
-      position: absolute;
-      top: -4px;
-      left: -4px;
-      right: -4px;
-      bottom: -4px;
-      border-radius: 50%;
-      background: inherit;
-      opacity: 0.3;
-      animation: pulse 2s infinite;
-    }
-
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 4px;
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      border-radius: 4px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-      background: linear-gradient(135deg, #764ba2, #f093fb);
-    }
-
-    /* Dark Mode */
-    .dark-mode {
-      background: linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #4a6741 100%);
-    }
-
-    .dark-mode .glass-morphism {
-      background: rgba(0, 0, 0, 0.25);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .dark-mode .gradient-text {
-      background: linear-gradient(135deg, #60a5fa, #a78bfa, #f472b6);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+    .shimmer-neon::before {
+      background: linear-gradient(90deg, transparent, rgba(255,0,110,0.6), transparent);
     }
 
     /* Advanced Button Styles */
@@ -231,6 +262,7 @@
       text-transform: uppercase;
       letter-spacing: 1px;
       font-size: 14px;
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
     }
 
     .btn-advanced::before {
@@ -249,12 +281,35 @@
     }
 
     .btn-advanced:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 15px 35px rgba(102, 126, 234, 0.5);
     }
 
     .btn-advanced:active {
       transform: translateY(-1px);
+    }
+
+    .btn-neon {
+      background: linear-gradient(135deg, #ff006e 0%, #8338ec 100%);
+      box-shadow: 0 0 25px rgba(255, 0, 110, 0.5);
+      border: 1px solid rgba(255, 0, 110, 0.5);
+    }
+
+    .btn-neon:hover {
+      box-shadow: 0 0 50px rgba(255, 0, 110, 0.8);
+      border-color: rgba(255, 0, 110, 1);
+    }
+
+    .btn-cyber {
+      background: linear-gradient(135deg, #00f5ff 0%, #ff00ff 100%);
+      box-shadow: 0 0 25px rgba(0, 245, 255, 0.5);
+      border: 1px solid rgba(0, 245, 255, 0.5);
+      font-family: 'Orbitron', monospace;
+    }
+
+    .btn-cyber:hover {
+      box-shadow: 0 0 50px rgba(0, 245, 255, 0.8);
+      border-color: rgba(0, 245, 255, 1);
     }
 
     /* Toggle Switch Advanced */
@@ -272,6 +327,11 @@
     .toggle-advanced.active {
       background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
       box-shadow: 0 0 20px rgba(79, 172, 254, 0.5);
+    }
+
+    .toggle-advanced.neon.active {
+      background: linear-gradient(135deg, #ff006e 0%, #8338ec 100%);
+      box-shadow: 0 0 30px rgba(255, 0, 110, 0.8);
     }
 
     .toggle-advanced::before {
@@ -398,6 +458,42 @@
       animation: pulse 2s infinite;
     }
 
+    /* Dark Mode */
+    .dark-mode {
+      background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #533483 100%);
+    }
+
+    .dark-mode .glass-morphism {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .dark-mode .gradient-text {
+      background: linear-gradient(135deg, #60a5fa, #a78bfa, #f472b6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(135deg, #764ba2, #f093fb);
+    }
+
     /* Responsive Design */
     @media (max-width: 480px) {
       body { width: 100vw; min-height: 100vh; }
@@ -407,23 +503,37 @@
   </style>
 </head>
 <body class="font-inter bg-gradient-to-br from-mvk-primary via-mvk-secondary to-mvk-accent transition-colors duration-300">
+  <!-- Matrix Rain Effect -->
+  <div class="matrix-rain">
+    <div class="matrix-char" style="left: 5%; animation-delay: 0s;">0</div>
+    <div class="matrix-char" style="left: 15%; animation-delay: 2s;">1</div>
+    <div class="matrix-char" style="left: 25%; animation-delay: 4s;">0</div>
+    <div class="matrix-char" style="left: 35%; animation-delay: 6s;">1</div>
+    <div class="matrix-char" style="left: 45%; animation-delay: 8s;">0</div>
+    <div class="matrix-char" style="left: 55%; animation-delay: 1s;">1</div>
+    <div class="matrix-char" style="left: 65%; animation-delay: 3s;">0</div>
+    <div class="matrix-char" style="left: 75%; animation-delay: 5s;">1</div>
+    <div class="matrix-char" style="left: 85%; animation-delay: 7s;">0</div>
+    <div class="matrix-char" style="left: 95%; animation-delay: 9s;">1</div>
+  </div>
+
   <!-- Marketing Banner -->
-  <div class="bg-gradient-to-r from-mvk-accent to-mvk-warning text-white font-semibold text-xs py-2 px-4 relative overflow-hidden" id="installBanner">
-    <button class="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full w-5 h-5 flex items-center justify-center text-xs transition-all duration-300" onclick="this.parentElement.style.display='none'" aria-label="Close">&times;</button>
+  <div class="bg-gradient-to-r from-mvk-accent to-mvk-warning text-white font-semibold text-xs py-2 px-4 relative overflow-hidden animate-slide-in" id="installBanner">
+    <button class="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full w-5 h-5 flex items-center justify-center text-xs transition-all duration-300 hover-glow" onclick="this.parentElement.style.display='none'" aria-label="Close">&times;</button>
     <div class="text-center shimmer-effect">
       🚀 Advanced AI MCQ Bot by MVK Solutions - Professional Edition
-      <a href="https://mvksolutions.com/enterprise" target="_blank" class="underline ml-1 font-bold hover:text-yellow-200 transition-colors">Get Enterprise License</a>
+      <a href="https://mvksolutions.com/enterprise" target="_blank" class="underline ml-1 font-bold hover:text-yellow-200 transition-colors neon-text">Get Enterprise License</a>
     </div>
   </div>
   
   <div class="relative z-10 p-5 h-full flex flex-col">
     <!-- Theme Toggle -->
-    <button id="themeToggle" class="absolute top-4 right-4 w-10 h-10 rounded-full glass-morphism hover-lift flex items-center justify-center text-lg z-20 neon-glow">
+    <button id="themeToggle" class="absolute top-4 right-4 w-10 h-10 rounded-full glass-morphism hover-lift flex items-center justify-center text-lg z-20 hover-glow">
       🌙
     </button>
     
     <!-- Company Header -->
-    <div class="glass-morphism rounded-2xl p-4 mb-5 text-center hover-lift shimmer-effect">
+    <div class="glass-morphism-strong rounded-2xl p-4 mb-5 text-center hover-lift shimmer-effect animate-fade-in">
       <div class="company-logo-advanced mx-auto mb-3">MVK</div>
       <div class="text-lg font-bold gradient-text mb-1">MVK Solutions</div>
       <div class="text-xs text-white opacity-90 font-medium">AI-Powered Automation Excellence</div>
@@ -433,33 +543,33 @@
     </div>
     
     <!-- Main Header -->
-    <div class="glass-morphism rounded-2xl p-5 mb-5 flex items-center hover-lift">
-      <img src="icons/icon48.png" alt="Logo" class="w-12 h-12 mr-4 rounded-xl shadow-lg floating-animation">
-      <h1 class="text-lg font-bold text-white text-shadow">Advanced AI MCQ Bot</h1>
+    <div class="glass-morphism rounded-2xl p-5 mb-5 flex items-center hover-lift animate-scale-in">
+      <img src="icons/icon48.png" alt="Logo" class="w-12 h-12 mr-4 rounded-xl shadow-lg animate-float">
+      <h1 class="text-lg font-bold text-white text-shadow cyber-text">Advanced AI MCQ Bot</h1>
     </div>
     
     <!-- Main Container -->
-    <div class="glass-morphism rounded-2xl p-6 mb-5 flex-1 overflow-y-auto hover-lift">
+    <div class="glass-morphism-strong rounded-2xl p-6 mb-5 flex-1 overflow-y-auto hover-lift">
       <!-- Status Indicator -->
-      <div class="flex items-center mb-5 p-4 glass-morphism-dark rounded-xl">
-        <div id="statusDot" class="status-indicator-advanced inactive pulse-ring"></div>
+      <div class="flex items-center mb-5 p-4 glass-morphism-dark rounded-xl hover-glow">
+        <div id="statusDot" class="status-indicator-advanced inactive"></div>
         <div id="statusText" class="text-sm font-semibold text-white">Bot is inactive</div>
       </div>
       
       <!-- Error Message -->
-      <div id="errorMessage" class="hidden bg-red-500 bg-opacity-20 border border-red-400 text-red-100 rounded-xl p-3 mb-4 text-sm font-medium backdrop-blur-sm"></div>
+      <div id="errorMessage" class="hidden bg-red-500 bg-opacity-20 border border-red-400 text-red-100 rounded-xl p-3 mb-4 text-sm font-medium backdrop-blur-sm animate-pulse"></div>
       
       <!-- Controls Grid -->
       <div class="space-y-4">
         <!-- Enable Bot Toggle -->
-        <div class="flex justify-between items-center p-4 glass-morphism-dark rounded-xl hover-lift">
+        <div class="flex justify-between items-center p-4 glass-morphism-dark rounded-xl hover-lift hover-neon">
           <span class="text-sm font-semibold text-white">Enable Bot</span>
-          <div id="botToggle" class="toggle-advanced cursor-pointer"></div>
+          <div id="botToggle" class="toggle-advanced neon cursor-pointer"></div>
         </div>
         
         <!-- Mode Selector -->
         <div class="glass-morphism-dark rounded-xl p-4 hover-lift">
-          <select id="modeSelect" class="w-full p-3 bg-white bg-opacity-10 border border-white border-opacity-30 rounded-xl text-white text-sm font-medium backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-mvk-success focus:border-transparent transition-all duration-300">
+          <select id="modeSelect" class="w-full p-3 bg-white bg-opacity-10 border border-white border-opacity-30 rounded-xl text-white text-sm font-medium backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-mvk-success focus:border-transparent transition-all duration-300 hover-glow">
             <option value="learning" class="bg-mvk-dark text-white">🎓 Learning Mode</option>
             <option value="safe" class="bg-mvk-dark text-white">🛡️ Safe Mode</option>
             <option value="stealth" class="bg-mvk-dark text-white">🥷 Stealth Mode</option>
@@ -467,19 +577,19 @@
         </div>
         
         <!-- Voice Narration Toggle -->
-        <div class="flex justify-between items-center p-4 glass-morphism-dark rounded-xl hover-lift">
+        <div class="flex justify-between items-center p-4 glass-morphism-dark rounded-xl hover-lift hover-neon">
           <span class="text-sm font-semibold text-white">Voice Narration</span>
           <div id="voiceToggle" class="toggle-advanced cursor-pointer"></div>
         </div>
         
         <!-- Auto-Answer Toggle -->
-        <div class="flex justify-between items-center p-4 glass-morphism-dark rounded-xl hover-lift">
+        <div class="flex justify-between items-center p-4 glass-morphism-dark rounded-xl hover-lift hover-neon">
           <span class="text-sm font-semibold text-white">Auto-Answer</span>
-          <div id="autoAnswerToggle" class="toggle-advanced active cursor-pointer"></div>
+          <div id="autoAnswerToggle" class="toggle-advanced active neon cursor-pointer"></div>
         </div>
         
         <!-- Human-like Movement Toggle -->
-        <div class="flex justify-between items-center p-4 glass-morphism-dark rounded-xl hover-lift">
+        <div class="flex justify-between items-center p-4 glass-morphism-dark rounded-xl hover-lift hover-neon">
           <span class="text-sm font-semibold text-white">Human-like Movement</span>
           <div id="humanMouseMovementToggle" class="toggle-advanced cursor-pointer"></div>
         </div>
@@ -490,44 +600,44 @@
         <button id="scanButton" class="btn-advanced w-full shimmer-effect">
           🔍 Scan for MCQs
         </button>
-        <button id="captureButton" class="btn-advanced w-full shimmer-effect" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+        <button id="captureButton" class="btn-advanced w-full shimmer-effect btn-neon">
           📸 Capture Screen
         </button>
       </div>
       
       <!-- MCQ Info -->
-      <div id="mcqInfo" class="hidden mt-5 p-4 glass-morphism-dark rounded-xl hover-lift">
+      <div id="mcqInfo" class="hidden mt-5 p-4 glass-morphism-neon rounded-xl hover-lift">
         <div class="mcq-question text-xs text-white font-semibold mb-2"></div>
         <div class="mcq-answer text-xs text-green-300 font-medium"></div>
       </div>
       
       <!-- API Status -->
-      <div id="apiStatus" class="text-xs text-center mt-4 py-2 px-4 rounded-full font-medium uppercase tracking-wide bg-red-500 bg-opacity-20 text-red-300 border border-red-400">
+      <div id="apiStatus" class="text-xs text-center mt-4 py-2 px-4 rounded-full font-medium uppercase tracking-wide bg-red-500 bg-opacity-20 text-red-300 border border-red-400 animate-pulse">
         API Status: Not Connected
       </div>
       
       <!-- Statistics Grid -->
       <div class="grid grid-cols-3 gap-3 mt-5">
-        <div class="stats-card-advanced">
+        <div class="stats-card-advanced hover-lift">
           <div class="stats-value-advanced" id="mcqsFound">0</div>
           <div class="text-xs text-white opacity-80 font-medium uppercase tracking-wide">MCQs Found</div>
         </div>
-        <div class="stats-card-advanced">
+        <div class="stats-card-advanced hover-lift">
           <div class="stats-value-advanced" id="mcqsAnswered">0</div>
           <div class="text-xs text-white opacity-80 font-medium uppercase tracking-wide">Answered</div>
         </div>
-        <div class="stats-card-advanced">
+        <div class="stats-card-advanced hover-lift">
           <div class="stats-value-advanced" id="accuracy">0%</div>
           <div class="text-xs text-white opacity-80 font-medium uppercase tracking-wide">Accuracy</div>
         </div>
       </div>
 
       <!-- OCR Controls -->
-      <div class="mt-5 p-4 glass-morphism-dark rounded-xl hover-lift">
-        <button id="start-auto" class="btn-advanced w-full mb-3 shimmer-effect" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+      <div class="mt-5 p-4 glass-morphism-neon rounded-xl hover-lift">
+        <button id="start-auto" class="btn-advanced w-full mb-3 shimmer-effect btn-cyber">
           🤖 Auto Detect & OCR
         </button>
-        <select id="lang-select" class="w-full p-3 bg-white bg-opacity-10 border border-white border-opacity-30 rounded-xl text-white text-sm font-medium backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-mvk-success focus:border-transparent transition-all duration-300 mb-3">
+        <select id="lang-select" class="w-full p-3 bg-white bg-opacity-10 border border-white border-opacity-30 rounded-xl text-white text-sm font-medium backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-mvk-success focus:border-transparent transition-all duration-300 mb-3 hover-glow">
           <option value="eng" class="bg-mvk-dark text-white">🇺🇸 English</option>
           <option value="hin" class="bg-mvk-dark text-white">🇮🇳 Hindi</option>
           <option value="spa" class="bg-mvk-dark text-white">🇪🇸 Spanish</option>
@@ -543,7 +653,7 @@
     </div>
     
     <!-- Settings Link -->
-    <a href="options.html" class="block text-center mt-4 text-white opacity-80 hover:opacity-100 text-xs font-medium py-3 px-4 glass-morphism rounded-xl hover-lift transition-all duration-300 uppercase tracking-wide">
+    <a href="options.html" class="block text-center mt-4 text-white opacity-80 hover:opacity-100 text-xs font-medium py-3 px-4 glass-morphism-strong rounded-xl hover-lift transition-all duration-300 uppercase tracking-wide shimmer-effect">
       ⚙️ Settings & API Configuration
     </a>
   </div>
@@ -597,6 +707,36 @@
         setTimeout(() => banner.style.display = 'none', 500);
       }
     }, 10000);
+
+    // Add floating animation to stats cards
+    document.querySelectorAll('.stats-card-advanced').forEach((card, index) => {
+      card.style.animationDelay = `${index * 0.2}s`;
+      card.classList.add('animate-float');
+    });
+
+    // Add glow effect on hover for interactive elements
+    document.querySelectorAll('.hover-glow').forEach(element => {
+      element.addEventListener('mouseenter', function() {
+        this.style.boxShadow = '0 0 30px rgba(102, 126, 234, 0.6)';
+      });
+      
+      element.addEventListener('mouseleave', function() {
+        this.style.boxShadow = '';
+      });
+    });
+
+    // Add neon effect on hover for neon elements
+    document.querySelectorAll('.hover-neon').forEach(element => {
+      element.addEventListener('mouseenter', function() {
+        this.style.boxShadow = '0 0 50px rgba(255, 0, 110, 0.8)';
+        this.style.borderColor = 'rgba(255, 0, 110, 1)';
+      });
+      
+      element.addEventListener('mouseleave', function() {
+        this.style.boxShadow = '';
+        this.style.borderColor = '';
+      });
+    });
   </script>
 </body>
 </html>

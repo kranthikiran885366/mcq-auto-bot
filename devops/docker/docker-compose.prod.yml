@@ -1,0 +1,418 @@
+# Docker Compose for Advanced AI MCQ Bot Production Environment
+# Built by MVK Solutions
+
+version: '3.8'
+
+services:
+  # Main Application (Multiple Instances for Load Balancing)
+  mcq-bot-1:
+    build:
+      context: ../..
+      dockerfile: devops/docker/Dockerfile
+      target: production
+    container_name: mcq-bot-app-1
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=postgresql://postgres:${DB_PASSWORD}@postgres:5432/mcq_bot_prod
+      - REDIS_URL=redis://redis:6379/0
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - SECRET_KEY=${SECRET_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - SENTRY_DSN=${SENTRY_DSN}
+    volumes:
+      - app_logs:/app/logs
+      - app_data:/app/data
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - mcq-bot-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  mcq-bot-2:
+    build:
+      context: ../..
+      dockerfile: devops/docker/Dockerfile
+      target: production
+    container_name: mcq-bot-app-2
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=postgresql://postgres:${DB_PASSWORD}@postgres:5432/mcq_bot_prod
+      - REDIS_URL=redis://redis:6379/0
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - SECRET_KEY=${SECRET_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - SENTRY_DSN=${SENTRY_DSN}
+    volumes:
+      - app_logs:/app/logs
+      - app_data:/app/data
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - mcq-bot-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # PostgreSQL Database with Replication
+  postgres:
+    image: postgres:13-alpine
+    container_name: mcq-bot-postgres-primary
+    environment:
+      - POSTGRES_DB=mcq_bot_prod
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_REPLICATION_MODE=master
+      - POSTGRES_REPLICATION_USER=replicator
+      - POSTGRES_REPLICATION_PASSWORD=${REPLICATION_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backup:/backup
+    networks:
+      - mcq-bot-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+
+  # PostgreSQL Read Replica
+  postgres-replica:
+    image: postgres:13-alpine
+    container_name: mcq-bot-postgres-replica
+    environment:
+      - POSTGRES_MASTER_SERVICE=postgres
+      - POSTGRES_REPLICATION_MODE=slave
+      - POSTGRES_REPLICATION_USER=replicator
+      - POSTGRES_REPLICATION_PASSWORD=${REPLICATION_PASSWORD}
+      - POSTGRES_MASTER_PORT_NUMBER=5432
+    depends_on:
+      - postgres
+    networks:
+      - mcq-bot-network
+    restart: always
+
+  # Redis Cluster
+  redis-master:
+    image: redis:7-alpine
+    container_name: mcq-bot-redis-master
+    command: redis-server --appendonly yes --replica-announce-ip redis-master
+    volumes:
+      - redis_master_data:/data
+    networks:
+      - mcq-bot-network
+    restart: always
+
+  redis-replica:
+    image: redis:7-alpine
+    container_name: mcq-bot-redis-replica
+    command: redis-server --slaveof redis-master 6379 --appendonly yes
+    depends_on:
+      - redis-master
+    volumes:
+      - redis_replica_data:/data
+    networks:
+      - mcq-bot-network
+    restart: always
+
+  # Redis Sentinel for High Availability
+  redis-sentinel:
+    image: redis:7-alpine
+    container_name: mcq-bot-redis-sentinel
+    command: redis-sentinel /etc/redis/sentinel.conf
+    volumes:
+      - ../redis/sentinel.conf:/etc/redis/sentinel.conf
+    depends_on:
+      - redis-master
+      - redis-replica
+    networks:
+      - mcq-bot-network
+    restart: always
+
+  # Nginx Load Balancer with SSL
+  nginx:
+    image: nginx:alpine
+    container_name: mcq-bot-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../nginx/nginx.prod.conf:/etc/nginx/nginx.conf
+      - ../nginx/ssl:/etc/nginx/ssl
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - mcq-bot-1
+      - mcq-bot-2
+    networks:
+      - mcq-bot-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: mcq-bot-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ../monitoring/prometheus.prod.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    networks:
+      - mcq-bot-network
+    restart: always
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: mcq-bot-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ../monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ../monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - prometheus
+    networks:
+      - mcq-bot-network
+    restart: always
+
+  # Elasticsearch Cluster
+  elasticsearch-1:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.14.0
+    container_name: mcq-bot-elasticsearch-1
+    environment:
+      - node.name=elasticsearch-1
+      - cluster.name=mcq-bot-cluster
+      - discovery.seed_hosts=elasticsearch-2
+      - cluster.initial_master_nodes=elasticsearch-1,elasticsearch-2
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - elasticsearch_1_data:/usr/share/elasticsearch/data
+    networks:
+      - mcq-bot-network
+    restart: always
+
+  elasticsearch-2:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.14.0
+    container_name: mcq-bot-elasticsearch-2
+    environment:
+      - node.name=elasticsearch-2
+      - cluster.name=mcq-bot-cluster
+      - discovery.seed_hosts=elasticsearch-1
+      - cluster.initial_master_nodes=elasticsearch-1,elasticsearch-2
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - elasticsearch_2_data:/usr/share/elasticsearch/data
+    networks:
+      - mcq-bot-network
+    restart: always
+
+  # Kibana
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.14.0
+    container_name: mcq-bot-kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch-1:9200,http://elasticsearch-2:9200
+      - SERVER_NAME=kibana.mvksolutions.com
+    depends_on:
+      - elasticsearch-1
+      - elasticsearch-2
+    networks:
+      - mcq-bot-network
+    restart: always
+
+  # Logstash
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.14.0
+    container_name: mcq-bot-logstash
+    volumes:
+      - ../monitoring/logstash.prod.conf:/usr/share/logstash/pipeline/logstash.conf
+      - app_logs:/app/logs:ro
+    environment:
+      - "LS_JAVA_OPTS=-Xmx1g -Xms1g"
+    depends_on:
+      - elasticsearch-1
+      - elasticsearch-2
+    networks:
+      - mcq-bot-network
+    restart: always
+
+  # Filebeat for Log Shipping
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:7.14.0
+    container_name: mcq-bot-filebeat
+    user: root
+    volumes:
+      - ../monitoring/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - app_logs:/app/logs:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - elasticsearch-1
+      - elasticsearch-2
+    networks:
+      - mcq-bot-network
+    restart: always
+
+  # Jaeger for Distributed Tracing
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: mcq-bot-jaeger
+    ports:
+      - "16686:16686"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - SPAN_STORAGE_TYPE=elasticsearch
+      - ES_SERVER_URLS=http://elasticsearch-1:9200,http://elasticsearch-2:9200
+    depends_on:
+      - elasticsearch-1
+      - elasticsearch-2
+    networks:
+      - mcq-bot-network
+    restart: always
+
+  # AlertManager for Alerts
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: mcq-bot-alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ../monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    networks:
+      - mcq-bot-network
+    restart: always
+
+  # Node Exporter for System Metrics
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: mcq-bot-node-exporter
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - mcq-bot-network
+    restart: always
+
+  # cAdvisor for Container Metrics
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: mcq-bot-cadvisor
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true
+    devices:
+      - /dev/kmsg
+    networks:
+      - mcq-bot-network
+    restart: always
+
+  # Backup Service
+  backup:
+    image: postgres:13-alpine
+    container_name: mcq-bot-backup
+    environment:
+      - PGPASSWORD=${DB_PASSWORD}
+    volumes:
+      - ./backup:/backup
+      - ../scripts/backup.sh:/backup.sh
+    command: /bin/sh -c "chmod +x /backup.sh && crond -f"
+    depends_on:
+      - postgres
+    networks:
+      - mcq-bot-network
+    restart: always
+
+# Networks
+networks:
+  mcq-bot-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+
+# Volumes
+volumes:
+  postgres_data:
+    driver: local
+  redis_master_data:
+    driver: local
+  redis_replica_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  elasticsearch_1_data:
+    driver: local
+  elasticsearch_2_data:
+    driver: local
+  app_logs:
+    driver: local
+  app_data:
+    driver: local

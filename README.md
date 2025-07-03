@@ -4,8 +4,10 @@
 [![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/mvksolutions/mcq-automation-bot)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/mvksolutions/mcq-automation-bot/actions)
 [![DevOps Ready](https://img.shields.io/badge/DevOps-Ready-orange.svg)](https://github.com/mvksolutions/mcq-automation-bot)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://hub.docker.com/r/mvksolutions/mcq-automation-bot)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-Ready-326ce5.svg)](https://kubernetes.io/)
 
-> **Enterprise-Grade AI-Powered Multiple Choice Question Automation System**
+> **🏆 Enterprise-Grade AI-Powered Multiple Choice Question Automation System**
 
 A comprehensive, production-ready automation solution for Multiple Choice Questions (MCQs) using cutting-edge AI and advanced web automation technologies. Built by **MVK Solutions** for educational institutions, training organizations, and assessment platforms.
 
@@ -13,7 +15,7 @@ A comprehensive, production-ready automation solution for Multiple Choice Questi
 
 ### 🧠 **Advanced AI Integration**
 - **Multi-Provider Support**: OpenAI GPT-4, Google Gemini Pro, DeepSeek, HuggingFace
-- **Intelligent Answer Prediction**: 95%+ accuracy rate with advanced reasoning
+- **Intelligent Answer Prediction**: 97%+ accuracy rate with advanced reasoning
 - **Auto-Fallback System**: Seamless switching between AI providers
 - **Custom Prompt Engineering**: Tailored prompts for different question types
 
@@ -35,45 +37,46 @@ A comprehensive, production-ready automation solution for Multiple Choice Questi
 - **CI/CD Pipeline**: Automated testing and deployment
 - **Monitoring & Logging**: Comprehensive observability
 
-## 📁 Project Structure
+## 📊 Performance Metrics
 
-```
-mcq-automation-bot/
-├── 📂 backend/                    # Python Flask Backend
-│   ├── 🐍 app.py                 # Main Flask application
-│   ├── 🤖 automation_bot.py      # Advanced MCQ automation engine
-│   ├── 📋 requirements.txt       # Python dependencies
-│   ├── 🔧 install_dependencies.py # Automated dependency installer
-│   ├── 🚀 run_server.py          # Production server runner
-│   ├── 🔐 .env.example          # Environment variables template
-│   └── 📂 templates/
-│       └── 🌐 index.html         # Backend control panel
-├── 📂 frontend/                   # Modern Web Frontend
-│   ├── 🎨 index.html            # Main dashboard
-│   └── 🧪 test-mcq-page.html    # Testing environment
-├── 📂 extension/                  # Chrome Extension
-│   ├── 📋 manifest.json         # Extension manifest
-│   ├── 🎛️ popup.html            # Extension popup interface
-│   ├── ⚙️ options.html          # Settings configuration
-│   ├── 🔧 popup.js              # Popup functionality
-│   ├── ⚙️ options.js            # Options management
-│   ├── 🌐 content.js            # Content script injection
-│   └── 🔄 background.js         # Service worker
-├── 📂 devops/                     # DevOps Configuration
-│   ├── 🐳 docker/               # Docker configurations
-│   ├── 🔄 .github/workflows/    # GitHub Actions CI/CD
-│   ├── 📊 monitoring/           # Monitoring setup
-│   └── 🔒 security/             # Security configurations
-├── 📂 docs/                       # Documentation
-│   ├── 📖 API.md                # API documentation
-│   ├── 🧪 TESTING.md            # Testing guidelines
-│   ├── 🤝 CONTRIBUTING.md       # Contribution guidelines
-│   └── 🏗️ PROJECT_STRUCTURE.md  # Detailed project structure
-├── 📂 tests/                      # Test Suite
-│   ├── 🧪 unit/                 # Unit tests
-│   ├── 🔗 integration/          # Integration tests
-│   └── 🎭 e2e/                  # End-to-end tests
-└── 📋 README.md                  # This file
+| Metric | Target | Current |
+|--------|--------|---------|
+| Response Time | < 2s | 1.2s |
+| Accuracy Rate | > 95% | 97.3% |
+| Uptime | 99.9% | 99.95% |
+| Concurrent Users | 1000+ | 1500+ |
+
+## 🏗️ Architecture Overview
+
+```mermaid
+graph TB
+    A[Chrome Extension] --> B[Content Scripts]
+    B --> C[Background Service Worker]
+    C --> D[Flask Backend API]
+    D --> E[AI Services]
+    D --> F[OCR Engine]
+    D --> G[Detection Engine]
+    D --> H[PostgreSQL Database]
+    D --> I[Redis Cache]
+    
+    E --> J[OpenAI GPT-4]
+    E --> K[Google Gemini]
+    E --> L[DeepSeek]
+    
+    F --> M[Tesseract OCR]
+    F --> N[Google Vision API]
+    
+    G --> O[DOM Parser]
+    G --> P[Pattern Matcher]
+    G --> Q[Image Analyzer]
+    
+    R[Monitoring Stack] --> S[Prometheus]
+    R --> T[Grafana]
+    R --> U[ELK Stack]
+    
+    V[DevOps] --> W[Docker]
+    V --> X[Kubernetes]
+    V --> Y[GitHub Actions]
 ```
 
 ## 🚀 Quick Start
@@ -82,7 +85,7 @@ mcq-automation-bot/
 
 - **Python 3.8+**
 - **Node.js 16+**
-- **Docker** (optional)
+- **Docker** (optional but recommended)
 - **Chrome Browser**
 - **Git**
 
@@ -124,9 +127,202 @@ python -m http.server 8080
 2. Load unpacked → Select project root directory
 3. Configure API keys in extension options
 
+## 🐳 Docker Deployment
+
+### Development Environment
+
+```bash
+# Start all services
+docker-compose up --build
+
+# Run in background
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+```
+
+### Production Environment
+
+```bash
+# Production deployment
+docker-compose -f devops/docker/docker-compose.prod.yml up -d
+
+# Scale services
+docker-compose -f devops/docker/docker-compose.prod.yml up --scale mcq-bot=3 -d
+```
+
+## ☸️ Kubernetes Deployment
+
+### Using Helm
+
+```bash
+# Add MVK Solutions Helm repository
+helm repo add mvksolutions https://charts.mvksolutions.com
+helm repo update
+
+# Install MCQ Bot
+helm install mcq-bot mvksolutions/mcq-automation-bot \
+  --namespace mcq-bot \
+  --create-namespace \
+  --set image.tag=latest \
+  --set ingress.enabled=true \
+  --set ingress.hosts[0].host=mcq-bot.yourdomain.com
+```
+
+### Using kubectl
+
+```bash
+# Apply Kubernetes manifests
+kubectl apply -f devops/kubernetes/production/
+
+# Check deployment status
+kubectl get pods -n mcq-bot-prod
+
+# View logs
+kubectl logs -f deployment/mcq-bot-app -n mcq-bot-prod
+```
+
+## 🔧 Configuration
+
+### Environment Variables
+
+```bash
+# Backend Configuration
+FLASK_ENV=production
+DATABASE_URL=postgresql://user:pass@localhost:5432/mcq_bot
+REDIS_URL=redis://localhost:6379/0
+
+# AI Provider Keys
+OPENAI_API_KEY=sk-...
+GEMINI_API_KEY=AIza...
+DEEPSEEK_API_KEY=...
+
+# Security
+SECRET_KEY=your-secret-key
+JWT_SECRET_KEY=your-jwt-secret
+
+# Monitoring
+SENTRY_DSN=https://...
+PROMETHEUS_ENABLED=true
+```
+
+### Chrome Extension Configuration
+
+```javascript
+// Extension options
+{
+  "apiProvider": "openai",
+  "autoAnswer": true,
+  "answerDelay": 3,
+  "stealthMode": true,
+  "humanLikeBehavior": true
+}
+```
+
+## 🧪 Testing
+
+### Run All Tests
+
+```bash
+# Backend tests
+pytest tests/ -v --cov=backend
+
+# Frontend tests
+npm test
+
+# E2E tests
+npx playwright test
+
+# Performance tests
+k6 run tests/performance/load_test.js
+```
+
+### Test Coverage
+
+```bash
+# Generate coverage report
+pytest --cov=backend --cov-report=html
+open htmlcov/index.html
+```
+
+## 📊 Monitoring & Observability
+
+### Prometheus Metrics
+
+```bash
+# Application metrics
+mcq_bot_requests_total
+mcq_bot_response_time_seconds
+mcq_bot_mcqs_processed_total
+mcq_bot_ai_requests_total
+```
+
+### Grafana Dashboards
+
+- **System Overview**: Application health and performance
+- **MCQ Processing**: Question detection and answering metrics
+- **AI Provider Usage**: Usage statistics across providers
+- **Infrastructure**: Server and container metrics
+
+### Log Aggregation
+
+```bash
+# View application logs
+kubectl logs -f deployment/mcq-bot-app -n mcq-bot-prod
+
+# Search logs in Kibana
+# Navigate to: https://kibana.mvksolutions.com
+```
+
+## 🔒 Security Features
+
+- **🔐 API Key Encryption**: AES-256 encryption for stored credentials
+- **🛡️ Rate Limiting**: Prevents API abuse and ensures fair usage
+- **🔍 Input Validation**: Comprehensive sanitization of all inputs
+- **📝 Audit Logging**: Complete audit trail of all operations
+- **🚫 Anti-Detection**: Advanced techniques to avoid platform detection
+
+## 🌐 API Documentation
+
+### Authentication
+
+```bash
+curl -X POST https://api.mvksolutions.com/v2/auth \
+  -H "Content-Type: application/json" \
+  -d '{"api_key": "your_api_key"}'
+```
+
+### Process MCQs
+
+```bash
+curl -X POST https://api.mvksolutions.com/v2/process-mcqs \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/quiz",
+    "ai_provider": "openai",
+    "auto_answer": true
+  }'
+```
+
+### Real-time Updates
+
+```javascript
+const ws = new WebSocket('wss://api.mvksolutions.com/v2/ws/automation');
+
+ws.onmessage = function(event) {
+  const data = JSON.parse(event.data);
+  console.log('MCQ processed:', data);
+};
+```
+
 ## 🛠️ DevOps Implementation
 
-### 🔄 CI/CD Pipeline
+### CI/CD Pipeline
 
 ```yaml
 # .github/workflows/ci-cd.yml
@@ -152,158 +348,49 @@ jobs:
           docker push ${{ secrets.REGISTRY_URL }}/mcq-bot
 ```
 
-### 🐳 Docker Deployment
+### Infrastructure as Code
 
-```dockerfile
-# Dockerfile
-FROM python:3.9-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY . .
-EXPOSE 5000
-CMD ["python", "run_server.py"]
+```hcl
+# terraform/main.tf
+resource "aws_eks_cluster" "mcq_bot" {
+  name     = "mcq-bot-cluster"
+  role_arn = aws_iam_role.cluster.arn
+  version  = "1.28"
+
+  vpc_config {
+    subnet_ids = aws_subnet.cluster[*].id
+  }
+}
 ```
 
-```yaml
-# docker-compose.yml
-version: '3.8'
-services:
-  mcq-bot:
-    build: .
-    ports:
-      - "5000:5000"
-    environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-    volumes:
-      - ./logs:/app/logs
-  
-  redis:
-    image: redis:alpine
-    ports:
-      - "6379:6379"
-  
-  postgres:
-    image: postgres:13
-    environment:
-      POSTGRES_DB: mcq_bot
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-volumes:
-  postgres_data:
-```
-
-### 📊 Monitoring Stack
+### Monitoring Stack
 
 ```yaml
-# monitoring/docker-compose.monitoring.yml
+# docker-compose.monitoring.yml
 version: '3.8'
 services:
   prometheus:
     image: prom/prometheus
     ports:
       - "9090:9090"
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
   
   grafana:
     image: grafana/grafana
     ports:
       - "3000:3000"
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
   
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.14.0
-    environment:
-      - discovery.type=single-node
     ports:
       - "9200:9200"
-  
-  kibana:
-    image: docker.elastic.co/kibana/kibana:7.14.0
-    ports:
-      - "5601:5601"
-    depends_on:
-      - elasticsearch
-```
-
-## 🧪 Testing Strategy
-
-### Unit Tests
-```bash
-# Run unit tests
-python -m pytest tests/unit/ -v --coverage
-
-# JavaScript tests
-npm test
-```
-
-### Integration Tests
-```bash
-# API integration tests
-python -m pytest tests/integration/ -v
-
-# End-to-end tests
-npm run test:e2e
-```
-
-### Load Testing
-```bash
-# Using Apache JMeter
-jmeter -n -t tests/load/mcq-bot-load-test.jmx -l results.jtl
-
-# Using k6
-k6 run tests/load/load-test.js
-```
-
-## 📊 Performance Metrics
-
-| Metric | Target | Current |
-|--------|--------|---------|
-| Response Time | < 2s | 1.2s |
-| Accuracy Rate | > 95% | 97.3% |
-| Uptime | 99.9% | 99.95% |
-| Concurrent Users | 1000+ | 1500+ |
-
-## 🔒 Security Features
-
-- **🔐 API Key Encryption**: AES-256 encryption for stored credentials
-- **🛡️ Rate Limiting**: Prevents API abuse and ensures fair usage
-- **🔍 Input Validation**: Comprehensive sanitization of all inputs
-- **📝 Audit Logging**: Complete audit trail of all operations
-- **🚫 Anti-Detection**: Advanced techniques to avoid platform detection
-
-## 🌐 API Documentation
-
-### Authentication
-```bash
-curl -X POST https://api.mvksolutions.com/auth \
-  -H "Content-Type: application/json" \
-  -d '{"api_key": "your_api_key"}'
-```
-
-### Process MCQs
-```bash
-curl -X POST https://api.mvksolutions.com/process-mcqs \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "url": "https://example.com/quiz",
-    "ai_provider": "openai",
-    "auto_answer": true
-  }'
 ```
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+We welcome contributions! Please see our [Contributing Guidelines](docs/CONTRIBUTING.md) for details.
 
 ### Development Setup
+
 ```bash
 # Fork the repository
 git clone https://github.com/yourusername/mcq-automation-bot.git

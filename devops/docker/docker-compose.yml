@@ -1,0 +1,251 @@
+# Docker Compose for Advanced AI MCQ Bot Development Environment
+# Built by MVK Solutions
+
+version: '3.8'
+
+services:
+  # Main Application
+  mcq-bot:
+    build:
+      context: ../..
+      dockerfile: devops/docker/Dockerfile
+    container_name: mcq-bot-app
+    ports:
+      - "5000:5000"
+      - "8080:8080"
+    environment:
+      - FLASK_ENV=development
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/mcq_bot_dev
+      - REDIS_URL=redis://redis:6379/0
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+    volumes:
+      - ../../backend:/app/backend
+      - ../../frontend:/app/frontend
+      - ../../logs:/app/logs
+      - ../../data:/app/data
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - mcq-bot-network
+    restart: unless-stopped
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:13-alpine
+    container_name: mcq-bot-postgres
+    environment:
+      - POSTGRES_DB=mcq_bot_dev
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - mcq-bot-network
+    restart: unless-stopped
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: mcq-bot-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - mcq-bot-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: mcq-bot-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ../nginx/ssl:/etc/nginx/ssl
+      - ../../frontend:/usr/share/nginx/html
+    depends_on:
+      - mcq-bot
+    networks:
+      - mcq-bot-network
+    restart: unless-stopped
+
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: mcq-bot-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ../monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - mcq-bot-network
+    restart: unless-stopped
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: mcq-bot-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ../monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ../monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - prometheus
+    networks:
+      - mcq-bot-network
+    restart: unless-stopped
+
+  # Elasticsearch for Logging
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.14.0
+    container_name: mcq-bot-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - mcq-bot-network
+    restart: unless-stopped
+
+  # Kibana for Log Visualization
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.14.0
+    container_name: mcq-bot-kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    networks:
+      - mcq-bot-network
+    restart: unless-stopped
+
+  # Logstash for Log Processing
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.14.0
+    container_name: mcq-bot-logstash
+    volumes:
+      - ../monitoring/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+      - ../../logs:/app/logs:ro
+    depends_on:
+      - elasticsearch
+    networks:
+      - mcq-bot-network
+    restart: unless-stopped
+
+  # Jaeger for Distributed Tracing
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: mcq-bot-jaeger
+    ports:
+      - "16686:16686"
+      - "14268:14268"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - mcq-bot-network
+    restart: unless-stopped
+
+  # MinIO for Object Storage
+  minio:
+    image: minio/minio:latest
+    container_name: mcq-bot-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin123
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - mcq-bot-network
+    restart: unless-stopped
+
+  # Selenium Grid Hub
+  selenium-hub:
+    image: selenium/hub:4.0.0
+    container_name: mcq-bot-selenium-hub
+    ports:
+      - "4444:4444"
+    networks:
+      - mcq-bot-network
+    restart: unless-stopped
+
+  # Chrome Node for Selenium
+  chrome-node:
+    image: selenium/node-chrome:4.0.0
+    container_name: mcq-bot-chrome-node
+    environment:
+      - HUB_HOST=selenium-hub
+      - HUB_PORT=4444
+    depends_on:
+      - selenium-hub
+    networks:
+      - mcq-bot-network
+    restart: unless-stopped
+
+  # Firefox Node for Selenium
+  firefox-node:
+    image: selenium/node-firefox:4.0.0
+    container_name: mcq-bot-firefox-node
+    environment:
+      - HUB_HOST=selenium-hub
+      - HUB_PORT=4444
+    depends_on:
+      - selenium-hub
+    networks:
+      - mcq-bot-network
+    restart: unless-stopped
+
+# Networks
+networks:
+  mcq-bot-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# Volumes
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+  minio_data:
+    driver: local

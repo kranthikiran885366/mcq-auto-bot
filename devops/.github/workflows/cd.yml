@@ -1,0 +1,507 @@
+# Continuous Deployment Pipeline for Advanced AI MCQ Bot
+# Built by MVK Solutions
+
+name: 🚀 Continuous Deployment
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  workflow_run:
+    workflows: ["🔄 Continuous Integration"]
+    types: [completed]
+    branches: [ main ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: mvksolutions/mcq-automation-bot
+  PYTHON_VERSION: '3.9'
+  NODE_VERSION: '16'
+
+jobs:
+  # Build and Push Docker Images
+  build-and-push:
+    name: 🏗️ Build & Push Images
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'push'
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+    
+    steps:
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v4
+
+    - name: 🔧 Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: 🔐 Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: 🏷️ Extract Metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: 🏗️ Build and Push Docker Image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./devops/docker/Dockerfile
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
+          VCS_REF=${{ github.sha }}
+          VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
+
+    - name: 🔍 Scan Image for Vulnerabilities
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: 📊 Upload Trivy Results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  # Deploy to Staging
+  deploy-staging:
+    name: 🧪 Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    environment:
+      name: staging
+      url: https://staging.mcq-bot.mvksolutions.com
+    
+    steps:
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v4
+
+    - name: 🔧 Setup Kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+
+    - name: 🔐 Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
+    - name: 🔧 Update Kubeconfig
+      run: |
+        aws eks update-kubeconfig --region us-east-1 --name mcq-bot-staging
+
+    - name: 🚀 Deploy to Staging
+      run: |
+        # Update image tag in Kubernetes manifests
+        sed -i "s|IMAGE_TAG|${{ needs.build-and-push.outputs.image-tag }}|g" devops/kubernetes/staging/
+        
+        # Apply Kubernetes manifests
+        kubectl apply -f devops/kubernetes/staging/
+        
+        # Wait for deployment to complete
+        kubectl rollout status deployment/mcq-bot-app -n staging --timeout=600s
+
+    - name: 🧪 Run Smoke Tests
+      run: |
+        # Wait for service to be ready
+        sleep 60
+        
+        # Run basic health checks
+        curl -f https://staging.mcq-bot.mvksolutions.com/api/health || exit 1
+        
+        # Run smoke tests
+        python tests/smoke/staging_smoke_tests.py
+
+    - name: 📊 Run Performance Tests
+      run: |
+        # Install k6
+        sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+        echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+        sudo apt-get update
+        sudo apt-get install k6
+        
+        # Run performance tests against staging
+        k6 run tests/performance/staging_load_test.js
+
+  # Security Scanning
+  security-scan:
+    name: 🔒 Security Scan
+    runs-on: ubuntu-latest
+    needs: [deploy-staging]
+    
+    steps:
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v4
+
+    - name: 🔍 Run OWASP ZAP Full Scan
+      uses: zaproxy/action-full-scan@v0.7.0
+      with:
+        target: 'https://staging.mcq-bot.mvksolutions.com'
+        rules_file_name: '.zap/rules.tsv'
+        cmd_options: '-a'
+
+    - name: 🛡️ Run Nuclei Security Scan
+      uses: projectdiscovery/nuclei-action@main
+      with:
+        target: 'https://staging.mcq-bot.mvksolutions.com'
+        github-report: true
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  # Deploy to Production
+  deploy-production:
+    name: 🌟 Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, security-scan]
+    environment:
+      name: production
+      url: https://mcq-bot.mvksolutions.com
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v4
+
+    - name: 🔧 Setup Kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+
+    - name: 🔐 Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
+    - name: 🔧 Update Kubeconfig
+      run: |
+        aws eks update-kubeconfig --region us-east-1 --name mcq-bot-production
+
+    - name: 💾 Backup Database
+      run: |
+        # Create database backup before deployment
+        kubectl create job --from=cronjob/database-backup backup-pre-deploy-$(date +%Y%m%d%H%M%S) -n production
+
+    - name: 🚀 Deploy to Production (Blue-Green)
+      run: |
+        # Update image tag in Kubernetes manifests
+        sed -i "s|IMAGE_TAG|${{ needs.build-and-push.outputs.image-tag }}|g" devops/kubernetes/production/
+        
+        # Deploy to green environment
+        kubectl apply -f devops/kubernetes/production/ -l environment=green
+        
+        # Wait for green deployment to be ready
+        kubectl rollout status deployment/mcq-bot-app-green -n production --timeout=600s
+        
+        # Run health checks on green environment
+        kubectl port-forward service/mcq-bot-service-green 8080:80 -n production &
+        sleep 30
+        curl -f http://localhost:8080/api/health || exit 1
+        
+        # Switch traffic to green environment
+        kubectl patch service mcq-bot-service -n production -p '{"spec":{"selector":{"environment":"green"}}}'
+        
+        # Wait for traffic switch
+        sleep 60
+        
+        # Verify production health
+        curl -f https://mcq-bot.mvksolutions.com/api/health || exit 1
+        
+        # Scale down blue environment
+        kubectl scale deployment mcq-bot-app-blue --replicas=0 -n production
+
+    - name: 🧪 Run Production Smoke Tests
+      run: |
+        # Run comprehensive smoke tests
+        python tests/smoke/production_smoke_tests.py
+        
+        # Run API tests
+        python tests/api/production_api_tests.py
+
+    - name: 📊 Update Monitoring
+      run: |
+        # Update Grafana dashboards
+        curl -X POST \
+          -H "Authorization: Bearer ${{ secrets.GRAFANA_API_KEY }}" \
+          -H "Content-Type: application/json" \
+          -d @devops/monitoring/grafana/production-dashboard.json \
+          https://grafana.mvksolutions.com/api/dashboards/db
+        
+        # Create deployment annotation in Grafana
+        curl -X POST \
+          -H "Authorization: Bearer ${{ secrets.GRAFANA_API_KEY }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "text": "Production deployment: ${{ github.sha }}",
+            "tags": ["deployment", "production"],
+            "time": '$(date +%s000)'
+          }' \
+          https://grafana.mvksolutions.com/api/annotations
+
+  # Deploy Chrome Extension
+  deploy-extension:
+    name: 🧩 Deploy Chrome Extension
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v4
+
+    - name: 🟢 Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+
+    - name: 📦 Install Dependencies
+      run: npm ci
+
+    - name: 🏗️ Build Extension
+      run: |
+        # Update version in manifest.json
+        VERSION=${GITHUB_REF#refs/tags/v}
+        sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" manifest.json
+        
+        # Build extension package
+        zip -r mcq-automation-bot-extension.zip . \
+          -x "*.git*" "node_modules/*" "tests/*" "devops/*" "backend/*" "docs/*"
+
+    - name: 🚀 Upload to Chrome Web Store
+      uses: mnao305/chrome-extension-upload@v4.0.1
+      with:
+        file-path: mcq-automation-bot-extension.zip
+        extension-id: ${{ secrets.CHROME_EXTENSION_ID }}
+        client-id: ${{ secrets.CHROME_CLIENT_ID }}
+        client-secret: ${{ secrets.CHROME_CLIENT_SECRET }}
+        refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}
+
+    - name: 📦 Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: mcq-automation-bot-extension.zip
+        generate_release_notes: true
+        draft: false
+        prerelease: false
+
+  # Update Documentation
+  update-docs:
+    name: 📚 Update Documentation
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    
+    steps:
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v4
+
+    - name: 🐍 Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: 📚 Generate API Documentation
+      run: |
+        pip install -r backend/requirements.txt
+        pip install sphinx sphinx-rtd-theme
+        
+        # Generate API docs
+        cd docs
+        sphinx-build -b html . _build/html
+
+    - name: 🚀 Deploy Documentation
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs/_build/html
+        publish_branch: gh-pages
+
+  # Rollback on Failure
+  rollback:
+    name: 🔄 Rollback on Failure
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    if: failure()
+    
+    steps:
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v4
+
+    - name: 🔧 Setup Kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+
+    - name: 🔐 Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
+    - name: 🔧 Update Kubeconfig
+      run: |
+        aws eks update-kubeconfig --region us-east-1 --name mcq-bot-production
+
+    - name: 🔄 Rollback to Previous Version
+      run: |
+        # Switch traffic back to blue environment
+        kubectl patch service mcq-bot-service -n production -p '{"spec":{"selector":{"environment":"blue"}}}'
+        
+        # Scale up blue environment
+        kubectl scale deployment mcq-bot-app-blue --replicas=3 -n production
+        
+        # Wait for rollback to complete
+        kubectl rollout status deployment/mcq-bot-app-blue -n production --timeout=300s
+        
+        # Verify rollback
+        curl -f https://mcq-bot.mvksolutions.com/api/health || exit 1
+
+    - name: 🚨 Send Rollback Notification
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        text: '🔄 Production deployment failed and was rolled back for ${{ github.ref }}'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # Post-Deployment Tests
+  post-deployment:
+    name: 🧪 Post-Deployment Tests
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    
+    steps:
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v4
+
+    - name: 🧪 Run End-to-End Tests
+      run: |
+        # Install Playwright
+        npm install -g @playwright/test
+        npx playwright install --with-deps
+        
+        # Run E2E tests against production
+        PLAYWRIGHT_BASE_URL=https://mcq-bot.mvksolutions.com npx playwright test tests/e2e/production/
+
+    - name: 📊 Run Load Tests
+      run: |
+        # Install k6
+        sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+        echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+        sudo apt-get update
+        sudo apt-get install k6
+        
+        # Run production load tests
+        k6 run tests/performance/production_load_test.js
+
+    - name: 🔍 Monitor Application Health
+      run: |
+        # Monitor for 10 minutes after deployment
+        for i in {1..20}; do
+          echo "Health check $i/20"
+          curl -f https://mcq-bot.mvksolutions.com/api/health || exit 1
+          sleep 30
+        done
+
+  # Notification
+  notify-success:
+    name: 📢 Notify Success
+    runs-on: ubuntu-latest
+    needs: [deploy-production, deploy-extension, update-docs, post-deployment]
+    if: success()
+    
+    steps:
+    - name: 📢 Send Success Notification
+      uses: 8398a7/action-slack@v3
+      with:
+        status: success
+        text: |
+          🎉 Deployment completed successfully!
+          
+          🚀 Production: https://mcq-bot.mvksolutions.com
+          📚 Documentation: https://docs.mvksolutions.com
+          🧩 Chrome Extension: Updated
+          
+          Commit: ${{ github.sha }}
+          Version: ${{ github.ref }}
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+    - name: 📧 Send Email Notification
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: smtp.gmail.com
+        server_port: 587
+        username: ${{ secrets.EMAIL_USERNAME }}
+        password: ${{ secrets.EMAIL_PASSWORD }}
+        subject: '🎉 MCQ Bot Deployment Successful'
+        body: |
+          The Advanced AI MCQ Bot has been successfully deployed to production.
+          
+          Deployment Details:
+          - Commit: ${{ github.sha }}
+          - Version: ${{ github.ref }}
+          - Timestamp: ${{ github.event.head_commit.timestamp }}
+          
+          Production URL: https://mcq-bot.mvksolutions.com
+          
+          Best regards,
+          MVK Solutions DevOps Team
+        to: team@mvksolutions.com
+        from: devops@mvksolutions.com
+
+  # Cleanup
+  cleanup:
+    name: 🧹 Cleanup
+    runs-on: ubuntu-latest
+    needs: [notify-success]
+    if: always()
+    
+    steps:
+    - name: 🧹 Clean up old images
+      run: |
+        # Clean up old container images (keep last 5)
+        echo "Cleaning up old container images..."
+        # This would typically be done via a separate cleanup job
+        
+    - name: 📊 Update Deployment Metrics
+      run: |
+        # Update deployment metrics in monitoring system
+        curl -X POST \
+          -H "Content-Type: application/json" \
+          -d '{
+            "metric": "deployment.success",
+            "value": 1,
+            "timestamp": '$(date +%s)',
+            "tags": {
+              "environment": "production",
+              "version": "${{ github.ref }}",
+              "commit": "${{ github.sha }}"
+            }
+          }' \
+          ${{ secrets.METRICS_ENDPOINT }}

@@ -30,7 +30,9 @@
             'scale-in': 'scaleIn 0.4s ease-out',
             'matrix': 'matrix 20s linear infinite',
             'particle': 'particle 10s linear infinite',
-            'wave': 'wave 3s ease-in-out infinite'
+            'wave': 'wave 3s ease-in-out infinite',
+            'neon-pulse': 'neon-pulse 2s ease-in-out infinite alternate',
+            'cyber-glitch': 'cyber-glitch 0.3s ease-in-out infinite alternate'
           },
           keyframes: {
             float: {
@@ -74,6 +76,24 @@
             wave: {
               '0%, 100%': { transform: 'rotate(0deg)' },
               '50%': { transform: 'rotate(180deg)' }
+            },
+            'neon-pulse': {
+              '0%': { 
+                textShadow: '0 0 5px #ff006e, 0 0 10px #ff006e, 0 0 15px #ff006e',
+                boxShadow: '0 0 5px #ff006e, 0 0 10px #ff006e, 0 0 15px #ff006e'
+              },
+              '100%': { 
+                textShadow: '0 0 10px #ff006e, 0 0 20px #ff006e, 0 0 30px #ff006e',
+                boxShadow: '0 0 10px #ff006e, 0 0 20px #ff006e, 0 0 30px #ff006e'
+              }
+            },
+            'cyber-glitch': {
+              '0%': { transform: 'translate(0)' },
+              '20%': { transform: 'translate(-2px, 2px)' },
+              '40%': { transform: 'translate(-2px, -2px)' },
+              '60%': { transform: 'translate(2px, 2px)' },
+              '80%': { transform: 'translate(2px, -2px)' },
+              '100%': { transform: 'translate(0)' }
             }
           },
           backdropBlur: {
@@ -236,7 +256,7 @@
         0 0 10px #ff006e,
         0 0 15px #ff006e,
         0 0 20px #ff006e;
-      animation: glow 2s ease-in-out infinite alternate;
+      animation: neon-pulse 2s ease-in-out infinite alternate;
     }
 
     .cyber-text {
@@ -247,6 +267,36 @@
       background-clip: text;
       text-transform: uppercase;
       letter-spacing: 2px;
+    }
+
+    .glitch-text {
+      position: relative;
+      color: #fff;
+      font-family: 'Orbitron', monospace;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .glitch-text::before,
+    .glitch-text::after {
+      content: attr(data-text);
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .glitch-text::before {
+      animation: cyber-glitch 0.3s ease-in-out infinite alternate;
+      color: #ff006e;
+      z-index: -1;
+    }
+
+    .glitch-text::after {
+      animation: cyber-glitch 0.3s ease-in-out infinite alternate-reverse;
+      color: #00f5ff;
+      z-index: -2;
     }
 
     /* Hover Effects */
@@ -681,7 +731,7 @@
   
   <div class="relative z-10 min-h-screen flex flex-col">
     <!-- Theme Toggle -->
-    <button id="themeToggle" class="fixed top-8 right-8 w-14 h-14 rounded-full glass-morphism hover-lift hover-glow flex items-center justify-center text-2xl z-50 neon-glow">
+    <button id="themeToggle" class="fixed top-8 right-8 w-14 h-14 rounded-full glass-morphism hover-lift hover-glow flex items-center justify-center text-2xl z-50 animate-glow">
       🌙
     </button>
     
@@ -701,7 +751,7 @@
       
       <!-- Main Header -->
       <div class="glass-morphism rounded-3xl p-6 mb-8 flex items-center hover-lift animate-scale-in">
-        <img src="icons/icon48.png" alt="Logo" class="w-16 h-16 mr-6 rounded-2xl shadow-lg floating-animation">
+        <img src="icons/icon48.png" alt="Logo" class="w-16 h-16 mr-6 rounded-2xl shadow-lg animate-float">
         <h1 class="text-3xl font-bold text-white text-shadow cyber-text">🤖 Advanced AI MCQ Bot Settings</h1>
       </div>
       
@@ -1133,6 +1183,23 @@ Correct answer:</textarea>
         hideLoading();
         showNotification('Settings saved and synced with backend!', 'success');
       }, 1500);
+    });
+
+    // Add floating animation to cards
+    document.querySelectorAll('.glass-morphism-dark').forEach((card, index) => {
+      card.style.animationDelay = `${index * 0.1}s`;
+      card.classList.add('animate-float');
+    });
+
+    // Add glitch effect to cyber text
+    document.querySelectorAll('.cyber-text').forEach(element => {
+      element.setAttribute('data-text', element.textContent);
+      element.classList.add('glitch-text');
+    });
+
+    // Add wave animation to particles
+    document.querySelectorAll('.particle').forEach((particle, index) => {
+      particle.style.animationDelay = `${index * 0.5}s`;
     });
   </script>
 </body>
