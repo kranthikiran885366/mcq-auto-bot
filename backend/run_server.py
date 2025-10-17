@@ -10,7 +10,7 @@ from app import app
 
 def main():
     """Main function to run the server"""
-    print("🤖 Starting MCQ Automation Bot Server...")
+    print("Starting MCQ Automation Bot Server...")
     print("=" * 50)
     print("Backend URL: http://localhost:5000")
     print("Frontend URL: Open frontend/index.html in your browser")
@@ -23,9 +23,9 @@ def main():
         import cv2
         import pytesseract
         import openai
-        print("✅ All required packages are installed")
+        print("[OK] All required packages are installed")
     except ImportError as e:
-        print(f"❌ Missing required package: {e}")
+        print(f"[ERROR] Missing required package: {e}")
         print("Please run: pip install -r requirements.txt")
         sys.exit(1)
     
@@ -41,9 +41,9 @@ def main():
         
         driver = webdriver.Chrome(options=options)
         driver.quit()
-        print("✅ ChromeDriver is available")
+        print("[OK] ChromeDriver is available")
     except Exception as e:
-        print(f"❌ ChromeDriver not found: {e}")
+        print(f"[ERROR] ChromeDriver not found: {e}")
         print("Please install ChromeDriver: https://chromedriver.chromium.org/")
         print("Or use: pip install webdriver-manager")
     
@@ -56,9 +56,9 @@ def main():
             threaded=True
         )
     except KeyboardInterrupt:
-        print("\n🛑 Server stopped by user")
+        print("\nServer stopped by user")
     except Exception as e:
-        print(f"❌ Server error: {e}")
+        print(f"[ERROR] Server error: {e}")
 
 if __name__ == "__main__":
     main()

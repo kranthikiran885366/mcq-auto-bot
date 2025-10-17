@@ -685,6 +685,9 @@ bot = MCQAutomationBot()
 def index():
     return render_template('index.html')
 
+
+
+
 @app.route('/api/setup', methods=['POST'])
 def setup_bot():
     """Setup the automation bot"""
@@ -1510,6 +1513,12 @@ def close_bot():
         logger.error(f'Unexpected error in /api/ocr-detect: {e}')
         return jsonify({'success': False, 'error': f'Unexpected error: {e}'})
 
+
+@app.route('/api/health', methods=['GET'])
+def health():
+    """Simple health check endpoint used by container healthchecks and PaaS platforms"""
+    return jsonify({'ok': True}), 200
+
 @app.route('/api/vision-answer', methods=['POST'])
 def vision_answer():
     data = request.json
@@ -1642,4 +1651,7 @@ def deskew(image):
     return rotated
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    import os
+    port = int(os.environ.get('PORT', 5000))
+    debug = os.environ.get('FLASK_ENV') == 'development'
+    app.run(debug=debug, host='0.0.0.0', port=port)

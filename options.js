@@ -302,7 +302,8 @@ document.addEventListener("DOMContentLoaded", () => {
     })
 
     // Sync with backend
-    fetch('http://localhost:5000/api/setup', {
+    const API_BASE = window.APP_CONFIG ? window.APP_CONFIG.API_BASE : 'https://mcq-bot-backend.railway.app/api';
+    fetch(`${API_BASE}/setup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

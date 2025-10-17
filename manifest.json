@@ -3,8 +3,19 @@
   "name": "Advanced AI MCQ Answering Bot",
   "version": "1.0.0",
   "description": "Automatically detects and answers any type of MCQ using AI on any website",
-  "permissions": ["activeTab", "storage", "scripting", "tabs", "webNavigation", "tabCapture"],
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting",
+    "tabs",
+    "webNavigation",
+    "tabCapture",
+    "declarativeNetRequest"
+  ],
   "host_permissions": ["<all_urls>"],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_icon": {

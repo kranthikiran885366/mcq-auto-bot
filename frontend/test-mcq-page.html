@@ -4,9 +4,325 @@
   <meta charset="UTF-8">
   <title>MCQ Bot Test Page</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 2em; }
-    .mcq-block { margin-bottom: 2em; padding: 1em; border: 1px solid #ccc; border-radius: 8px; }
+    body { 
+      font-family: Arial, sans-serif; 
+      margin: 2em; 
+      background: #f5f5f5;
+      transition: all 0.3s ease;
+    }
+    
+    body.dark {
+      background: #1a1a1a;
+      color: #ffffff;
+    }
+    
+    .mcq-block { 
+      margin-bottom: 2em; 
+      padding: 1em; 
+      border: 1px solid #ccc; 
+      border-radius: 8px; 
+      background: white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .dark .mcq-block {
+      background: #2a2a2a;
+      border-color: #444;
+      color: #ffffff;
+    }
+    
     .custom-mcq { background: #f9f9f9; }
+    .dark .custom-mcq { background: #333; }
+    
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 30px;
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .dark .header {
+      background: #2a2a2a;
+      color: #ffffff;
+    }
+    
+    .logo {
+      width: 48px;
+      height: 48px;
+    }
+    
+    .container {
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+    }
+    
+    .dark .container {
+      background: #2a2a2a;
+      color: #ffffff;
+    }
+    
+    .theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      font-size: 20px;
+      cursor: pointer;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      transition: all 0.3s ease;
+      z-index: 1000;
+    }
+    
+    .theme-toggle:hover {
+      transform: scale(1.1);
+    }
+    
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+    
+    .dark .status {
+      background: #333;
+    }
+    
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      transition: all 0.3s ease;
+    }
+    
+    .status-dot.inactive {
+      background: #dc3545;
+      box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.2);
+    }
+    
+    .status-dot.active {
+      background: #28a745;
+      box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.2);
+    }
+    
+    .status-text {
+      font-weight: 500;
+    }
+    
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 15px;
+      padding: 10px 0;
+    }
+    
+    .toggle-label {
+      font-weight: 500;
+      color: #333;
+    }
+    
+    .dark .toggle-label {
+      color: #ffffff;
+    }
+    
+    .toggle {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 34px;
+    }
+    
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: 0.4s;
+      border-radius: 34px;
+    }
+    
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 26px;
+      width: 26px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: 0.4s;
+      border-radius: 50%;
+    }
+    
+    input:checked + .slider {
+      background-color: #667eea;
+    }
+    
+    input:focus + .slider {
+      box-shadow: 0 0 1px #667eea;
+    }
+    
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+    
+    .mode-selector {
+      margin-bottom: 20px;
+    }
+    
+    .mode-selector select {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e1e5e9;
+      border-radius: 8px;
+      font-size: 14px;
+      background: white;
+      cursor: pointer;
+    }
+    
+    .dark .mode-selector select {
+      background: #333;
+      border-color: #555;
+      color: #ffffff;
+    }
+    
+    .button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-right: 10px;
+      margin-bottom: 10px;
+    }
+    
+    .button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    
+    .button.secondary {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    
+    .mcq-info {
+      background: #e8f5e8;
+      border: 1px solid #4caf50;
+      border-radius: 8px;
+      padding: 15px;
+      margin: 15px 0;
+    }
+    
+    .dark .mcq-info {
+      background: #1a3d1a;
+      border-color: #4caf50;
+    }
+    
+    .api-status {
+      padding: 10px 15px;
+      border-radius: 8px;
+      font-weight: 500;
+      margin: 15px 0;
+      text-align: center;
+    }
+    
+    .api-status.disconnected {
+      background: #ffebee;
+      color: #c62828;
+      border: 1px solid #ef5350;
+    }
+    
+    .api-status.connected {
+      background: #e8f5e8;
+      color: #2e7d32;
+      border: 1px solid #4caf50;
+    }
+    
+    .dark .api-status.disconnected {
+      background: #3d1a1a;
+    }
+    
+    .dark .api-status.connected {
+      background: #1a3d1a;
+    }
+    
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin: 20px 0;
+    }
+    
+    .stats-item {
+      text-align: center;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border: 1px solid #e9ecef;
+    }
+    
+    .dark .stats-item {
+      background: #333;
+      border-color: #555;
+    }
+    
+    .stats-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 5px;
+    }
+    
+    .settings-link {
+      display: inline-block;
+      margin: 20px 0;
+      padding: 10px 20px;
+      background: #17a2b8;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+    
+    .settings-link:hover {
+      background: #138496;
+      transform: translateY(-2px);
+    }
   </style>
 </head>
 <body>
@@ -84,6 +400,132 @@
   <button id="fullscreen-btn" style="margin-bottom:1em;">Enter Fullscreen Mode (for proctoring test)</button>
   <div style="color:#888; font-size:0.95em; margin-bottom:2em;">Use this button to test the bot's fullscreen detection and safe mode behavior.</div>
   <script>
+    // Theme toggle functionality
+    const themeToggle = document.getElementById('themeToggle');
+    const body = document.body;
+    
+    // Load saved theme
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    if (savedTheme === 'dark') {
+      body.classList.add('dark');
+      themeToggle.textContent = '☀️';
+    }
+    
+    themeToggle.addEventListener('click', () => {
+      body.classList.toggle('dark');
+      const isDark = body.classList.contains('dark');
+      themeToggle.textContent = isDark ? '☀️' : '🌙';
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    });
+    
+    // Bot toggle functionality
+    const botToggle = document.getElementById('botToggle');
+    const statusDot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+    const apiStatus = document.getElementById('apiStatus');
+    
+    botToggle.addEventListener('change', function() {
+      if (this.checked) {
+        statusDot.classList.remove('inactive');
+        statusDot.classList.add('active');
+        statusText.textContent = 'Bot is active';
+        apiStatus.classList.remove('disconnected');
+        apiStatus.classList.add('connected');
+        apiStatus.textContent = 'API Status: Connected';
+      } else {
+        statusDot.classList.remove('active');
+        statusDot.classList.add('inactive');
+        statusText.textContent = 'Bot is inactive';
+        apiStatus.classList.remove('connected');
+        apiStatus.classList.add('disconnected');
+        apiStatus.textContent = 'API Status: Not Connected';
+      }
+    });
+    
+    // Scan button functionality
+    const scanButton = document.getElementById('scanButton');
+    const mcqsFoundElement = document.getElementById('mcqsFound');
+    
+    scanButton.addEventListener('click', function() {
+      if (!botToggle.checked) {
+        alert('Please enable the bot first!');
+        return;
+      }
+      
+      this.disabled = true;
+      this.textContent = 'Scanning...';
+      
+      // Simulate scanning
+      setTimeout(() => {
+        const mcqCount = document.querySelectorAll('.mcq-block').length;
+        mcqsFoundElement.textContent = mcqCount;
+        this.disabled = false;
+        this.textContent = 'Scan for MCQs';
+        
+        // Show success message
+        const errorMessage = document.getElementById('errorMessage');
+        errorMessage.style.display = 'block';
+        errorMessage.style.color = '#28a745';
+        errorMessage.style.background = '#d4edda';
+        errorMessage.style.borderColor = '#28a745';
+        errorMessage.textContent = `Found ${mcqCount} MCQs on this page!`;
+        
+        setTimeout(() => {
+          errorMessage.style.display = 'none';
+        }, 3000);
+      }, 2000);
+    });
+    
+    // Capture button functionality
+    const captureButton = document.getElementById('captureButton');
+    
+    captureButton.addEventListener('click', function() {
+      if (!botToggle.checked) {
+        alert('Please enable the bot first!');
+        return;
+      }
+      
+      this.disabled = true;
+      this.textContent = 'Capturing...';
+      
+      // Simulate screen capture
+      setTimeout(() => {
+        this.disabled = false;
+        this.textContent = 'Capture Screen';
+        
+        const errorMessage = document.getElementById('errorMessage');
+        errorMessage.style.display = 'block';
+        errorMessage.style.color = '#17a2b8';
+        errorMessage.style.background = '#d1ecf1';
+        errorMessage.style.borderColor = '#17a2b8';
+        errorMessage.textContent = 'Screen captured successfully!';
+        
+        setTimeout(() => {
+          errorMessage.style.display = 'none';
+        }, 3000);
+      }, 1500);
+    });
+    
+    // Auto-answer toggle functionality
+    const autoAnswerToggle = document.getElementById('autoAnswerToggle');
+    const mcqsAnsweredElement = document.getElementById('mcqsAnswered');
+    const accuracyElement = document.getElementById('accuracy');
+    
+    autoAnswerToggle.addEventListener('change', function() {
+      if (this.checked && botToggle.checked) {
+        // Simulate auto-answering
+        setTimeout(() => {
+          const totalMCQs = parseInt(mcqsFoundElement.textContent) || 0;
+          if (totalMCQs > 0) {
+            const answered = Math.floor(totalMCQs * 0.8); // 80% success rate
+            mcqsAnsweredElement.textContent = answered;
+            accuracyElement.textContent = Math.round((answered / totalMCQs) * 100) + '%';
+          }
+        }, 1000);
+      }
+    });
+    
+    // Fullscreen functionality
     document.getElementById('fullscreen-btn').onclick = function() {
       const el = document.body;
       if (el.requestFullscreen) el.requestFullscreen();
@@ -91,6 +533,33 @@
       else if (el.mozRequestFullScreen) el.mozRequestFullScreen();
       else if (el.msRequestFullscreen) el.msRequestFullscreen();
     };
+    
+    // Voice toggle functionality
+    const voiceToggle = document.getElementById('voiceToggle');
+    voiceToggle.addEventListener('change', function() {
+      if (this.checked) {
+        // Simulate voice narration
+        if ('speechSynthesis' in window) {
+          const utterance = new SpeechSynthesisUtterance('Voice narration enabled');
+          speechSynthesis.speak(utterance);
+        }
+      }
+    });
+    
+    // Mode selector functionality
+    const modeSelect = document.getElementById('modeSelect');
+    modeSelect.addEventListener('change', function() {
+      const errorMessage = document.getElementById('errorMessage');
+      errorMessage.style.display = 'block';
+      errorMessage.style.color = '#856404';
+      errorMessage.style.background = '#fff3cd';
+      errorMessage.style.borderColor = '#ffeaa7';
+      errorMessage.textContent = `Switched to ${this.value} mode`;
+      
+      setTimeout(() => {
+        errorMessage.style.display = 'none';
+      }, 2000);
+    });
   </script>
 
   <!-- Standard radio MCQ -->

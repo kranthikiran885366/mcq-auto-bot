@@ -129,5 +129,11 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 # Expose port
 EXPOSE 5000
 
-# Start command
-CMD ["python", "backend/run_server.py"]
+# Copy entrypoint script (it was created as root earlier; ensure ownership)
+USER root
+COPY backend/entrypoint.sh /app/backend/entrypoint.sh
+RUN chmod +x /app/backend/entrypoint.sh && chown appuser:appuser /app/backend/entrypoint.sh
+USER appuser
+
+# Start command via entrypoint (writes Google creds if provided)
+CMD ["/bin/sh", "/app/backend/entrypoint.sh"]

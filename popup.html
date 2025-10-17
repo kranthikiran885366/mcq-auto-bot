@@ -3,740 +3,555 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Advanced AI MCQ Bot - MVK Solutions</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            'mvk-primary': '#667eea',
-            'mvk-secondary': '#764ba2',
-            'mvk-accent': '#f093fb',
-            'mvk-success': '#4facfe',
-            'mvk-warning': '#fa709a',
-            'mvk-dark': '#2c3e50'
-          },
-          animation: {
-            'float': 'float 6s ease-in-out infinite',
-            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-            'bounce-slow': 'bounce 2s infinite',
-            'spin-slow': 'spin 3s linear infinite',
-            'gradient': 'gradient 15s ease infinite',
-            'shimmer': 'shimmer 2s linear infinite',
-            'glow': 'glow 2s ease-in-out infinite alternate',
-            'matrix': 'matrix 20s linear infinite',
-            'neon-pulse': 'neon-pulse 2s ease-in-out infinite alternate'
-          },
-          keyframes: {
-            float: {
-              '0%, 100%': { transform: 'translateY(0px)' },
-              '50%': { transform: 'translateY(-20px)' }
-            },
-            gradient: {
-              '0%, 100%': { backgroundPosition: '0% 50%' },
-              '50%': { backgroundPosition: '100% 50%' }
-            },
-            shimmer: {
-              '0%': { transform: 'translateX(-100%)' },
-              '100%': { transform: 'translateX(100%)' }
-            },
-            glow: {
-              '0%': { boxShadow: '0 0 20px rgba(102, 126, 234, 0.5)' },
-              '100%': { boxShadow: '0 0 30px rgba(102, 126, 234, 0.8)' }
-            },
-            matrix: {
-              '0%': { transform: 'translateY(-100vh)' },
-              '100%': { transform: 'translateY(100vh)' }
-            },
-            'neon-pulse': {
-              '0%': { 
-                textShadow: '0 0 5px #ff006e, 0 0 10px #ff006e, 0 0 15px #ff006e',
-                boxShadow: '0 0 5px #ff006e, 0 0 10px #ff006e, 0 0 15px #ff006e'
-              },
-              '100%': { 
-                textShadow: '0 0 10px #ff006e, 0 0 20px #ff006e, 0 0 30px #ff006e',
-                boxShadow: '0 0 10px #ff006e, 0 0 20px #ff006e, 0 0 30px #ff006e'
-              }
-            }
-          },
-          backdropBlur: {
-            'xs': '2px',
-            '4xl': '72px'
-          },
-          fontFamily: {
-            'inter': ['Inter', 'system-ui', 'sans-serif'],
-            'poppins': ['Poppins', 'system-ui', 'sans-serif'],
-            'orbitron': ['Orbitron', 'monospace']
-          }
-        }
-      }
-    }
-  </script>
+  <title>Advanced AI MCQ Bot</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&display=swap');
-    
-    :root {
-      --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-      --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-      --warning-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-      --dark-gradient: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-      --neon-gradient: linear-gradient(135deg, #ff006e 0%, #8338ec 50%, #3a86ff 100%);
-      --cyber-gradient: linear-gradient(135deg, #00f5ff 0%, #ff00ff 50%, #ffff00 100%);
-      --glass-bg: rgba(255, 255, 255, 0.25);
-      --glass-border: rgba(255, 255, 255, 0.18);
-      --shadow-light: 0 8px 32px rgba(31, 38, 135, 0.37);
-      --shadow-dark: 0 8px 32px rgba(0, 0, 0, 0.3);
-      --shadow-neon: 0 0 50px rgba(255, 0, 110, 0.5);
-      --border-radius: 20px;
-      --transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      --text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
     body {
-      width: 420px;
-      min-height: 700px;
-      font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #fa709a 100%);
-      background-size: 400% 400%;
-      animation: gradient 20s ease infinite;
-      position: relative;
-      overflow-x: hidden;
+      width: 340px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 15px;
+      background-color: #f9f9f9;
+      margin: 0;
     }
-
-    body::before {
-      content: '';
+    .header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 18px;
+      padding-bottom: 12px;
+      border-bottom: 1.5px solid #e5e7eb;
+    }
+    .logo {
+      width: 44px;
+      height: 44px;
+      margin-right: 12px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #22223b;
+      letter-spacing: -0.5px;
+    }
+    .container {
+      background: linear-gradient(135deg, #f8fafc 0%, #e0e7ef 100%);
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1.5px 4px rgba(0,0,0,0.04);
+      padding: 20px;
+      margin-bottom: 20px;
+      transition: background 0.3s, box-shadow 0.3s;
+    }
+    .status {
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .status-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      margin-right: 10px;
+      background: #cbd5e1;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+      transition: background 0.3s;
+    }
+    .status-dot.active {
+      background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);
+      animation: pulse-green 1.2s infinite;
+    }
+    .status-dot.inactive {
+      background: linear-gradient(90deg, #f43f5e 0%, #be123c 100%);
+      animation: pulse-red 1.2s infinite;
+    }
+    @keyframes pulse-green {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(34,197,94,0.1); }
+    }
+    @keyframes pulse-red {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(244,63,94,0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(244,63,94,0.1); }
+    }
+    .status-text {
+      font-size: 14px;
+    }
+    .toggle-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .toggle-label {
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .toggle {
+      position: relative;
+      display: inline-block;
+      width: 52px;
+      height: 28px;
+    }
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
       position: absolute;
+      cursor: pointer;
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
-      background: 
-        radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.4) 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.4) 0%, transparent 50%),
-        radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.3) 0%, transparent 50%),
-        radial-gradient(circle at 60% 60%, rgba(250, 112, 154, 0.3) 0%, transparent 50%);
-      pointer-events: none;
-      animation: float 8s ease-in-out infinite;
+      background: #cbd5e1;
+      transition: background 0.3s;
+      border-radius: 28px;
     }
-
-    /* Matrix Rain Effect */
-    .matrix-rain {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 1;
-      opacity: 0.1;
+    .toggle input:checked + .slider {
+      background: linear-gradient(90deg, #6366f1 0%, #06b6d4 100%);
     }
-
-    .matrix-char {
+    .slider:before {
       position: absolute;
-      color: #00ff00;
-      font-family: 'Orbitron', monospace;
-      font-size: 12px;
-      animation: matrix 20s linear infinite;
-    }
-
-    /* Glass Morphism Variants */
-    .glass-morphism {
-      background: rgba(255, 255, 255, 0.15);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
-    }
-
-    .glass-morphism-strong {
-      background: rgba(255, 255, 255, 0.25);
-      backdrop-filter: blur(30px);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      box-shadow: 0 12px 40px rgba(31, 38, 135, 0.5);
-    }
-
-    .glass-morphism-dark {
-      background: rgba(0, 0, 0, 0.15);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    }
-
-    .glass-morphism-neon {
-      background: rgba(255, 0, 110, 0.1);
-      backdrop-filter: blur(25px);
-      border: 1px solid rgba(255, 0, 110, 0.3);
-      box-shadow: 0 0 50px rgba(255, 0, 110, 0.3);
-    }
-
-    /* Advanced Text Effects */
-    .gradient-text {
-      background: linear-gradient(135deg, #667eea, #764ba2, #f093fb, #4facfe);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      background-size: 300% 300%;
-      animation: gradient 4s ease infinite;
-    }
-
-    .neon-text {
-      color: #fff;
-      text-shadow: 
-        0 0 5px #ff006e,
-        0 0 10px #ff006e,
-        0 0 15px #ff006e,
-        0 0 20px #ff006e;
-      animation: neon-pulse 2s ease-in-out infinite alternate;
-    }
-
-    .cyber-text {
-      font-family: 'Orbitron', monospace;
-      background: linear-gradient(135deg, #00f5ff, #ff00ff, #ffff00);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-    }
-
-    /* Hover Effects */
-    .hover-lift {
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .hover-lift:hover {
-      transform: translateY(-8px) scale(1.02);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-    }
-
-    .hover-glow:hover {
-      box-shadow: 0 0 30px rgba(102, 126, 234, 0.6);
-      border-color: rgba(102, 126, 234, 0.8);
-    }
-
-    .hover-neon:hover {
-      box-shadow: 0 0 50px rgba(255, 0, 110, 0.8);
-      border-color: rgba(255, 0, 110, 1);
-    }
-
-    /* Shimmer Effects */
-    .shimmer-effect {
-      position: relative;
-      overflow: hidden;
-    }
-
-    .shimmer-effect::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-      animation: shimmer 3s infinite;
-    }
-
-    .shimmer-neon::before {
-      background: linear-gradient(90deg, transparent, rgba(255,0,110,0.6), transparent);
-    }
-
-    /* Advanced Button Styles */
-    .btn-advanced {
-      position: relative;
-      overflow: hidden;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border: none;
-      border-radius: 16px;
-      color: white;
-      font-weight: 600;
-      padding: 16px 24px;
-      cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      font-size: 14px;
-      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
-    }
-
-    .btn-advanced::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-      transition: left 0.5s;
-    }
-
-    .btn-advanced:hover::before {
-      left: 100%;
-    }
-
-    .btn-advanced:hover {
-      transform: translateY(-3px) scale(1.02);
-      box-shadow: 0 15px 35px rgba(102, 126, 234, 0.5);
-    }
-
-    .btn-advanced:active {
-      transform: translateY(-1px);
-    }
-
-    .btn-neon {
-      background: linear-gradient(135deg, #ff006e 0%, #8338ec 100%);
-      box-shadow: 0 0 25px rgba(255, 0, 110, 0.5);
-      border: 1px solid rgba(255, 0, 110, 0.5);
-    }
-
-    .btn-neon:hover {
-      box-shadow: 0 0 50px rgba(255, 0, 110, 0.8);
-      border-color: rgba(255, 0, 110, 1);
-    }
-
-    .btn-cyber {
-      background: linear-gradient(135deg, #00f5ff 0%, #ff00ff 100%);
-      box-shadow: 0 0 25px rgba(0, 245, 255, 0.5);
-      border: 1px solid rgba(0, 245, 255, 0.5);
-      font-family: 'Orbitron', monospace;
-    }
-
-    .btn-cyber:hover {
-      box-shadow: 0 0 50px rgba(0, 245, 255, 0.8);
-      border-color: rgba(0, 245, 255, 1);
-    }
-
-    /* Toggle Switch Advanced */
-    .toggle-advanced {
-      position: relative;
-      width: 64px;
-      height: 36px;
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 36px;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .toggle-advanced.active {
-      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-      box-shadow: 0 0 20px rgba(79, 172, 254, 0.5);
-    }
-
-    .toggle-advanced.neon.active {
-      background: linear-gradient(135deg, #ff006e 0%, #8338ec 100%);
-      box-shadow: 0 0 30px rgba(255, 0, 110, 0.8);
-    }
-
-    .toggle-advanced::before {
-      content: '';
-      position: absolute;
-      top: 2px;
-      left: 2px;
-      width: 28px;
-      height: 28px;
-      background: white;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 4px;
+      bottom: 4px;
+      background: #fff;
+      transition: transform 0.3s;
       border-radius: 50%;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.10);
     }
-
-    .toggle-advanced.active::before {
-      transform: translateX(28px);
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+    .toggle input:checked + .slider:before {
+      transform: translateX(24px);
     }
-
-    /* Stats Card Advanced */
-    .stats-card-advanced {
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 20px;
-      padding: 20px;
+    .button {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(90deg, #6366f1 0%, #06b6d4 100%);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(99,102,241,0.08);
+      margin-bottom: 10px;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+    .button:hover {
+      background: linear-gradient(90deg, #4f46e5 0%, #0ea5e9 100%);
+      box-shadow: 0 4px 16px rgba(99,102,241,0.12);
+    }
+    .button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    .button.secondary {
+      background: #f1f5f9;
+      color: #22223b;
+    }
+    .button.secondary:hover {
+      background: #e0e7ef;
+    }
+    .dark-mode .button.secondary {
+      background: #23272f;
+      color: #fff;
+    }
+    .settings-link {
+      display: block;
+      margin-top: 20px;
       text-align: center;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
-      overflow: hidden;
+      color: #3b82f6;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 8px 12px;
+      border-radius: 8px;
+      transition: all 0.2s;
     }
-
-    .stats-card-advanced::before {
-      content: '';
+    #start-auto {
+      width: 100%;
+      padding: 12px 16px;
+      margin: 10px 0;
+      background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 2px 8px rgba(79, 70, 229, 0.2);
+    }
+    #start-auto:hover {
+      background: linear-gradient(90deg, #4338ca 0%, #6d28d9 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    }
+    #start-auto:active {
+      transform: translateY(0);
+    }
+    #start-auto:disabled {
+      background: #e5e7eb;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    
+    #start-auto.active {
+      background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);
+    }
+    
+    #start-auto.active:hover {
+      background: linear-gradient(90deg, #16a34a 0%, #15803d 100%);
+    }
+    .settings-link:hover {
+      color: #6366f1;
+      text-decoration: underline;
+    }
+    .api-status {
+      font-size: 12px;
+      color: #666;
+      margin-top: 10px;
+      text-align: center;
+    }
+    .api-status.connected {
+      color: #4CAF50;
+    }
+    .api-status.disconnected {
+      color: #F44336;
+    }
+    .mode-selector {
+      margin-bottom: 15px;
+    }
+    .mode-selector select {
+      width: 100%;
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+    }
+    .stats {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+      font-size: 12px;
+      color: #666;
+    }
+    .stats-item {
+      text-align: center;
+    }
+    .stats-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #6366f1;
+    }
+    .dark-mode .stats-value {
+      color: #38bdf8;
+    }
+    .theme-toggle {
       position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
-      transform: rotate(45deg);
-      animation: shimmer 3s infinite;
+      top: 15px;
+      right: 15px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 18px;
     }
-
-    .stats-card-advanced:hover {
-      transform: translateY(-8px) scale(1.05);
-      box-shadow: 0 20px 40px rgba(31, 38, 135, 0.3);
-      border-color: rgba(255, 255, 255, 0.4);
+    .dark-mode {
+      background-color: #222;
+      color: #eee;
     }
-
-    .stats-value-advanced {
-      font-size: 32px;
-      font-weight: 800;
-      background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 8px;
-      text-shadow: none;
+    .dark-mode .container {
+      background: linear-gradient(135deg, #23272f 0%, #18181b 100%);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.32), 0 1.5px 4px rgba(0,0,0,0.16);
     }
-
-    /* Company Logo Advanced */
-    .company-logo-advanced {
-      width: 56px;
-      height: 56px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-      border-radius: 16px;
+    .dark-mode h1, .dark-mode .toggle-label {
+      color: #fff;
+    }
+    .dark-mode .button.secondary {
+      background-color: #444;
+      color: #eee;
+    }
+    .mcq-info {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #f5f5f5;
+      border-radius: 4px;
+      font-size: 12px;
+      max-height: 100px;
+      overflow-y: auto;
+    }
+    .dark-mode .mcq-info {
+      background-color: #444;
+    }
+    .mcq-question {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .mcq-answer {
+      color: #4CAF50;
+    }
+    .dark-mode .mcq-answer {
+      color: #8BC34A;
+    }
+    
+    .form-control {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      background: white;
+    }
+    
+    .dark-mode .form-control {
+      background: #333;
+      border-color: #555;
+      color: #fff;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      font-size: 13px;
+    }
+    
+    .status-message {
+      padding: 8px;
+      border-radius: 4px;
+      margin: 10px 0;
+      font-size: 12px;
+      display: none;
+    }
+    
+    .status-message.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+      display: block;
+    }
+    
+    .status-message.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+      display: block;
+    }
+    
+    .status-message.info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+      display: block;
+    }
+    
+    .preview-image {
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin: 10px 0;
+    }
+    
+    .ocr-result {
+      background: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 4px;
+      padding: 10px;
+      font-size: 12px;
+      max-height: 150px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    
+    .dark-mode .ocr-result {
+      background: #2d3748;
+      border-color: #4a5568;
+      color: #e2e8f0;
+    }
+    /* Responsive */
+    @media (max-width: 400px) {
+      .container { padding: 10px; }
+      h1 { font-size: 16px; }
+      .button { font-size: 13px; padding: 10px; }
+    }
+    /* Banner Styles */
+    .banner {
+      width: 100%;
+      background: linear-gradient(90deg, #6366f1 0%, #06b6d4 100%);
+      color: #fff;
+      font-weight: 600;
+      font-size: 13px;
+      padding: 10px 16px 10px 36px;
+      position: relative;
+      text-align: left;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 28px;
-      font-weight: 800;
-      color: white;
-      box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
-      position: relative;
-      overflow: hidden;
-      animation: float 6s ease-in-out infinite;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(99,102,241,0.08);
+      border-bottom-left-radius: 8px;
+      border-bottom-right-radius: 8px;
+      margin-bottom: 10px;
+      animation: fadeIn 0.6s;
     }
-
-    .company-logo-advanced::before {
-      content: '';
+    .banner a {
+      color: #fff;
+      text-decoration: underline;
+      margin-left: 6px;
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .banner .close-btn {
       position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: linear-gradient(45deg, transparent, rgba(255,255,255,0.4), transparent);
-      transform: rotate(45deg);
-      animation: shimmer 4s infinite;
-    }
-
-    /* Status Indicator Advanced */
-    .status-indicator-advanced {
-      position: relative;
-      width: 20px;
-      height: 20px;
+      left: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0,0,0,0.12);
+      border: none;
+      color: #fff;
+      font-size: 16px;
       border-radius: 50%;
-      margin-right: 12px;
+      width: 22px;
+      height: 22px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
     }
-
-    .status-indicator-advanced.active {
-      background: linear-gradient(135deg, #10b981, #34d399);
-      box-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
-      animation: pulse 2s infinite;
-    }
-
-    .status-indicator-advanced.inactive {
-      background: linear-gradient(135deg, #ef4444, #f87171);
-      box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
-      animation: pulse 2s infinite;
-    }
-
-    .status-indicator-advanced::before {
-      content: '';
-      position: absolute;
-      top: -4px;
-      left: -4px;
-      right: -4px;
-      bottom: -4px;
-      border-radius: 50%;
-      background: inherit;
-      opacity: 0.3;
-      animation: pulse 2s infinite;
-    }
-
-    /* Dark Mode */
-    .dark-mode {
-      background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #533483 100%);
-    }
-
-    .dark-mode .glass-morphism {
-      background: rgba(0, 0, 0, 0.25);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .dark-mode .gradient-text {
-      background: linear-gradient(135deg, #60a5fa, #a78bfa, #f472b6);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 4px;
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      border-radius: 4px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-      background: linear-gradient(135deg, #764ba2, #f093fb);
-    }
-
-    /* Responsive Design */
-    @media (max-width: 480px) {
-      body { width: 100vw; min-height: 100vh; }
-      .company-logo-advanced { width: 48px; height: 48px; font-size: 24px; }
-      .stats-value-advanced { font-size: 24px; }
+    .banner .close-btn:hover {
+      background: rgba(0,0,0,0.22);
     }
   </style>
 </head>
-<body class="font-inter bg-gradient-to-br from-mvk-primary via-mvk-secondary to-mvk-accent transition-colors duration-300">
-  <!-- Matrix Rain Effect -->
-  <div class="matrix-rain">
-    <div class="matrix-char" style="left: 5%; animation-delay: 0s;">0</div>
-    <div class="matrix-char" style="left: 15%; animation-delay: 2s;">1</div>
-    <div class="matrix-char" style="left: 25%; animation-delay: 4s;">0</div>
-    <div class="matrix-char" style="left: 35%; animation-delay: 6s;">1</div>
-    <div class="matrix-char" style="left: 45%; animation-delay: 8s;">0</div>
-    <div class="matrix-char" style="left: 55%; animation-delay: 1s;">1</div>
-    <div class="matrix-char" style="left: 65%; animation-delay: 3s;">0</div>
-    <div class="matrix-char" style="left: 75%; animation-delay: 5s;">1</div>
-    <div class="matrix-char" style="left: 85%; animation-delay: 7s;">0</div>
-    <div class="matrix-char" style="left: 95%; animation-delay: 9s;">1</div>
+<body class="min-w-[340px] bg-background text-foreground p-4 dark:bg-[#18181b] dark:text-white transition-colors duration-300">
+  <div class="banner" id="installBanner">
+    <img src="./icons/icon48.png" alt="Logo" style="width:24px;height:24px;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,0.10);margin-right:8px;">
+    <span style="font-weight:700;margin-right:8px;">Advanced AI MCQ Bot</span>
+    <button class="close-btn" onclick="this.parentElement.style.display='none'" aria-label="Close">&times;</button>
+    Add this extension to Chrome for the best experience!
+    <a href="https://chrome.google.com/webstore/category/extensions" target="_blank">Get it on Chrome Web Store</a>
   </div>
-
-  <!-- Marketing Banner -->
-  <div class="bg-gradient-to-r from-mvk-accent to-mvk-warning text-white font-semibold text-xs py-2 px-4 relative overflow-hidden animate-slide-in" id="installBanner">
-    <button class="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full w-5 h-5 flex items-center justify-center text-xs transition-all duration-300 hover-glow" onclick="this.parentElement.style.display='none'" aria-label="Close">&times;</button>
-    <div class="text-center shimmer-effect">
-      🚀 Advanced AI MCQ Bot by MVK Solutions - Professional Edition
-      <a href="https://mvksolutions.com/enterprise" target="_blank" class="underline ml-1 font-bold hover:text-yellow-200 transition-colors neon-text">Get Enterprise License</a>
+  
+  <button id="themeToggle" class="theme-toggle">🌙</button>
+  
+  <div class="header">
+    <img src="icons/icon48.png" alt="Logo" class="logo">
+    <h1>Advanced AI MCQ Bot</h1>
+  </div>
+  
+  <div class="container">
+    <div class="status">
+      <div id="statusDot" class="status-dot inactive"></div>
+      <div id="statusText" class="status-text">Bot is inactive</div>
+    </div>
+    <div id="errorMessage" style="display:none; color:#F44336; background:#fff3f3; border:1px solid #F44336; border-radius:4px; padding:8px; margin-bottom:10px; font-size:13px;"></div>
+    
+    <div class="toggle-container">
+      <span class="toggle-label">Enable Bot</span>
+      <label class="toggle">
+        <input type="checkbox" id="botToggle">
+        <span class="slider"></span>
+      </label>
+    </div>
+    
+    <div class="mode-selector">
+      <select id="modeSelect">
+        <option value="learning">Learning Mode</option>
+        <option value="safe">Safe Mode</option>
+        <option value="stealth">Stealth Mode</option>
+      </select>
+    </div>
+    
+    <div class="toggle-container">
+      <span class="toggle-label">Voice Narration</span>
+      <label class="toggle">
+        <input type="checkbox" id="voiceToggle">
+        <span class="slider"></span>
+      </label>
+    </div>
+    
+    <div class="toggle-container">
+      <span class="toggle-label">Auto-Answer</span>
+      <label class="toggle">
+        <input type="checkbox" id="autoAnswerToggle" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+    
+    <div style="margin-top: 10px;">
+      <label style="display: flex; align-items: center; gap: 8px;">
+        <input type="checkbox" id="humanMouseMovementToggle">
+        Human-like Mouse Movement
+      </label>
+      <small style="color: #888;">(Simulates random mouse movement, clicks, and scrolling for advanced human-like behavior.)</small>
+    </div>
+    
+    <button id="scanButton" class="button">Scan for MCQs</button>
+    <button id="captureButton" class="button secondary">Capture Screen</button>
+    
+    <div id="mcqInfo" class="mcq-info" style="display: none;">
+      <div class="mcq-question">Question: </div>
+      <div class="mcq-answer">Answer: </div>
+    </div>
+    
+    <div id="apiStatus" class="api-status disconnected">
+      API Status: Not Connected
+    </div>
+    
+    <div class="stats">
+      <div class="stats-item">
+        <div class="stats-value" id="mcqsFound">0</div>
+        <div>MCQs Found</div>
+      </div>
+      <div class="stats-item">
+        <div class="stats-value" id="mcqsAnswered">0</div>
+        <div>Answered</div>
+      </div>
+      <div class="stats-item">
+        <div class="stats-value" id="accuracy">0%</div>
+        <div>Accuracy</div>
+      </div>
     </div>
   </div>
   
-  <div class="relative z-10 p-5 h-full flex flex-col">
-    <!-- Theme Toggle -->
-    <button id="themeToggle" class="absolute top-4 right-4 w-10 h-10 rounded-full glass-morphism hover-lift flex items-center justify-center text-lg z-20 hover-glow">
-      🌙
-    </button>
-    
-    <!-- Company Header -->
-    <div class="glass-morphism-strong rounded-2xl p-4 mb-5 text-center hover-lift shimmer-effect animate-fade-in">
-      <div class="company-logo-advanced mx-auto mb-3">MVK</div>
-      <div class="text-lg font-bold gradient-text mb-1">MVK Solutions</div>
-      <div class="text-xs text-white opacity-90 font-medium">AI-Powered Automation Excellence</div>
-      <div class="text-xs text-white opacity-75 mt-2 leading-relaxed">
-        Leading provider of intelligent automation solutions for educational technology
-      </div>
+  <a href="options.html" class="settings-link">Settings & API Configuration</a>
+  
+  <div class="container">
+    <div class="toggle-container">
+      <span class="toggle-label">Start Auto Detection</span>
+      <label class="toggle">
+        <input type="checkbox" id="startAutoToggle">
+        <span class="slider"></span>
+      </label>
     </div>
     
-    <!-- Main Header -->
-    <div class="glass-morphism rounded-2xl p-5 mb-5 flex items-center hover-lift animate-scale-in">
-      <img src="icons/icon48.png" alt="Logo" class="w-12 h-12 mr-4 rounded-xl shadow-lg animate-float">
-      <h1 class="text-lg font-bold text-white text-shadow cyber-text">Advanced AI MCQ Bot</h1>
+    <button id="start-auto" class="button">Auto Detect & OCR</button>
+    
+    <div class="form-group">
+      <label for="lang-select">OCR Language:</label>
+      <select id="lang-select" class="form-control">
+        <option value="eng">English</option>
+        <option value="hin">Hindi</option>
+        <option value="spa">Spanish</option>
+        <option value="fra">French</option>
+        <option value="deu">German</option>
+      </select>
     </div>
     
-    <!-- Main Container -->
-    <div class="glass-morphism-strong rounded-2xl p-6 mb-5 flex-1 overflow-y-auto hover-lift">
-      <!-- Status Indicator -->
-      <div class="flex items-center mb-5 p-4 glass-morphism-dark rounded-xl hover-glow">
-        <div id="statusDot" class="status-indicator-advanced inactive"></div>
-        <div id="statusText" class="text-sm font-semibold text-white">Bot is inactive</div>
-      </div>
-      
-      <!-- Error Message -->
-      <div id="errorMessage" class="hidden bg-red-500 bg-opacity-20 border border-red-400 text-red-100 rounded-xl p-3 mb-4 text-sm font-medium backdrop-blur-sm animate-pulse"></div>
-      
-      <!-- Controls Grid -->
-      <div class="space-y-4">
-        <!-- Enable Bot Toggle -->
-        <div class="flex justify-between items-center p-4 glass-morphism-dark rounded-xl hover-lift hover-neon">
-          <span class="text-sm font-semibold text-white">Enable Bot</span>
-          <div id="botToggle" class="toggle-advanced neon cursor-pointer"></div>
-        </div>
-        
-        <!-- Mode Selector -->
-        <div class="glass-morphism-dark rounded-xl p-4 hover-lift">
-          <select id="modeSelect" class="w-full p-3 bg-white bg-opacity-10 border border-white border-opacity-30 rounded-xl text-white text-sm font-medium backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-mvk-success focus:border-transparent transition-all duration-300 hover-glow">
-            <option value="learning" class="bg-mvk-dark text-white">🎓 Learning Mode</option>
-            <option value="safe" class="bg-mvk-dark text-white">🛡️ Safe Mode</option>
-            <option value="stealth" class="bg-mvk-dark text-white">🥷 Stealth Mode</option>
-          </select>
-        </div>
-        
-        <!-- Voice Narration Toggle -->
-        <div class="flex justify-between items-center p-4 glass-morphism-dark rounded-xl hover-lift hover-neon">
-          <span class="text-sm font-semibold text-white">Voice Narration</span>
-          <div id="voiceToggle" class="toggle-advanced cursor-pointer"></div>
-        </div>
-        
-        <!-- Auto-Answer Toggle -->
-        <div class="flex justify-between items-center p-4 glass-morphism-dark rounded-xl hover-lift hover-neon">
-          <span class="text-sm font-semibold text-white">Auto-Answer</span>
-          <div id="autoAnswerToggle" class="toggle-advanced active neon cursor-pointer"></div>
-        </div>
-        
-        <!-- Human-like Movement Toggle -->
-        <div class="flex justify-between items-center p-4 glass-morphism-dark rounded-xl hover-lift hover-neon">
-          <span class="text-sm font-semibold text-white">Human-like Movement</span>
-          <div id="humanMouseMovementToggle" class="toggle-advanced cursor-pointer"></div>
-        </div>
-      </div>
-      
-      <!-- Action Buttons -->
-      <div class="mt-6 space-y-3">
-        <button id="scanButton" class="btn-advanced w-full shimmer-effect">
-          🔍 Scan for MCQs
-        </button>
-        <button id="captureButton" class="btn-advanced w-full shimmer-effect btn-neon">
-          📸 Capture Screen
-        </button>
-      </div>
-      
-      <!-- MCQ Info -->
-      <div id="mcqInfo" class="hidden mt-5 p-4 glass-morphism-neon rounded-xl hover-lift">
-        <div class="mcq-question text-xs text-white font-semibold mb-2"></div>
-        <div class="mcq-answer text-xs text-green-300 font-medium"></div>
-      </div>
-      
-      <!-- API Status -->
-      <div id="apiStatus" class="text-xs text-center mt-4 py-2 px-4 rounded-full font-medium uppercase tracking-wide bg-red-500 bg-opacity-20 text-red-300 border border-red-400 animate-pulse">
-        API Status: Not Connected
-      </div>
-      
-      <!-- Statistics Grid -->
-      <div class="grid grid-cols-3 gap-3 mt-5">
-        <div class="stats-card-advanced hover-lift">
-          <div class="stats-value-advanced" id="mcqsFound">0</div>
-          <div class="text-xs text-white opacity-80 font-medium uppercase tracking-wide">MCQs Found</div>
-        </div>
-        <div class="stats-card-advanced hover-lift">
-          <div class="stats-value-advanced" id="mcqsAnswered">0</div>
-          <div class="text-xs text-white opacity-80 font-medium uppercase tracking-wide">Answered</div>
-        </div>
-        <div class="stats-card-advanced hover-lift">
-          <div class="stats-value-advanced" id="accuracy">0%</div>
-          <div class="text-xs text-white opacity-80 font-medium uppercase tracking-wide">Accuracy</div>
-        </div>
-      </div>
-
-      <!-- OCR Controls -->
-      <div class="mt-5 p-4 glass-morphism-neon rounded-xl hover-lift">
-        <button id="start-auto" class="btn-advanced w-full mb-3 shimmer-effect btn-cyber">
-          🤖 Auto Detect & OCR
-        </button>
-        <select id="lang-select" class="w-full p-3 bg-white bg-opacity-10 border border-white border-opacity-30 rounded-xl text-white text-sm font-medium backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-mvk-success focus:border-transparent transition-all duration-300 mb-3 hover-glow">
-          <option value="eng" class="bg-mvk-dark text-white">🇺🇸 English</option>
-          <option value="hin" class="bg-mvk-dark text-white">🇮🇳 Hindi</option>
-          <option value="spa" class="bg-mvk-dark text-white">🇪🇸 Spanish</option>
-          <option value="fra" class="bg-mvk-dark text-white">🇫🇷 French</option>
-        </select>
-        <button id="re-ocr" class="btn-advanced w-full mb-3 shimmer-effect" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
-          🔄 Re-OCR
-        </button>
-        <div id="status" class="text-xs text-white opacity-80 text-center mb-3"></div>
-        <img id="preview" class="hidden w-full max-h-32 object-cover rounded-lg shadow-lg mb-3"/>
-        <pre id="ocr-result" class="bg-black bg-opacity-30 text-white p-3 rounded-lg text-xs max-h-24 overflow-y-auto font-mono backdrop-blur-sm"></pre>
-      </div>
-    </div>
+    <button id="re-ocr" class="button secondary">Re-OCR</button>
     
-    <!-- Settings Link -->
-    <a href="options.html" class="block text-center mt-4 text-white opacity-80 hover:opacity-100 text-xs font-medium py-3 px-4 glass-morphism-strong rounded-xl hover-lift transition-all duration-300 uppercase tracking-wide shimmer-effect">
-      ⚙️ Settings & API Configuration
-    </a>
+    <div id="status" class="status-message"></div>
+    <img id="preview" class="preview-image" style="max-width:100%;max-height:200px;display:none;"/>
+    <pre id="ocr-result" class="ocr-result"></pre>
   </div>
   
+  <script src="config.js"></script>
   <script src="tesseract.min.js"></script>
   <script src="popup.js"></script>
-  
-  <script>
-    // Enhanced toggle functionality
-    document.querySelectorAll('.toggle-advanced').forEach(toggle => {
-      toggle.addEventListener('click', function() {
-        this.classList.toggle('active');
-      });
-    });
-
-    // Theme toggle functionality
-    const themeToggle = document.getElementById('themeToggle');
-    let isDarkMode = false;
-
-    themeToggle.addEventListener('click', () => {
-      isDarkMode = !isDarkMode;
-      document.body.classList.toggle('dark-mode', isDarkMode);
-      themeToggle.textContent = isDarkMode ? '☀️' : '🌙';
-    });
-
-    // Enhanced button interactions
-    document.querySelectorAll('.btn-advanced').forEach(btn => {
-      btn.addEventListener('mouseenter', function() {
-        this.style.transform = 'translateY(-3px) scale(1.02)';
-      });
-      
-      btn.addEventListener('mouseleave', function() {
-        this.style.transform = 'translateY(0) scale(1)';
-      });
-    });
-
-    // Parallax effect for background
-    document.addEventListener('mousemove', (e) => {
-      const mouseX = e.clientX / window.innerWidth;
-      const mouseY = e.clientY / window.innerHeight;
-      
-      document.body.style.backgroundPosition = `${mouseX * 100}% ${mouseY * 100}%`;
-    });
-
-    // Auto-hide banner after 10 seconds
-    setTimeout(() => {
-      const banner = document.getElementById('installBanner');
-      if (banner) {
-        banner.style.transform = 'translateY(-100%)';
-        banner.style.opacity = '0';
-        setTimeout(() => banner.style.display = 'none', 500);
-      }
-    }, 10000);
-
-    // Add floating animation to stats cards
-    document.querySelectorAll('.stats-card-advanced').forEach((card, index) => {
-      card.style.animationDelay = `${index * 0.2}s`;
-      card.classList.add('animate-float');
-    });
-
-    // Add glow effect on hover for interactive elements
-    document.querySelectorAll('.hover-glow').forEach(element => {
-      element.addEventListener('mouseenter', function() {
-        this.style.boxShadow = '0 0 30px rgba(102, 126, 234, 0.6)';
-      });
-      
-      element.addEventListener('mouseleave', function() {
-        this.style.boxShadow = '';
-      });
-    });
-
-    // Add neon effect on hover for neon elements
-    document.querySelectorAll('.hover-neon').forEach(element => {
-      element.addEventListener('mouseenter', function() {
-        this.style.boxShadow = '0 0 50px rgba(255, 0, 110, 0.8)';
-        this.style.borderColor = 'rgba(255, 0, 110, 1)';
-      });
-      
-      element.addEventListener('mouseleave', function() {
-        this.style.boxShadow = '';
-        this.style.borderColor = '';
-      });
-    });
-  </script>
 </body>
 </html>

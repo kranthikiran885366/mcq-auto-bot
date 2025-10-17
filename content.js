@@ -139,23 +139,54 @@ if (typeof chrome !== "undefined" && chrome.runtime) {
     }
 
     if (message.action === "scanForMCQs") {
-      const mcqs = findMCQs()
-      lastMCQ = mcqs.length > 0 ? mcqs[0] : null
-      sendResponse({
-        success: true,
-        count: mcqs.length,
-        lastMCQ: lastMCQ,
-      })
-
-      // Update stats
-      stats.found = mcqs.length
-      chrome.storage.sync.set({ stats })
-
-      // Send stats update to popup
-      chrome.runtime.sendMessage({
-        action: "updateStats",
-        stats: stats,
-      })
+      console.log('Received scanForMCQs request');
+      
+      // Return true to indicate we'll send a response asynchronously
+      const sendResponseAsync = sendResponse;
+      
+      // Wrap in setTimeout to ensure async response
+      setTimeout(async () => {
+        try {
+          console.log('Starting MCQ scan...');
+          const mcqs = await Promise.resolve(findAllMCQs()); // Ensure this is a promise
+          lastMCQ = mcqs.length > 0 ? mcqs[0] : null;
+          
+          // Update stats
+          stats.found = mcqs.length;
+          await chrome.storage.sync.set({ stats });
+          
+          console.log(`Found ${mcqs.length} MCQs`, mcqs);
+          
+          // Send response with all found MCQs and stats
+          sendResponseAsync({
+            success: true,
+            count: mcqs.length,
+            mcqs: mcqs,
+            lastMCQ: lastMCQ,
+            stats: stats
+          });
+          
+          // Send stats update to popup
+          chrome.runtime.sendMessage({
+            action: "updateStats",
+            stats: stats
+          }).catch(error => {
+            console.error('Error sending stats update:', error);
+          });
+          
+        } catch (error) {
+          console.error('Error in scanForMCQs:', error);
+          sendResponseAsync({
+            success: false,
+            error: error.message,
+            count: 0,
+            mcqs: []
+          });
+        }
+      }, 0);
+      
+      // Return true to indicate we'll send the response asynchronously
+      return true;
     }
 
     if (message.action === "captureScreen") {
@@ -216,7 +247,8 @@ if (typeof chrome !== "undefined" && chrome.runtime) {
             console.warn("[Content] Tesseract.js OCR failed, falling back to backend OCR:", err);
             // Fallback: Use backend OCR API
             try {
-              const response = await fetch('http://localhost:5000/api/ocr-detect', {
+              const API_BASE = window.APP_CONFIG ? window.APP_CONFIG.API_BASE : 'https://mcq-bot-backend.railway.app/api';
+              const response = await fetch(`${API_BASE}/ocr-detect`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ image_data: imageData, language: language || ocrLanguage })
@@ -1894,7 +1926,8 @@ async function findMCQsWithOCR() {
     } catch (e) {
       console.warn('[MCQ-BOT][OCR] Tesseract.js error:', e.message);
       try {
-        const response = await fetch('http://localhost:8000/api/ocr-detect', {
+        const API_BASE = window.APP_CONFIG ? window.APP_CONFIG.API_BASE : 'https://mcq-bot-backend.railway.app/api';
+        const response = await fetch(`${API_BASE}/ocr-detect`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ image_data: imageData })

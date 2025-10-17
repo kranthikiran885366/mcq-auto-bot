@@ -15,10 +15,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const themeToggle = document.getElementById("themeToggle")
   const errorMessage = document.getElementById("errorMessage")
   const startAuto = document.getElementById("start-auto")
+  const startAutoToggle = document.getElementById("startAutoToggle")
   const reOCR = document.getElementById("re-ocr")
   const langSelect = document.getElementById("lang-select")
   const preview = document.getElementById("preview")
   const ocrResult = document.getElementById("ocr-result")
+  const statusDiv = document.getElementById("status")
 
   let isDarkMode = false
   let lastImage = null
@@ -73,6 +75,136 @@ document.addEventListener("DOMContentLoaded", () => {
     },
   )
 
+  // Start auto toggle functionality
+  startAutoToggle.addEventListener('change', function() {
+    const isActive = this.checked;
+    
+    if (isActive) {
+      startAuto.classList.add('active');
+      startAuto.textContent = 'Stop Auto Detection';
+      showStatus('Auto detection enabled', 'success');
+      
+      // Enable the bot if not already enabled
+      if (!botToggle.checked) {
+        botToggle.checked = true;
+        updateStatusIndicator(true);
+        chrome.storage.sync.set({ botEnabled: true });
+      }
+    } else {
+      startAuto.classList.remove('active');
+      startAuto.textContent = 'Auto Detect & OCR';
+      showStatus('Auto detection disabled', 'info');
+    }
+  });
+  
+  // Start auto detection button
+  startAuto.addEventListener("click", async () => {
+    console.log('Start Auto button clicked');
+    
+    // Toggle the auto detection state
+    startAutoToggle.checked = !startAutoToggle.checked;
+    startAutoToggle.dispatchEvent(new Event('change'));
+    
+    if (!startAutoToggle.checked) {
+      return; // If we just disabled it, don't run the scan
+    }
+    
+    try {
+      // Disable button temporarily to prevent multiple clicks
+      startAuto.disabled = true;
+      const originalText = startAuto.textContent;
+      startAuto.textContent = 'Scanning...';
+      
+      showStatus('Initializing scan...', 'info');
+      
+      // Get active tab
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      
+      if (!tab || !tab.id) {
+        throw new Error('No active tab found');
+      }
+      
+      // Check if the URL is a restricted URL
+      if (tab.url && (tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || 
+                      tab.url.startsWith('edge://') || tab.url.startsWith('about:'))) {
+        throw new Error('Cannot scan Chrome internal pages. Please open a regular webpage.');
+      }
+      
+      // Try to inject content script if needed
+      try {
+        await chrome.tabs.sendMessage(tab.id, { action: 'ping' });
+      } catch (e) {
+        console.log('Injecting content script...');
+        try {
+          await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            files: ['content.js']
+          });
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (injectError) {
+          throw new Error('Failed to initialize scanner. Please refresh the page and try again.');
+        }
+      }
+      
+      // Trigger the scan
+      const response = await new Promise((resolve) => {
+        chrome.tabs.sendMessage(tab.id, { action: 'scanForMCQs' }, (response) => {
+          if (chrome.runtime.lastError) {
+            resolve({ success: false, error: chrome.runtime.lastError.message });
+          } else {
+            resolve(response || { success: false, error: 'No response from content script' });
+          }
+        });
+      });
+      
+      if (response.success) {
+        showStatus(`Found ${response.count || 0} MCQs`, 'success');
+        statusText.textContent = `Found ${response.count || 0} MCQs`;
+        
+        // Update stats
+        if (response.stats) {
+          mcqsFoundEl.textContent = response.stats.found || 0;
+          mcqsAnsweredEl.textContent = response.stats.answered || 0;
+          accuracyEl.textContent = `${response.stats.accuracy || 0}%`;
+        }
+        
+        // Show MCQ info if available
+        if (response.lastMCQ) {
+          mcqInfo.style.display = 'block';
+          const questionText = response.lastMCQ.question || '';
+          const truncatedQuestion = questionText.length > 100 
+            ? questionText.substring(0, 100) + '...' 
+            : questionText;
+          mcqInfo.querySelector('.mcq-question').textContent = `Question: ${truncatedQuestion}`;
+          mcqInfo.querySelector('.mcq-answer').textContent = `Answer: ${response.lastMCQ.answer || 'Processing...'}`;
+        }
+      } else {
+        const errorMsg = response.error || 'Failed to scan for MCQs';
+        showStatus(errorMsg, 'error');
+        statusText.textContent = 'Scan failed';
+        
+        // Disable the toggle on error
+        startAutoToggle.checked = false;
+        startAuto.classList.remove('active');
+        startAuto.textContent = 'Auto Detect & OCR';
+      }
+    } catch (error) {
+      console.error('Error in startAuto:', error);
+      showStatus('Error: ' + error.message, 'error');
+      statusText.textContent = 'Error occurred';
+      
+      // Disable the toggle on error
+      startAutoToggle.checked = false;
+      startAuto.classList.remove('active');
+      startAuto.textContent = 'Auto Detect & OCR';
+    } finally {
+      startAuto.disabled = false;
+      if (startAutoToggle.checked) {
+        startAuto.textContent = 'Stop Auto Detection';
+      }
+    }
+  });
+
   // Toggle bot status
   botToggle.addEventListener("change", () => {
     const isEnabled = botToggle.checked
@@ -83,10 +215,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Send message to content script
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      chrome.tabs.sendMessage(tabs[0].id, {
-        action: isEnabled ? "enableBot" : "disableBot",
-        mode: modeSelect.value,
-      })
+      if (!tabs || tabs.length === 0) {
+        console.warn('No active tab to notify about bot toggle')
+        return
+      }
+      const tab = tabs[0]
+      if (!tab || !tab.id) {
+        console.warn('Active tab object invalid')
+        return
+      }
+      try {
+        chrome.tabs.sendMessage(tab.id, {
+          action: isEnabled ? "enableBot" : "disableBot",
+          mode: modeSelect.value,
+        }, (resp) => {
+          if (chrome.runtime.lastError) {
+            // Content script might not be injected on this page - that's fine
+            console.warn('Could not send enable/disable message to tab:', chrome.runtime.lastError.message)
+          }
+        })
+      } catch (err) {
+        console.error('Error sending enable/disable message:', err)
+      }
     })
   })
 
@@ -98,10 +248,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Send message to content script
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      chrome.tabs.sendMessage(tabs[0].id, {
-        action: "setVoiceNarration",
-        enabled: isEnabled,
-      })
+      if (!tabs || tabs.length === 0) return
+      const tab = tabs[0]
+      if (!tab || !tab.id) return
+      try {
+        chrome.tabs.sendMessage(tab.id, {
+          action: "setVoiceNarration",
+          enabled: isEnabled,
+        }, () => {
+          if (chrome.runtime.lastError) console.warn('Voice toggle message failed:', chrome.runtime.lastError.message)
+        })
+      } catch (err) {
+        console.error('Error sending voice toggle message:', err)
+      }
     })
   })
 
@@ -113,10 +272,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Send message to content script
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      chrome.tabs.sendMessage(tabs[0].id, {
-        action: "setAutoAnswer",
-        enabled: isEnabled,
-      })
+      if (!tabs || tabs.length === 0) return
+      const tab = tabs[0]
+      if (!tab || !tab.id) return
+      try {
+        chrome.tabs.sendMessage(tab.id, {
+          action: "setAutoAnswer",
+          enabled: isEnabled,
+        }, () => {
+          if (chrome.runtime.lastError) console.warn('Auto-answer message failed:', chrome.runtime.lastError.message)
+        })
+      } catch (err) {
+        console.error('Error sending auto-answer message:', err)
+      }
     })
   })
 
@@ -128,45 +296,100 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Send message to content script
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      chrome.tabs.sendMessage(tabs[0].id, {
-        action: "setMode",
-        mode: mode,
-      })
+      if (!tabs || tabs.length === 0) return
+      const tab = tabs[0]
+      if (!tab || !tab.id) return
+      try {
+        chrome.tabs.sendMessage(tab.id, {
+          action: "setMode",
+          mode: mode,
+        }, () => {
+          if (chrome.runtime.lastError) console.warn('Set mode message failed:', chrome.runtime.lastError.message)
+        })
+      } catch (err) {
+        console.error('Error sending setMode message:', err)
+      }
     })
   })
 
   // Scan for MCQs button
-  scanButton.addEventListener("click", () => {
-    clearError()
-    statusText.textContent = "Scanning for MCQs..."
-
-    // Send message to content script
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      chrome.tabs.sendMessage(tabs[0].id, { action: "scanForMCQs" }, (response) => {
-        if (response && response.success) {
-          statusText.textContent = `Found ${response.count} MCQs`
-          mcqsFoundEl.textContent = response.count
-
-          // Update storage
-          chrome.storage.sync.get(["stats"], (result) => {
-            const stats = result.stats || { found: 0, answered: 0, accuracy: 0 }
-            stats.found = response.count
-            chrome.storage.sync.set({ stats })
-          })
-
-          // Show MCQ info if available
-          if (response.lastMCQ) {
-            mcqInfo.style.display = "block"
-            mcqInfo.querySelector(".mcq-question").textContent =
-              `Question: ${response.lastMCQ.question.substring(0, 100)}${response.lastMCQ.question.length > 100 ? "..." : ""}`
-            mcqInfo.querySelector(".mcq-answer").textContent = `Answer: ${response.lastMCQ.answer || "Pending..."}`
+  scanButton.addEventListener("click", async () => {
+    console.log('Scan button clicked');
+    clearError();
+    statusText.textContent = "Scanning for MCQs...";
+    scanButton.disabled = true;
+    
+    try {
+      // Get active tab
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      
+      if (!tab || !tab.id) {
+        throw new Error('No active tab found');
+      }
+      
+      // Check if content script is injected
+      try {
+        // Try to send a ping to the content script
+        await chrome.tabs.sendMessage(tab.id, { action: "ping" });
+      } catch (e) {
+        console.log('Content script not responding, injecting...');
+        // If content script is not injected, inject it
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ['content.js']
+        });
+      }
+      
+      // Send scan message
+      const response = await new Promise((resolve) => {
+        chrome.tabs.sendMessage(tab.id, { action: "scanForMCQs" }, (response) => {
+          if (chrome.runtime.lastError) {
+            console.error('Error sending message to content script:', chrome.runtime.lastError);
+            resolve(null);
+          } else {
+            resolve(response);
           }
-        } else {
-          statusText.textContent = "No MCQs found"
+        });
+      });
+      
+      if (response && response.success) {
+        console.log(`Found ${response.count} MCQs`, response);
+        statusText.textContent = `Found ${response.count} MCQs`;
+        mcqsFoundEl.textContent = response.count;
+
+        // Update storage
+        const { stats } = await chrome.storage.sync.get(["stats"]);
+        const updatedStats = { 
+          ...(stats || { found: 0, answered: 0, accuracy: 0 }),
+          found: response.count 
+        };
+        await chrome.storage.sync.set({ stats: updatedStats });
+
+        // Show MCQ info if available
+        if (response.lastMCQ) {
+          mcqInfo.style.display = "block";
+          const questionText = response.lastMCQ.question || '';
+          const truncatedQuestion = questionText.length > 100 
+            ? questionText.substring(0, 100) + '...' 
+            : questionText;
+          mcqInfo.querySelector(".mcq-question").textContent = `Question: ${truncatedQuestion}`;
+          mcqInfo.querySelector(".mcq-answer").textContent = `Answer: ${response.lastMCQ.answer || "Pending..."}`;
         }
-      })
-    })
-  })
+      } else {
+        console.log('No MCQs found or error in scanning');
+        statusText.textContent = "No MCQs found";
+        if (response && response.error) {
+          showError(response.error);
+        }
+      }
+    } catch (error) {
+      console.error('Error in scan button click handler:', error);
+      showError('Failed to scan for MCQs: ' + error.message);
+      statusText.textContent = "Error scanning for MCQs";
+    } finally {
+      scanButton.disabled = false;
+    }
+  });
 
   // Capture screen button
   captureButton.addEventListener("click", () => {
@@ -260,48 +483,102 @@ document.addEventListener("DOMContentLoaded", () => {
     errorMessage.textContent = "";
     errorMessage.style.display = "none";
   }
-
-  startAuto.onclick = () => {
-    document.getElementById('status').textContent = "Detecting MCQ...";
-    chrome.runtime.sendMessage({type: "startAutoMCQ"}, (resp) => {
-      if (!resp || !resp.success) {
-        document.getElementById('status').textContent = "Error: " + (resp ? resp.error : "Unknown");
-        return;
+  
+  function showStatus(message, type = 'info') {
+    if (statusDiv) {
+      statusDiv.textContent = message;
+      statusDiv.className = `status-message ${type}`;
+      statusDiv.style.display = 'block';
+      
+      // Auto-hide after 5 seconds for success/error messages
+      if (type === 'success' || type === 'error') {
+        setTimeout(() => {
+          statusDiv.style.display = 'none';
+        }, 5000);
       }
-      lastImage = resp.image;
-      document.getElementById('preview').src = lastImage;
-      runOCR(lastImage, lastLang, 2);
+    }
+  }
+
+  // Note: startAuto has a robust handler earlier (startAuto.addEventListener)
+  // Remove duplicate onclick assignment to avoid conflicts.
+
+  // Ensure re-ocr and lang select use addEventListener for consistency
+  if (reOCR) {
+    reOCR.addEventListener('click', () => {
+      if (lastImage) {
+        showStatus('Re-running OCR...', 'info');
+        runOCR(lastImage, lastLang, 2);
+      } else {
+        showStatus('No image available for OCR', 'error');
+      }
     });
-  };
+  }
 
-  reOCR.onclick = () => {
-    if (lastImage) runOCR(lastImage, lastLang, 2);
-  };
+  if (langSelect) {
+    langSelect.addEventListener('change', (e) => {
+      lastLang = e.target.value;
+      showStatus(`Language changed to ${e.target.options[e.target.selectedIndex].text}`, 'info');
+      if (lastImage) {
+        runOCR(lastImage, lastLang, 2);
+      }
+    });
+  }
 
-  langSelect.onchange = (e) => {
-    lastLang = e.target.value;
-    if (lastImage) runOCR(lastImage, lastLang, 2);
-  };
-
-  // Add image preprocessing for better OCR accuracy
+  // Enhanced image preprocessing for better OCR accuracy
   function preprocessImage(base64, callback) {
     const img = new Image();
     img.onload = function() {
       const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
       const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-      // Grayscale and binarize
+      
+      // Scale up small images for better OCR
+      const minWidth = 800;
+      const scale = Math.max(1, minWidth / img.width);
+      
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      
+      // Draw scaled image
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      
+      // Get image data for processing
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      for (let i = 0; i < imageData.data.length; i += 4) {
-        const avg = (imageData.data[i] + imageData.data[i+1] + imageData.data[i+2]) / 3;
-        const bin = avg > 128 ? 255 : 0;
-        imageData.data[i] = imageData.data[i+1] = imageData.data[i+2] = bin;
+      const data = imageData.data;
+      
+      // Convert to grayscale and apply contrast enhancement
+      for (let i = 0; i < data.length; i += 4) {
+        // Calculate grayscale value
+        const gray = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
+        
+        // Apply contrast enhancement
+        const enhanced = gray < 128 ? Math.max(0, gray - 30) : Math.min(255, gray + 30);
+        
+        // Apply binary threshold
+        const binary = enhanced > 128 ? 255 : 0;
+        
+        data[i] = binary;     // Red
+        data[i + 1] = binary; // Green
+        data[i + 2] = binary; // Blue
+        // Alpha channel remains unchanged
       }
+      
+      // Put processed image data back
       ctx.putImageData(imageData, 0, 0);
+      
+      // Show preview if element exists
+      if (preview) {
+        preview.src = canvas.toDataURL('image/png');
+        preview.style.display = 'block';
+      }
+      
       callback(canvas.toDataURL('image/png'));
     };
+    
+    img.onerror = function() {
+      showStatus('Error loading image for preprocessing', 'error');
+      callback(base64); // Fallback to original
+    };
+    
     img.src = base64;
   }
 
@@ -324,48 +601,113 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function runOCR(image, lang, retries) {
-    const statusEl = document.getElementById('status');
     if (typeof Tesseract === 'undefined') {
-      if (statusEl) statusEl.textContent = 'Tesseract.js is not loaded!';
+      showStatus('Tesseract.js is not loaded!', 'error');
       console.error('Tesseract.js is not loaded!');
       return;
     }
-    if (statusEl) statusEl.textContent = "Running OCR (" + lang + ")...";
+    
+    showStatus(`Running OCR (${lang})...`, 'info');
+    
     preprocessImage(image, (processedImage) => {
-      Tesseract.recognize(processedImage, lang, { logger: m => console.log(m) })
-        .then(result => {
-          if (!result.data.text.trim() && retries > 0) {
-            if (statusEl) statusEl.textContent = "Retrying OCR...";
-            runOCR(processedImage, lang, retries - 1);
-          } else if (!result.data.text.trim()) {
-            // Fallback: send to backend
-            if (statusEl) statusEl.textContent = "Trying backend OCR...";
-            fetch('http://localhost:5000/api/ocr-detect', {
-              method: 'POST',
-              headers: {'Content-Type': 'application/json'},
-              body: JSON.stringify({image: processedImage, lang})
-            })
-            .then(r => r.json())
-            .then(data => {
-              if (statusEl) statusEl.textContent = "Backend OCR: " + (data.text || "No text found");
-              document.getElementById('ocr-result').textContent = data.text || "";
-            })
-            .catch(err => {
-              const msg = getErrorMessage(err);
-              if (statusEl) statusEl.textContent = "Backend OCR error: " + msg;
-              console.error('Backend OCR error:', err);
-            });
-          } else {
-            if (statusEl) statusEl.textContent = "OCR Success!";
-            document.getElementById('ocr-result').textContent = result.data.text;
+      Tesseract.recognize(processedImage, lang, { 
+        logger: m => {
+          if (m.status === 'recognizing text') {
+            showStatus(`OCR Progress: ${Math.round(m.progress * 100)}%`, 'info');
           }
-        })
-        .catch(err => {
-          const msg = getErrorMessage(err);
-          if (statusEl) statusEl.textContent = "Tesseract error: " + msg;
-          console.error('Tesseract error:', err);
-        });
+        }
+      })
+      .then(result => {
+        const extractedText = result.data.text.trim();
+        
+        if (!extractedText && retries > 0) {
+          showStatus('Retrying OCR...', 'info');
+          runOCR(processedImage, lang, retries - 1);
+        } else if (!extractedText) {
+          // Fallback: send to backend
+          showStatus('Trying backend OCR...', 'info');
+          const API_BASE = window.APP_CONFIG ? window.APP_CONFIG.API_BASE : 'https://mcq-bot-backend.railway.app/api';
+          fetch(`${API_BASE}/ocr-detect`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({image_data: processedImage, language: lang})
+          })
+          .then(r => r.json())
+          .then(data => {
+            if (data.success && data.text) {
+              showStatus('Backend OCR completed', 'success');
+              if (ocrResult) ocrResult.textContent = data.text;
+            } else {
+              showStatus('Backend OCR: No text found', 'error');
+              if (ocrResult) ocrResult.textContent = 'No text detected';
+            }
+          })
+          .catch(err => {
+            const msg = getErrorMessage(err);
+            showStatus('Backend OCR error: ' + msg, 'error');
+            console.error('Backend OCR error:', err);
+          });
+        } else {
+          showStatus('OCR completed successfully!', 'success');
+          if (ocrResult) ocrResult.textContent = extractedText;
+          
+          // Try to parse MCQs from the text
+          const mcqs = parseMCQsFromText(extractedText);
+          if (mcqs.length > 0) {
+            showStatus(`Found ${mcqs.length} MCQ(s) in text`, 'success');
+          }
+        }
+      })
+      .catch(err => {
+        const msg = getErrorMessage(err);
+        showStatus('Tesseract error: ' + msg, 'error');
+        console.error('Tesseract error:', err);
+      });
     });
+  }
+  
+  // Simple MCQ parser for OCR text
+  function parseMCQsFromText(text) {
+    const mcqs = [];
+    const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+    
+    let currentQuestion = '';
+    let currentOptions = [];
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      
+      // Check if line looks like a question (ends with ? or contains question words)
+      if (line.endsWith('?') || /\b(what|which|who|when|where|why|how)\b/i.test(line)) {
+        // Save previous MCQ if we have one
+        if (currentQuestion && currentOptions.length >= 2) {
+          mcqs.push({
+            question: currentQuestion,
+            options: currentOptions
+          });
+        }
+        
+        currentQuestion = line;
+        currentOptions = [];
+      }
+      // Check if line looks like an option (starts with A), B), 1), etc.)
+      else if (/^[A-D1-4][.)\s]/.test(line) || /^[a-d][.)\s]/.test(line)) {
+        const optionText = line.replace(/^[A-Da-d1-4][.)\s]+/, '').trim();
+        if (optionText) {
+          currentOptions.push(optionText);
+        }
+      }
+    }
+    
+    // Don't forget the last MCQ
+    if (currentQuestion && currentOptions.length >= 2) {
+      mcqs.push({
+        question: currentQuestion,
+        options: currentOptions
+      });
+    }
+    
+    return mcqs;
   }
 
   // Example function to answer MCQ using backend
@@ -376,7 +718,8 @@ document.addEventListener("DOMContentLoaded", () => {
     })
     const provider = settings.apiProvider || "openai"
     // POST to backend
-    const response = await fetch('http://localhost:5000/api/get-answer', {
+    const API_BASE = window.APP_CONFIG ? window.APP_CONFIG.API_BASE : 'https://mcq-bot-backend.railway.app/api';
+    const response = await fetch(`${API_BASE}/get-answer`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

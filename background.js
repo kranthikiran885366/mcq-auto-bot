@@ -91,7 +91,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
         // Fallback: Use backend OCR API
         try {
-          const response = await fetch('http://localhost:5000/api/ocr-detect', {
+          const API_BASE = 'https://mcq-bot-backend.railway.app/api'; // Use production URL in background
+          const response = await fetch(`${API_BASE}/ocr-detect`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ image_data: imageData, language: language || 'eng' })
